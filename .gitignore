@@ -203,3 +203,8 @@ calibration_*.npy
 # Training logs
 args.yaml
 results.csv
+
+
+.opencode/
+.understand-anything/
+.omo/
