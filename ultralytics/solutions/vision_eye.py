@@ -7,61 +7,60 @@ from ultralytics.utils.plotting import colors
 
 
 class VisionEye(BaseSolution):
-    """A class to manage object detection and vision mapping in images or video streams.
+    """管理图像或视频流中目标检测和视觉映射的类。
 
-    This class extends the BaseSolution class and provides functionality for detecting objects, mapping vision points,
-    and annotating results with bounding boxes and labels.
+    此类扩展了 BaseSolution 类，提供检测目标、映射视觉视点以及使用边界框和标签标注结果的功能。
 
-    Attributes:
-        vision_point (tuple[int, int]): Coordinates (x, y) where vision will view objects and draw tracks.
+    属性:
+        vision_point (tuple[int, int]): 系统观察目标并绘制轨迹的视点坐标 (x, y)。
 
-    Methods:
-        process: Process the input image to detect objects, annotate them, and apply vision mapping.
+    方法:
+        process: 处理输入图像以检测目标、标注它们并应用视觉映射。
 
-    Examples:
+    示例:
         >>> vision_eye = VisionEye()
         >>> frame = cv2.imread("frame.jpg")
         >>> results = vision_eye.process(frame)
-        >>> print(f"Total detected instances: {results.total_tracks}")
+        >>> print(f"检测到的目标总数: {results.total_tracks}")
     """
 
     def __init__(self, **kwargs: Any) -> None:
-        """Initialize the VisionEye class for detecting objects and applying vision mapping.
+        """初始化 VisionEye 类，用于检测目标并应用视觉映射。
 
-        Args:
-            **kwargs (Any): Keyword arguments passed to the parent class and for configuring vision_point.
+        参数:
+            **kwargs (Any): 传递给父类和用于配置 vision_point 的关键字参数。
         """
         super().__init__(**kwargs)
-        # Set the vision point where the system will view objects and draw tracks
+        # 设置系统观察目标并绘制轨迹的视点
         self.vision_point = self.CFG["vision_point"]
 
     def process(self, im0) -> SolutionResults:
-        """Perform object detection, vision mapping, and annotation on the input image.
+        """在输入图像上执行目标检测、视觉映射和标注。
 
-        Args:
-            im0 (np.ndarray): The input image for detection and annotation.
+        参数:
+            im0 (np.ndarray): 用于检测和标注的输入图像。
 
-        Returns:
-            (SolutionResults): Object containing the annotated image and tracking statistics.
-                - plot_im: Annotated output image with bounding boxes and vision mapping
-                - total_tracks: Number of tracked objects in the frame
+        返回:
+            (SolutionResults): 包含标注图像和跟踪统计信息的对象。
+                - plot_im: 带有边界框和视觉映射的标注输出图像
+                - total_tracks: 帧中跟踪目标的数量
 
-        Examples:
+        示例:
             >>> vision_eye = VisionEye()
             >>> frame = cv2.imread("image.jpg")
             >>> results = vision_eye.process(frame)
-            >>> print(f"Detected {results.total_tracks} objects")
+            >>> print(f"检测到 {results.total_tracks} 个目标")
         """
-        self.extract_tracks(im0)  # Extract tracks (bounding boxes, classes, and masks)
+        self.extract_tracks(im0)  # 提取跟踪信息（边界框、类别和掩码）
         annotator = SolutionAnnotator(im0, self.line_width)
 
         for cls, t_id, box, conf in zip(self.clss, self.track_ids, self.boxes, self.confs):
-            # Annotate the image with bounding boxes, labels, and vision mapping
+            # 使用边界框、标签和视觉映射对图像进行标注
             annotator.box_label(box, label=self.adjust_box_label(cls, conf, t_id), color=colors(int(t_id), True))
             annotator.visioneye(box, self.vision_point)
 
         plot_im = annotator.result()
-        self.display_output(plot_im)  # Display the annotated output using the base class function
+        self.display_output(plot_im)  # 使用基类函数显示标注后的输出
 
-        # Return a SolutionResults object with the annotated image and tracking statistics
+        # 返回包含标注图像和跟踪统计信息的 SolutionResults 对象
         return SolutionResults(plot_im=plot_im, total_tracks=len(self.track_ids))

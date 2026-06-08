@@ -9,57 +9,55 @@ from ultralytics.models.yolo.segment import SegmentationPredictor
 
 
 class YOLOEVPDetectPredictor(DetectionPredictor):
-    """A class extending DetectionPredictor for YOLO-EVP (Enhanced Visual Prompting) predictions.
+    """继承 DetectionPredictor 用于 YOLO-EVP (Enhanced Visual Prompting) 预测的类。
 
-    This class provides common functionality for YOLO models that use visual prompting, including model setup, prompt
-    handling, and preprocessing transformations.
+    该类为使用视觉提示的 YOLO 模型提供通用功能，包括模型设置、提示处理和
+    预处理变换。
 
     Attributes:
-        model (torch.nn.Module): The YOLO model for inference.
-        device (torch.device): Device to run the model on (CPU or CUDA).
-        prompts (dict | torch.Tensor): Visual prompts containing class indices and bounding boxes or masks.
+        model (torch.nn.Module): 用于推理的 YOLO 模型。
+        device (torch.device): 运行模型的设备（CPU 或 CUDA）。
+        prompts (dict | torch.Tensor): 包含类别索引和边界框或掩码的视觉提示。
 
     Methods:
-        setup_model: Initialize the YOLO model and set it to evaluation mode.
-        set_prompts: Set the visual prompts for the model.
-        pre_transform: Preprocess images and prompts before inference.
-        inference: Run inference with visual prompts.
-        get_vpe: Process source to get visual prompt embeddings.
+        setup_model: 初始化 YOLO 模型并设置为评估模式。
+        set_prompts: 为模型设置视觉提示。
+        pre_transform: 推理前预处理图像和提示。
+        inference: 使用视觉提示运行推理。
+        get_vpe: 处理源数据以获取视觉提示嵌入。
     """
 
     def setup_model(self, model, verbose: bool = True):
-        """Set up the model for prediction.
+        """设置用于预测的模型。
 
         Args:
-            model (torch.nn.Module): Model to load or use.
-            verbose (bool, optional): If True, provides detailed logging.
+            model (torch.nn.Module): 要加载或使用的模型。
+            verbose (bool, optional): 如果为 True，提供详细日志。
         """
         super().setup_model(model, verbose=verbose)
         self.done_warmup = True
 
     def set_prompts(self, prompts):
-        """Set the visual prompts for the model.
+        """为模型设置视觉提示。
 
         Args:
-            prompts (dict): Dictionary containing class indices and bounding boxes or masks. Must include a 'cls' key
-                with class indices.
+            prompts (dict): 包含类别索引和边界框或掩码的字典。必须包含带有类别索引的 'cls' 键。
         """
         self.prompts = prompts
 
     def pre_transform(self, im):
-        """Preprocess images and prompts before inference.
+        """推理前预处理图像和提示。
 
-        This method applies letterboxing to the input image and transforms the visual prompts (bounding boxes or masks)
-        accordingly.
+        该方法对输入图像应用 letterbox 并相应地转换视觉提示（边界框或掩码）。
 
         Args:
-            im (list): List of input images.
+            im (list): 输入图像列表。
 
         Returns:
-            (list): Preprocessed images ready for model inference.
+            (list): 准备好用于模型推理的预处理图像。
 
         Raises:
-            ValueError: If neither valid bounding boxes nor masks are provided in the prompts.
+            ValueError: 如果提示中既没有提供有效的边界框也没有提供掩码。
         """
         img = super().pre_transform(im)
         bboxes = self.prompts.pop("bboxes", None)
@@ -69,9 +67,9 @@ class YOLOEVPDetectPredictor(DetectionPredictor):
             visuals = self._process_single_image(img[0].shape[:2], im[0].shape[:2], category, bboxes, masks)
             prompts = visuals.unsqueeze(0).to(self.device)  # (1, N, H, W)
         else:
-            # NOTE: only supports bboxes as prompts for now
+            # 注意：目前仅支持边界框作为提示
             assert bboxes is not None, f"Expected bboxes, but got {bboxes}!"
-            # NOTE: needs list[np.ndarray]
+            # 注意：需要 list[np.ndarray]
             assert isinstance(bboxes, list) and all(isinstance(b, np.ndarray) for b in bboxes), (
                 f"Expected list[np.ndarray], but got {bboxes}!"
             )
@@ -90,64 +88,63 @@ class YOLOEVPDetectPredictor(DetectionPredictor):
         return img
 
     def _process_single_image(self, dst_shape, src_shape, category, bboxes=None, masks=None):
-        """Process a single image by resizing bounding boxes or masks and generating visuals.
+        """处理单张图像，调整边界框或掩码大小并生成视觉提示。
 
         Args:
-            dst_shape (tuple): The target shape (height, width) of the image.
-            src_shape (tuple): The original shape (height, width) of the image.
-            category (list | np.ndarray): The category indices for visual prompts.
-            bboxes (list | np.ndarray, optional): A list of bounding boxes in the format [x1, y1, x2, y2].
-            masks (np.ndarray, optional): A list of masks corresponding to the image.
+            dst_shape (tuple): 图像的目标形状 (高度, 宽度)。
+            src_shape (tuple): 图像的原始形状 (高度, 宽度)。
+            category (list | np.ndarray): 视觉提示的类别索引。
+            bboxes (list | np.ndarray, optional): 边界框列表，格式为 [x1, y1, x2, y2]。
+            masks (np.ndarray, optional): 与图像对应的掩码列表。
 
         Returns:
-            (torch.Tensor): The processed visuals for the image.
+            (torch.Tensor): 图像的处理后视觉提示。
 
         Raises:
-            ValueError: If neither `bboxes` nor `masks` are provided.
+            ValueError: 如果既未提供 `bboxes` 也未提供 `masks`。
         """
         if bboxes is not None and len(bboxes):
             bboxes = np.array(bboxes, dtype=np.float32)
             if bboxes.ndim == 1:
                 bboxes = bboxes[None, :]
-            # Calculate scaling factor and adjust bounding boxes
-            gain = min(dst_shape[0] / src_shape[0], dst_shape[1] / src_shape[1])  # gain = old / new
+            # 计算缩放因子并调整边界框
+            gain = min(dst_shape[0] / src_shape[0], dst_shape[1] / src_shape[1])  # 缩放因子 = 旧尺寸 / 新尺寸
             bboxes *= gain
             bboxes[..., 0::2] += round((dst_shape[1] - round(src_shape[1] * gain)) / 2 - 0.1)
             bboxes[..., 1::2] += round((dst_shape[0] - round(src_shape[0] * gain)) / 2 - 0.1)
         elif masks is not None:
-            # Resize and process masks
+            # 调整掩码大小并处理
             resized_masks = super().pre_transform(masks)
             masks = np.stack(resized_masks)  # (N, H, W)
-            masks[masks == 114] = 0  # Reset padding values to 0
+            masks[masks == 114] = 0  # 将填充值重置为 0
         else:
             raise ValueError("Please provide valid bboxes or masks")
 
-        # Generate visuals using the visual prompt loader
+        # 使用视觉提示加载器生成视觉提示
         return LoadVisualPrompt().get_visuals(category, dst_shape, bboxes, masks)
 
     def inference(self, im, *args, **kwargs):
-        """Run inference with visual prompts.
+        """使用视觉提示运行推理。
 
         Args:
-            im (torch.Tensor): Input image tensor.
-            *args (Any): Variable length argument list.
-            **kwargs (Any): Arbitrary keyword arguments.
+            im (torch.Tensor): 输入图像张量。
+            *args (Any): 可变长度参数列表。
+            **kwargs (Any): 任意关键字参数。
 
         Returns:
-            (torch.Tensor): Model prediction results.
+            (torch.Tensor): 模型预测结果。
         """
         return super().inference(im, vpe=self.prompts, *args, **kwargs)
 
     def get_vpe(self, source):
-        """Process the source to get the visual prompt embeddings (VPE).
+        """处理源数据以获取视觉提示嵌入 (VPE)。
 
         Args:
-            source (str | Path | int | PIL.Image | np.ndarray | torch.Tensor | list | tuple): The source of the image to
-                make predictions on. Accepts various types including file paths, URLs, PIL images, numpy arrays, and
-                torch tensors.
+            source (str | Path | int | PIL.Image | np.ndarray | torch.Tensor | list | tuple): 要进行预测的
+                图像源。接受多种类型，包括文件路径、URL、PIL 图像、numpy 数组和 torch 张量。
 
         Returns:
-            (torch.Tensor): The visual prompt embeddings (VPE) from the model.
+            (torch.Tensor): 模型的视觉提示嵌入 (VPE)。
         """
         self.setup_source(source)
         assert len(self.dataset) == 1, "get_vpe only supports one image!"
@@ -157,6 +154,6 @@ class YOLOEVPDetectPredictor(DetectionPredictor):
 
 
 class YOLOEVPSegPredictor(YOLOEVPDetectPredictor, SegmentationPredictor):
-    """Predictor for YOLO-EVP segmentation tasks combining detection and segmentation capabilities."""
+    """用于 YOLO-EVP 分割任务的预测器，结合了检测和分割能力。"""
 
     pass

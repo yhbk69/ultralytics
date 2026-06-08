@@ -58,17 +58,16 @@ REMOTE_FILE_PREFIXES = ("https://", "http://", "rtsp://", "rtmp://", "tcp://", "
 
 
 def parse_requirements(file_path=ROOT.parent / "requirements.txt", package=""):
-    """Parse a requirements.txt file, ignoring lines that start with '#' and any text after '#'.
+    """解析 requirements.txt 文件，忽略以 '#' 开头的行和 '#' 后的任何文本。
 
-    Args:
-        file_path (Path): Path to the requirements.txt file.
-        package (str, optional): Python package to use instead of requirements.txt file.
+    参数:
+        file_path (Path): requirements.txt 文件路径。
+        package (str, optional): 用来替代 requirements.txt 文件的 Python 包。
 
-    Returns:
-        requirements (list[SimpleNamespace]): List of parsed requirements as SimpleNamespace objects with `name` and
-            `specifier` attributes.
+    返回:
+        requirements (list[SimpleNamespace]): 解析后的需求列表，为包含 `name` 和 `specifier` 属性的 SimpleNamespace 对象。
 
-    Examples:
+    示例:
         >>> from ultralytics.utils.checks import parse_requirements
         >>> parse_requirements(package="ultralytics")
     """
@@ -81,7 +80,7 @@ def parse_requirements(file_path=ROOT.parent / "requirements.txt", package=""):
     for line in requires:
         line = line.strip()
         if line and not line.startswith("#"):
-            line = line.partition("#")[0].strip()  # ignore inline comments
+            line = line.partition("#")[0].strip()  # 忽略行内注释
             if match := re.match(r"([a-zA-Z0-9-_]+)\s*([<>!=~]+.*)?", line):
                 requirements.append(SimpleNamespace(name=match[1], specifier=match[2].strip() if match[2] else ""))
 
@@ -89,7 +88,7 @@ def parse_requirements(file_path=ROOT.parent / "requirements.txt", package=""):
 
 
 def get_distribution_name(import_name: str) -> str:
-    """Get the pip distribution name for a given import name (e.g., 'cv2' -> 'opencv-python-headless')."""
+    """获取给定导入名对应的 pip 分发包名（如 'cv2' -> 'opencv-python-headless'）。"""
     for dist in metadata.distributions():
         top_level = (dist.read_text("top_level.txt") or "").split()
         if import_name in top_level:
@@ -99,13 +98,13 @@ def get_distribution_name(import_name: str) -> str:
 
 @functools.lru_cache
 def parse_version(version="0.0.0") -> tuple:
-    """Convert a version string to a tuple of integers, ignoring any extra non-numeric string attached to the version.
+    """将版本字符串转换为整数元组，忽略版本后附加的任何非数字字符串。
 
-    Args:
-        version (str): Version string, i.e. '2.0.1+cpu'
+    参数:
+        version (str): 版本字符串，如 '2.0.1+cpu'
 
-    Returns:
-        (tuple): Tuple of integers representing the numeric part of the version, i.e. (2, 0, 1)
+    返回:
+        (tuple): 表示版本数字部分的整数元组，如 (2, 0, 1)
     """
     try:
         return tuple(map(int, re.findall(r"\d+", version)[:3]))  # '2.0.1+cpu' -> (2, 0, 1)
@@ -115,40 +114,39 @@ def parse_version(version="0.0.0") -> tuple:
 
 
 def is_ascii(s) -> bool:
-    """Check if a string is composed of only ASCII characters.
+    """检查字符串是否仅由 ASCII 字符组成。
 
-    Args:
-        s (str | list | tuple | dict): Input to be checked (all are converted to string for checking).
+    参数:
+        s (str | list | tuple | dict): 要检查的输入（全部转换为字符串进行检查）。
 
-    Returns:
-        (bool): True if the string is composed only of ASCII characters, False otherwise.
+    返回:
+        (bool): 如果字符串仅由 ASCII 字符组成则为 True，否则为 False。
     """
     return all(ord(c) < 128 for c in str(s))
 
 
 def check_imgsz(imgsz, stride=32, min_dim=1, max_dim=2, floor=0):
-    """Verify image size is a multiple of the given stride in each dimension. If the image size is not a multiple of the
-    stride, update it to the nearest multiple of the stride that is greater than or equal to the given floor value.
+    """验证图像大小在每个维度上是给定步幅的倍数。如果图像大小不是步幅的倍数，则将其更新为大于或等于给定下限值的最近步幅倍数。
 
-    Args:
-        imgsz (int | list[int]): Image size.
-        stride (int): Stride value.
-        min_dim (int): Minimum number of dimensions.
-        max_dim (int): Maximum number of dimensions.
-        floor (int): Minimum allowed value for image size.
+    参数:
+        imgsz (int | list[int]): 图像大小。
+        stride (int): 步幅值。
+        min_dim (int): 最小维度数。
+        max_dim (int): 最大维度数。
+        floor (int): 图像大小的最小允许值。
 
-    Returns:
-        (list[int] | int): Updated image size.
+    返回:
+        (list[int] | int): 更新后的图像大小。
     """
-    # Convert stride to integer if it is a tensor
+    # 如果步幅是张量则转换为整数
     stride = int(stride.max() if isinstance(stride, torch.Tensor) else stride)
 
-    # Convert image size to list if it is an integer
+    # 如果图像大小是整数则转换为列表
     if isinstance(imgsz, int):
         imgsz = [imgsz]
     elif isinstance(imgsz, (list, tuple)):
         imgsz = list(imgsz)
-    elif isinstance(imgsz, str):  # i.e. '640' or '[640,640]'
+    elif isinstance(imgsz, str):  # 如 '640' 或 '[640,640]'
         imgsz = [int(imgsz)] if imgsz.isnumeric() else ast.literal_eval(imgsz)
     else:
         raise TypeError(
@@ -156,7 +154,7 @@ def check_imgsz(imgsz, stride=32, min_dim=1, max_dim=2, floor=0):
             f"Valid imgsz types are int i.e. 'imgsz=640' or list i.e. 'imgsz=[640,640]'"
         )
 
-    # Apply max_dim
+    # 应用最大维度限制
     if len(imgsz) > max_dim:
         msg = (
             "'train' and 'val' imgsz must be an integer, while 'predict' and 'export' imgsz may be a [h, w] list "
@@ -166,14 +164,14 @@ def check_imgsz(imgsz, stride=32, min_dim=1, max_dim=2, floor=0):
             raise ValueError(f"imgsz={imgsz} is not a valid image size. {msg}")
         LOGGER.warning(f"updating to 'imgsz={max(imgsz)}'. {msg}")
         imgsz = [max(imgsz)]
-    # Make image size a multiple of the stride
+    # 使图像大小为步幅的倍数
     sz = [max(math.ceil(x / stride) * stride, floor) for x in imgsz]
 
-    # Print warning message if image size was updated
+    # 如果图像大小已更新则打印警告信息
     if sz != imgsz:
         LOGGER.warning(f"imgsz={imgsz} must be multiple of max stride {stride}, updating to {sz}")
 
-    # Add missing dimensions if necessary
+    # 必要时添加缺失的维度
     sz = [sz[0], sz[0]] if min_dim == 2 and len(sz) == 1 else sz[0] if min_dim == 1 and len(sz) == 1 else sz
 
     return sz
@@ -181,7 +179,7 @@ def check_imgsz(imgsz, stride=32, min_dim=1, max_dim=2, floor=0):
 
 @functools.lru_cache
 def check_uv():
-    """Check if uv package manager is installed and can run successfully."""
+    """检查 uv 包管理器是否已安装并能成功运行。"""
     try:
         return subprocess.run(["uv", "-V"], capture_output=True).returncode == 0
     except FileNotFoundError:
@@ -197,49 +195,49 @@ def check_version(
     verbose: bool = False,
     msg: str = "",
 ) -> bool:
-    """Check current version against the required version or range.
+    """检查当前版本是否满足所需版本或范围。
 
-    Args:
-        current (str): Current version or package name to get version from.
-        required (str): Required version or range (in pip-style format).
-        name (str): Name to be used in warning message.
-        hard (bool): If True, raise a ModuleNotFoundError if the requirement is not met.
-        verbose (bool): If True, print warning message if requirement is not met.
-        msg (str): Extra message to display if verbose.
+    参数:
+        current (str): 当前版本或用于获取版本的包名。
+        required (str): 所需版本或范围（pip 格式）。
+        name (str): 警告消息中使用的名称。
+        hard (bool): 如果为 True，不满足需求时抛出 ModuleNotFoundError。
+        verbose (bool): 如果为 True，不满足需求时打印警告消息。
+        msg (str): verbose 时显示的额外消息。
 
-    Returns:
-        (bool): True if requirement is met, False otherwise.
+    返回:
+        (bool): 满足需求为 True，否则为 False。
 
-    Examples:
-        Check if current version is exactly 22.04
+    示例:
+        检查当前版本是否恰好为 22.04
         >>> check_version(current="22.04", required="==22.04")
 
-        Check if current version is greater than or equal to 22.04
-        >>> check_version(current="22.10", required="22.04")  # assumes '>=' inequality if none passed
+        检查当前版本是否大于等于 22.04
+        >>> check_version(current="22.10", required="22.04")  # 未指定运算符时默认使用 '>='
 
-        Check if current version is less than or equal to 22.04
+        检查当前版本是否小于等于 22.04
         >>> check_version(current="22.04", required="<=22.04")
 
-        Check if current version is between 20.04 (inclusive) and 22.04 (exclusive)
+        检查当前版本是否在 20.04（含）和 22.04（不含）之间
         >>> check_version(current="21.10", required=">20.04,<22.04")
     """
-    if not current:  # if current is '' or None
+    if not current:  # 如果 current 为 '' 或 None
         LOGGER.warning(f"invalid check_version({current}, {required}) requested, please check values.")
         return True
-    elif not current[0].isdigit():  # current is package name rather than version string, i.e. current='ultralytics'
+    elif not current[0].isdigit():  # current 是包名而非版本字符串，如 current='ultralytics'
         try:
-            name = current  # assigned package name to 'name' arg
-            current = metadata.version(current)  # get version string from package name
+            name = current  # 将包名赋给 'name' 参数
+            current = metadata.version(current)  # 从包名获取版本字符串
         except metadata.PackageNotFoundError as e:
             if hard:
                 raise ModuleNotFoundError(f"{current} package is required but not installed") from e
             else:
                 return False
 
-    if not required:  # if required is '' or None
+    if not required:  # 如果 required 为 '' 或 None
         return True
 
-    if "sys_platform" in required and (  # i.e. required='<2.4.0,>=1.8.0; sys_platform == "win32"'
+    if "sys_platform" in required and (  # 如 required='<2.4.0,>=1.8.0; sys_platform == "win32"'
         (WINDOWS and "win32" not in required)
         or (LINUX and "linux" not in required)
         or (MACOS and "macos" not in required and "darwin" not in required)
@@ -251,9 +249,9 @@ def check_version(
     result = True
     c = parse_version(current)  # '1.2.3' -> (1, 2, 3)
     for r in required.strip(",").split(","):
-        op, version = re.match(r"([^0-9]*)([\d.]+)", r).groups()  # split '>=22.04' -> ('>=', '22.04')
+        op, version = re.match(r"([^0-9]*)([\d.]+)", r).groups()  # 拆分 '>=22.04' -> ('>=', '22.04')
         if not op:
-            op = ">="  # assume >= if no op passed
+            op = ">="  # 若未传入操作符则默认 >=
         v = parse_version(version)  # '1.2.3' -> (1, 2, 3)
         if op == "==" and c != v:
             result = False
@@ -270,25 +268,25 @@ def check_version(
     if not result:
         warning = f"{name}{required} is required, but {name}=={current} is currently installed {msg}"
         if hard:
-            raise ModuleNotFoundError(warning)  # assert version requirements met
+            raise ModuleNotFoundError(warning)  # 确保版本需求满足
         if verbose:
             LOGGER.warning(warning)
     return result
 
 
 def check_latest_pypi_version(package_name="ultralytics"):
-    """Return the latest version of a PyPI package without downloading or installing it.
+    """返回 PyPI 包的最新版本，无需下载或安装。
 
-    Args:
-        package_name (str): The name of the package to find the latest version for.
+    参数:
+        package_name (str): 要查找最新版本的包名。
 
-    Returns:
-        (str | None): The latest version of the package, or None if unavailable.
+    返回:
+        (str | None): 包的最新版本，不可用时为 None。
     """
-    import requests  # scoped as slow import
+    import requests  # 限定作用域以避免慢导入
 
     try:
-        requests.packages.urllib3.disable_warnings()  # Disable the InsecureRequestWarning
+        requests.packages.urllib3.disable_warnings()  # 禁用 InsecureRequestWarning
         response = requests.get(f"https://pypi.org/pypi/{package_name}/json", timeout=3)
         if response.status_code == 200:
             return response.json()["info"]["version"]
@@ -297,17 +295,17 @@ def check_latest_pypi_version(package_name="ultralytics"):
 
 
 def check_pip_update_available():
-    """Check if a new version of the ultralytics package is available on PyPI.
+    """检查 PyPI 上是否有 ultralytics 包的新版本。
 
-    Returns:
-        (bool): True if an update is available, False otherwise.
+    返回:
+        (bool): 有更新为 True，否则为 False。
     """
     if ONLINE and IS_PIP_PACKAGE:
         try:
             from ultralytics import __version__
 
             latest = check_latest_pypi_version()
-            if check_version(__version__, f"<{latest}"):  # check if current version is < latest version
+            if check_version(__version__, f"<{latest}"):  # 检查当前版本是否小于最新版本
                 LOGGER.info(
                     f"New https://pypi.org/project/ultralytics/{latest} available 😃 "
                     f"Update with 'pip install -U ultralytics'"
@@ -321,28 +319,28 @@ def check_pip_update_available():
 @ThreadingLocked()
 @functools.lru_cache
 def check_font(font="Arial.ttf"):
-    """Find font locally or download to user's configuration directory if it does not already exist.
+    """在本地查找字体，如不存在则下载到用户配置目录。
 
-    Args:
-        font (str): Path or name of font.
+    参数:
+        font (str): 字体路径或名称。
 
-    Returns:
-        (Path | str): Resolved font file path.
+    返回:
+        (Path | str): 解析后的字体文件路径。
     """
-    from matplotlib import font_manager  # scope for faster 'import ultralytics'
+    from matplotlib import font_manager  # 限定作用域以加速 'import ultralytics'
 
-    # Check USER_CONFIG_DIR
+    # 检查用户配置目录
     name = Path(font).name
     file = USER_CONFIG_DIR / name
     if file.exists():
         return file
 
-    # Check system fonts
+    # 检查系统字体
     matches = [s for s in font_manager.findSystemFonts() if font in s]
     if any(matches):
         return matches[0]
 
-    # Download to USER_CONFIG_DIR if missing
+    # 如果缺失则下载到用户配置目录
     url = f"{ASSETS_URL}/{name}"
     if downloads.is_url(url, check=True):
         downloads.safe_download(url=url, file=file)
@@ -350,52 +348,52 @@ def check_font(font="Arial.ttf"):
 
 
 def check_python(minimum: str = "3.8.0", hard: bool = True, verbose: bool = False) -> bool:
-    """Check current python version against the required minimum version.
+    """检查当前 Python 版本是否满足所需的最低版本。
 
-    Args:
-        minimum (str): Required minimum version of python.
-        hard (bool): If True, raise a ModuleNotFoundError if the requirement is not met.
-        verbose (bool): If True, print warning message if requirement is not met.
+    参数:
+        minimum (str): 所需的最低 Python 版本。
+        hard (bool): 如果为 True，不满足需求时抛出 ModuleNotFoundError。
+        verbose (bool): 如果为 True，不满足需求时打印警告消息。
 
-    Returns:
-        (bool): Whether the installed Python version meets the minimum constraints.
+    返回:
+        (bool): 已安装的 Python 版本是否满足最低要求。
     """
     return check_version(PYTHON_VERSION, minimum, name="Python", hard=hard, verbose=verbose)
 
 
 @TryExcept()
 def check_apt_requirements(requirements):
-    """Check if apt packages are installed and install missing ones.
+    """检查 apt 包是否已安装并安装缺失的包。
 
-    Args:
-        requirements (list[str]): List of apt package names to check and install.
+    参数:
+        requirements (list[str]): 要检查和安装的 apt 包名列表。
     """
     prefix = colorstr("red", "bold", "apt requirements:")
-    # Check which packages are missing
+    # 检查缺失的包
     missing_packages = []
     for package in requirements:
         try:
-            # Use dpkg -l to check if package is installed
+            # 使用 dpkg -l 检查包是否已安装
             result = subprocess.run(["dpkg", "-l", package], capture_output=True, text=True, check=False)
-            # Check if package is installed (look for "ii" status)
+            # 检查包是否已安装（查找 "ii" 状态）
             if result.returncode != 0 or not any(
                 line.startswith("ii") and package in line for line in result.stdout.splitlines()
             ):
                 missing_packages.append(package)
         except Exception:
-            # If check fails, assume package is not installed
+            # 如果检查失败，假设包未安装
             missing_packages.append(package)
 
-    # Install missing packages if any
+    # 安装缺失的包
     if missing_packages:
         LOGGER.info(
             f"{prefix} Ultralytics requirement{'s' * (len(missing_packages) > 1)} {missing_packages} not found, attempting AutoUpdate..."
         )
-        # Optionally update package list first
+        # 可选地先更新包列表
         cmd = (["sudo"] if is_sudo_available() else []) + ["apt", "update"]
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
 
-        # Build and run the install command
+        # 构建并运行安装命令
         cmd = (["sudo"] if is_sudo_available() else []) + ["apt", "install", "-y"] + missing_packages
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
 
@@ -405,29 +403,27 @@ def check_apt_requirements(requirements):
 
 @TryExcept()
 def check_requirements(requirements=ROOT.parent / "requirements.txt", exclude=(), install=True, cmds=""):
-    """Check if installed dependencies meet Ultralytics YOLO models requirements and attempt to auto-update if needed.
+    """检查已安装的依赖是否满足 Ultralytics YOLO 模型需求，并在需要时尝试自动更新。
 
-    Args:
-        requirements (Path | str | list[str|tuple] | tuple[str]): Path to a requirements.txt file, a single package
-            requirement as a string, a list of package requirements as strings, or a list containing strings and tuples
-            of interchangeable packages.
-        exclude (tuple): Tuple of package names to exclude from checking.
-        install (bool): If True, attempt to auto-update packages that don't meet requirements.
-        cmds (str): Additional commands to pass to the pip install command when auto-updating.
+    参数:
+        requirements (Path | str | list[str|tuple] | tuple[str]): requirements.txt 文件路径、单个包需求字符串、包需求字符串列表，或包含字符串和可互换包元组的列表。
+        exclude (tuple): 要从检查中排除的包名元组。
+        install (bool): 如果为 True，尝试自动更新不满足需求的包。
+        cmds (str): 自动更新时传递给 pip install 命令的额外命令。
 
-    Examples:
+    示例:
         >>> from ultralytics.utils.checks import check_requirements
 
-        Check a requirements.txt file
+        检查 requirements.txt 文件
         >>> check_requirements("path/to/requirements.txt")
 
-        Check a single package
+        检查单个包
         >>> check_requirements("ultralytics>=8.3.200", cmds="--index-url https://download.pytorch.org/whl/cpu")
 
-        Check multiple packages
+        检查多个包
         >>> check_requirements(["numpy", "ultralytics"])
 
-        Check with interchangeable packages
+        检查可互换的包
         >>> check_requirements([("onnxruntime", "onnxruntime-gpu"), "numpy"])
     """
     prefix = colorstr("red", "bold", "requirements:")
@@ -436,7 +432,7 @@ def check_requirements(requirements=ROOT.parent / "requirements.txt", exclude=()
         LOGGER.info(f"{prefix} ULTRALYTICS_SKIP_REQUIREMENTS_CHECKS=1 detected, skipping requirements check.")
         return True
 
-    if isinstance(requirements, Path):  # requirements.txt file
+    if isinstance(requirements, Path):  # requirements.txt 文件
         file = requirements.resolve()
         assert file.exists(), f"{prefix} {file} not found, check failed."
         requirements = [f"{x.name}{x.specifier}" for x in parse_requirements(file) if x.name not in exclude]
@@ -449,7 +445,7 @@ def check_requirements(requirements=ROOT.parent / "requirements.txt", exclude=()
         satisfied = False
 
         for candidate in candidates:
-            r_stripped = candidate.rpartition("/")[-1].replace(".git", "")  # replace git+https://org/repo.git -> 'repo'
+            r_stripped = candidate.rpartition("/")[-1].replace(".git", "")  # 将 git+https://org/repo.git 替换为 'repo'
             match = re.match(r"([a-zA-Z0-9-_]+)([<>!=~]+.*)?", r_stripped)
             name, required = match[1], match[2].strip() if match[2] else ""
             try:
@@ -461,17 +457,17 @@ def check_requirements(requirements=ROOT.parent / "requirements.txt", exclude=()
 
         if not satisfied:
             pkg = candidates[0]
-            if "git+" in pkg:  # strip version constraints from git URLs for pip
+            if "git+" in pkg:  # 为 pip 从 git URL 中移除版本约束
                 url, sep, marker = pkg.partition(";")
                 pkg = re.sub(r"[<>!=~]+.*$", "", url) + sep + marker
             pkgs.append(pkg)
 
     @Retry(times=2, delay=1)
     def attempt_install(packages, commands, use_uv):
-        """Attempt package installation with uv if available, falling back to pip."""
+        """尝试使用 uv 安装包（如可用），否则回退到 pip。"""
         if use_uv:
-            # Use --python to explicitly target current interpreter (venv or system)
-            # This ensures correct installation when VIRTUAL_ENV env var isn't set
+            # 使用 --python 显式指定当前解释器（虚拟环境或系统）
+            # 确保 VIRTUAL_ENV 环境变量未设置时正确安装
             return subprocess.check_output(
                 f'uv pip install --no-cache-dir --python "{sys.executable}" {packages} {commands} '
                 f"--index-strategy=unsafe-best-match --break-system-packages",
@@ -486,16 +482,16 @@ def check_requirements(requirements=ROOT.parent / "requirements.txt", exclude=()
             text=True,
         )
 
-    s = " ".join(f'"{x}"' for x in pkgs)  # console string
+    s = " ".join(f'"{x}"' for x in pkgs)  # 控制台字符串
     if s:
-        if install and AUTOINSTALL:  # check environment variable
-            # Note uv fails on arm64 macOS and Raspberry Pi runners
-            n = len(pkgs)  # number of packages updates
+        if install and AUTOINSTALL:  # 检查环境变量
+            # 注意 uv 在 arm64 macOS 和 Raspberry Pi 运行器上会失败
+            n = len(pkgs)  # 更新的包数量
             LOGGER.info(f"{prefix} Ultralytics requirement{'s' * (n > 1)} {pkgs} not found, attempting AutoUpdate...")
             try:
                 t = time.time()
                 assert ONLINE, "AutoUpdate skipped (offline)"
-                use_uv = not ARM64 and check_uv()  # uv fails on ARM64
+                use_uv = not ARM64 and check_uv()  # uv 在 ARM64 上失败
                 LOGGER.info(attempt_install(s, cmds, use_uv=use_uv))
                 dt = time.time() - t
                 LOGGER.info(f"{prefix} AutoUpdate success ✅ {dt:.1f}s")
@@ -515,21 +511,21 @@ def check_requirements(requirements=ROOT.parent / "requirements.txt", exclude=()
 
 
 def check_executorch_requirements():
-    """Check and install ExecuTorch requirements including platform-specific dependencies."""
-    # BUG executorch build on arm64 Docker requires packaging>=22.0 https://github.com/pypa/setuptools/issues/4483
+    """检查并安装 ExecuTorch 需求，包括平台特定依赖。"""
+    # BUG: arm64 Docker 上的 executorch 构建需要 packaging>=22.0 https://github.com/pypa/setuptools/issues/4483
     if LINUX and ARM64 and IS_DOCKER:
         check_requirements("packaging>=22.0")
 
     check_requirements("executorch", cmds=f"torch=={TORCH_VERSION.split('+')[0]}")
-    # Pin numpy to avoid coremltools errors with numpy>=2.4.0, must be separate
+    # 固定 numpy 版本以避免 coremltools 与 numpy>=2.4.0 的错误，必须单独处理
     check_requirements("numpy<=2.3.5")
 
 
 def check_tensorrt(min_version: str = "7.0.0"):
-    """Check and install TensorRT requirements including platform-specific dependencies.
+    """检查并安装 TensorRT 需求，包括平台特定依赖。
 
-    Args:
-        min_version (str): Minimum supported TensorRT version (default: "7.0.0").
+    参数:
+        min_version (str): 最低支持的 TensorRT 版本（默认："7.0.0"）。
     """
     if LINUX:
         cuda_version = torch.version.cuda.split(".")[0]
@@ -537,10 +533,9 @@ def check_tensorrt(min_version: str = "7.0.0"):
 
 
 def check_torchvision():
-    """Check the installed versions of PyTorch and Torchvision to ensure they're compatible.
+    """检查已安装的 PyTorch 和 Torchvision 版本以确保兼容性。
 
-    This function checks the installed versions of PyTorch and Torchvision, and warns if they're incompatible according
-    to the compatibility table based on: https://github.com/pytorch/vision#installation.
+    此函数检查已安装的 PyTorch 和 Torchvision 版本，如果根据兼容性表（基于 https://github.com/pytorch/vision#installation）不兼容则发出警告。
     """
     compatibility_table = {
         "2.10": ["0.25"],
@@ -558,7 +553,7 @@ def check_torchvision():
         "1.12": ["0.13"],
     }
 
-    # Check major and minor versions
+    # 检查主版本和次版本
     v_torch = ".".join(TORCH_VERSION.split("+", 1)[0].split(".")[:2])
     if v_torch in compatibility_table:
         compatible_versions = compatibility_table[v_torch]
@@ -573,39 +568,39 @@ def check_torchvision():
 
 
 def check_suffix(file="yolo26n.pt", suffix=".pt", msg=""):
-    """Check file(s) for acceptable suffix.
+    """检查文件是否有可接受的后缀。
 
-    Args:
-        file (str | list[str]): File or list of files to check.
-        suffix (str | tuple): Acceptable suffix or tuple of suffixes.
-        msg (str): Additional message to display in case of error.
+    参数:
+        file (str | list[str]): 要检查的文件或文件列表。
+        suffix (str | tuple): 可接受的后缀或后缀元组。
+        msg (str): 出错时显示的额外消息。
     """
     if file and suffix:
         if isinstance(suffix, str):
             suffix = {suffix}
         for f in file if isinstance(file, (list, tuple)) else [file]:
-            if s := str(f).rpartition(".")[-1].lower().strip():  # file suffix
+            if s := str(f).rpartition(".")[-1].lower().strip():  # 文件后缀
                 assert f".{s}" in suffix, f"{msg}{f} acceptable suffix is {suffix}, not .{s}"
 
 
 def check_yolov5u_filename(file: str, verbose: bool = True) -> str:
-    """Replace legacy YOLOv5 filenames with updated YOLOv5u filenames.
+    """将旧版 YOLOv5 文件名替换为更新后的 YOLOv5u 文件名。
 
-    Args:
-        file (str): Filename to check and potentially update.
-        verbose (bool): Whether to print information about the replacement.
+    参数:
+        file (str): 要检查和可能更新的文件名。
+        verbose (bool): 是否打印替换信息。
 
-    Returns:
-        (str): Updated filename.
+    返回:
+        (str): 更新后的文件名。
     """
     if "yolov3" in file or "yolov5" in file:
         if "u.yaml" in file:
-            file = file.replace("u.yaml", ".yaml")  # i.e. yolov5nu.yaml -> yolov5n.yaml
+            file = file.replace("u.yaml", ".yaml")  # 如 yolov5nu.yaml -> yolov5n.yaml
         elif ".pt" in file and "u" not in file:
             original_file = file
-            file = re.sub(r"(.*yolov5([nsmlx]))\.pt", "\\1u.pt", file)  # i.e. yolov5n.pt -> yolov5nu.pt
-            file = re.sub(r"(.*yolov5([nsmlx])6)\.pt", "\\1u.pt", file)  # i.e. yolov5n6.pt -> yolov5n6u.pt
-            file = re.sub(r"(.*yolov3(|-tiny|-spp))\.pt", "\\1u.pt", file)  # i.e. yolov3-spp.pt -> yolov3-sppu.pt
+            file = re.sub(r"(.*yolov5([nsmlx]))\.pt", "\\1u.pt", file)  # 如 yolov5n.pt -> yolov5nu.pt
+            file = re.sub(r"(.*yolov5([nsmlx])6)\.pt", "\\1u.pt", file)  # 如 yolov5n6.pt -> yolov5n6u.pt
+            file = re.sub(r"(.*yolov3(|-tiny|-spp))\.pt", "\\1u.pt", file)  # 如 yolov3-spp.pt -> yolov3-sppu.pt
             if file != original_file and verbose:
                 LOGGER.info(
                     f"PRO TIP 💡 Replace 'model={original_file}' with new 'model={file}'.\nYOLOv5 'u' models are "
@@ -616,54 +611,54 @@ def check_yolov5u_filename(file: str, verbose: bool = True) -> str:
 
 
 def check_model_file_from_stem(model: str = "yolo11n") -> str | Path:
-    """Return a model filename from a valid model stem.
+    """从有效的模型词干返回模型文件名。
 
-    Args:
-        model (str): Model stem to check.
+    参数:
+        model (str): 要检查的模型词干。
 
-    Returns:
-        (str | Path): Model filename with appropriate suffix.
+    返回:
+        (str | Path): 带有适当后缀的模型文件名。
     """
     path = Path(model)
     if not path.suffix and path.stem in downloads.GITHUB_ASSETS_STEMS:
-        return path.with_suffix(".pt")  # add suffix, i.e. yolo26n -> yolo26n.pt
+        return path.with_suffix(".pt")  # 添加后缀，如 yolo26n -> yolo26n.pt
     return model
 
 
 def check_file(file, suffix="", download=True, download_dir=".", hard=True):
-    """Search/download file (if necessary), check suffix (if provided), and return path.
+    """搜索/下载文件（如需要），检查后缀（如提供），并返回路径。
 
-    Args:
-        file (str): File name or path, URL, platform URI (ul://), or GCS path (gs://).
-        suffix (str | tuple): Acceptable suffix or tuple of suffixes to validate against the file.
-        download (bool): Whether to download the file if it doesn't exist locally.
-        download_dir (str): Directory to download the file to.
-        hard (bool): Whether to raise an error if the file is not found.
+    参数:
+        file (str): 文件名或路径、URL、平台 URI (ul://) 或 GCS 路径 (gs://)。
+        suffix (str | tuple): 用于验证文件的可接受后缀或后缀元组。
+        download (bool): 如果文件在本地不存在是否下载。
+        download_dir (str): 下载文件的目标目录。
+        hard (bool): 如果找不到文件是否抛出错误。
 
-    Returns:
-        (str | list): Path to the file, or an empty list if not found.
+    返回:
+        (str | list): 文件路径，未找到时为空列表。
     """
-    check_suffix(file, suffix)  # optional
-    file = str(file).strip()  # convert to string and strip spaces
+    check_suffix(file, suffix)  # 可选
+    file = str(file).strip()  # 转换为字符串并去除空格
     file = check_yolov5u_filename(file)  # yolov5n -> yolov5nu
     if (
         not file
-        or ("://" not in file and Path(file).exists())  # '://' check required in Windows Python<3.10
+        or ("://" not in file and Path(file).exists())  # Windows Python<3.10 中需要 '://' 检查
         or file.lower().startswith("grpc://")
-    ):  # file exists or gRPC Triton images
+    ):  # 文件存在或 gRPC Triton 图像
         return file
-    elif download and file.lower().startswith("ul://"):  # Ultralytics Platform URI
+    elif download and file.lower().startswith("ul://"):  # Ultralytics 平台 URI
         from ultralytics.utils.callbacks.platform import resolve_platform_uri
 
-        url = resolve_platform_uri(file, hard=hard)  # Convert to signed HTTPS URL
+        url = resolve_platform_uri(file, hard=hard)  # 转换为签名的 HTTPS URL
         if url is None:
-            return []  # Not found, soft fail (consistent with file search behavior)
-        # Use URI path for unique directory structure: ul://user/project/model -> user/project/model/filename.pt
-        uri_path = Path(file[5:])  # Remove "ul://"
+            return []  # 未找到，软失败（与文件搜索行为一致）
+        # 使用 URI 路径建立唯一目录结构：ul://user/project/model -> user/project/model/filename.pt
+        uri_path = Path(file[5:])  # 移除 "ul://"
         if uri_path.is_absolute() or ".." in uri_path.parts:
             raise ValueError(f"Unsafe Ultralytics Platform URI path: {file}")
         local_file = Path(download_dir) / uri_path / url2file(url)
-        # Always re-download NDJSON datasets (cheap, ensures fresh data after updates)
+        # 始终重新下载 NDJSON 数据集（开销小，确保更新后的数据最新）
         if local_file.suffix == ".ndjson":
             local_file.unlink(missing_ok=True)
         if local_file.exists():
@@ -672,48 +667,48 @@ def check_file(file, suffix="", download=True, download_dir=".", hard=True):
             local_file.parent.mkdir(parents=True, exist_ok=True)
             downloads.safe_download(url=url, file=local_file, unzip=False)
         return str(local_file)
-    elif download and file.lower().startswith(REMOTE_FILE_PREFIXES):  # download
+    elif download and file.lower().startswith(REMOTE_FILE_PREFIXES):  # 下载
         if file.startswith("gs://"):
-            file = "https://storage.googleapis.com/" + file[5:]  # convert gs:// to public HTTPS URL
-        url = file  # warning: Pathlib turns :// -> :/
-        file = Path(download_dir) / url2file(file)  # '%2F' to '/', split authentication query strings
+            file = "https://storage.googleapis.com/" + file[5:]  # 将 gs:// 转换为公共 HTTPS URL
+        url = file  # 注意：Pathlib 将 :// 转为 :/
+        file = Path(download_dir) / url2file(file)  # 将 '%2F' 转为 '/'，分割认证查询字符串
         if file.exists():
-            LOGGER.info(f"Found {clean_url(url)} locally at {file}")  # file already exists
+            LOGGER.info(f"Found {clean_url(url)} locally at {file}")  # 文件已存在
         else:
             downloads.safe_download(url=url, file=file, unzip=False)
         return str(file)
-    else:  # search
-        files = glob.glob(str(ROOT / "**" / file), recursive=True) or glob.glob(str(ROOT.parent / file))  # find file
+    else:  # 搜索
+        files = glob.glob(str(ROOT / "**" / file), recursive=True) or glob.glob(str(ROOT.parent / file))  # 查找文件
         if not files and hard:
             raise FileNotFoundError(f"'{file}' does not exist")
         elif len(files) > 1 and hard:
             raise FileNotFoundError(f"Multiple files match '{file}', specify exact path: {files}")
-        return files[0] if len(files) else []  # return file
+        return files[0] if len(files) else []  # 返回文件
 
 
 def check_yaml(file, suffix=(".yaml", ".yml"), hard=True):
-    """Search/download YAML file (if necessary) and return path, checking suffix.
+    """搜索/下载 YAML 文件（如需要）并返回路径，检查后缀。
 
-    Args:
-        file (str | Path): File name or path.
-        suffix (tuple): Tuple of acceptable YAML file suffixes.
-        hard (bool): Whether to raise an error if the file is not found or multiple files are found.
+    参数:
+        file (str | Path): 文件名或路径。
+        suffix (tuple): 可接受的 YAML 文件后缀元组。
+        hard (bool): 如果找不到文件或找到多个文件是否抛出错误。
 
-    Returns:
-        (str): Path to the YAML file.
+    返回:
+        (str): YAML 文件路径。
     """
     return check_file(file, suffix, hard=hard)
 
 
 def check_is_path_safe(basedir: Path | str, path: Path | str) -> bool:
-    """Check if the resolved path is under the intended directory to prevent path traversal.
+    """检查解析后的路径是否在预期目录下以防止路径遍历。
 
-    Args:
-        basedir (Path | str): The intended directory.
-        path (Path | str): The path to check.
+    参数:
+        basedir (Path | str): 预期目录。
+        path (Path | str): 要检查的路径。
 
-    Returns:
-        (bool): True if the path is safe, False otherwise.
+    返回:
+        (bool): 路径安全为 True，否则为 False。
     """
     base_dir_resolved = Path(basedir).resolve()
     path_resolved = Path(path).resolve()
@@ -723,19 +718,19 @@ def check_is_path_safe(basedir: Path | str, path: Path | str) -> bool:
 
 @functools.lru_cache
 def check_imshow(warn=False):
-    """Check if environment supports image displays.
+    """检查环境是否支持图像显示。
 
-    Args:
-        warn (bool): Whether to warn if environment doesn't support image displays.
+    参数:
+        warn (bool): 如果环境不支持图像显示是否发出警告。
 
-    Returns:
+    返回:
         (bool): True if environment supports image displays, False otherwise.
     """
     try:
         if LINUX:
             assert not IS_COLAB and not IS_KAGGLE
             assert "DISPLAY" in os.environ, "The DISPLAY environment variable isn't set."
-        cv2.imshow("test", np.zeros((8, 8, 3), dtype=np.uint8))  # show a small 8-pixel image
+        cv2.imshow("test", np.zeros((8, 8, 3), dtype=np.uint8))  # 显示一个小的 8 像素图像
         cv2.waitKey(1)
         cv2.destroyAllWindows()
         cv2.waitKey(1)
@@ -747,53 +742,53 @@ def check_imshow(warn=False):
 
 
 def check_yolo(verbose=True, device=""):
-    """Print a human-readable YOLO software and hardware summary.
+    """打印人类可读的 YOLO 软件和硬件摘要。
 
-    Args:
-        verbose (bool): Whether to print verbose information.
-        device (str | torch.device): Device to use for YOLO.
+    参数:
+        verbose (bool): 是否打印详细信息。
+        device (str | torch.device): YOLO 使用的设备。
     """
-    import psutil  # scoped as slow import
+    import psutil  # 作用域为慢速导入
 
     from ultralytics.utils.torch_utils import select_device
 
     if IS_COLAB:
-        shutil.rmtree("sample_data", ignore_errors=True)  # remove colab /sample_data directory
+        shutil.rmtree("sample_data", ignore_errors=True)  # 移除 colab /sample_data 目录
 
     if verbose:
-        # System info
-        gib = 1 << 30  # bytes per GiB
+        # 系统信息
+        gib = 1 << 30  # 每 GiB 的字节数
         ram = psutil.virtual_memory().total
         total, _used, free = shutil.disk_usage("/")
         s = f"({os.cpu_count()} CPUs, {ram / gib:.1f} GB RAM, {(total - free) / gib:.1f}/{total / gib:.1f} GB disk)"
         try:
             from IPython import display
 
-            display.clear_output()  # clear display if notebook
+            display.clear_output()  # 如果是笔记本则清除显示
         except ImportError:
             pass
     else:
         s = ""
 
     if GIT.is_repo:
-        check_multiple_install()  # check conflicting installation if using local clone
+        check_multiple_install()  # 若使用本地克隆则检查冲突安装
 
     select_device(device=device, newline=False)
     LOGGER.info(f"Setup complete ✅ {s}")
 
 
 def collect_system_info():
-    """Collect and print relevant system information including OS, Python, RAM, CPU, and CUDA.
+    """收集并打印相关系统信息，包括操作系统、Python、内存、CPU 和 CUDA。
 
-    Returns:
-        (dict): Dictionary containing system information.
+    返回:
+        (dict): 包含系统信息的字典。
     """
-    import psutil  # scoped as slow import
+    import psutil  # 作用域为慢速导入
 
-    from ultralytics.utils import ENVIRONMENT  # scope to avoid circular import
+    from ultralytics.utils import ENVIRONMENT  # 限定作用域以避免循环导入
     from ultralytics.utils.torch_utils import get_cpu_info, get_gpu_info
 
-    gib = 1 << 30  # bytes per GiB
+    gib = 1 << 30  # 每 GiB 的字节数
     cuda = torch.cuda.is_available()
     check_yolo()
     total, _, free = shutil.disk_usage("/")
@@ -843,18 +838,17 @@ def collect_system_info():
 
 
 def check_amp(model):
-    """Check the PyTorch Automatic Mixed Precision (AMP) functionality of a YOLO model.
+    """检查 YOLO 模型的 PyTorch 自动混合精度（AMP）功能。
 
-    If the checks fail, it means there are anomalies with AMP on the system that may cause NaN losses or zero-mAP
-    results, so AMP will be disabled during training.
+    如果检查失败，表示系统上的 AMP 存在异常，可能导致 NaN 损失或零 mAP 结果，因此训练期间将禁用 AMP。
 
-    Args:
-        model (torch.nn.Module): A YOLO model instance.
+    参数:
+        model (torch.nn.Module): YOLO 模型实例。
 
-    Returns:
-        (bool): Returns True if the AMP functionality works correctly with YOLO model, else False.
+    返回:
+        (bool): 如果 AMP 功能与 YOLO 模型正常工作则返回 True，否则返回 False。
 
-    Examples:
+    示例:
         >>> from ultralytics import YOLO
         >>> from ultralytics.utils.checks import check_amp
         >>> model = YOLO("yolo26n.pt").model.cuda()
@@ -862,12 +856,12 @@ def check_amp(model):
     """
     from ultralytics.utils.torch_utils import autocast
 
-    device = next(model.parameters()).device  # get model device
+    device = next(model.parameters()).device  # 获取模型设备
     prefix = colorstr("AMP: ")
     if device.type in {"cpu", "mps"}:
-        return False  # AMP only used on CUDA devices
+        return False  # AMP 仅在 CUDA 设备上使用
     else:
-        # GPUs that have issues with AMP
+        # 存在 AMP 问题的 GPU
         pattern = re.compile(
             r"(nvidia|geforce|quadro|tesla).*?(1660|1650|1630|t400|t550|t600|t1000|t1200|t2000|k40m)", re.IGNORECASE
         )
@@ -881,16 +875,16 @@ def check_amp(model):
             return False
 
     def amp_allclose(m, im):
-        """All close FP32 vs AMP results."""
+        """比较 FP32 与 AMP 结果是否接近。"""
         batch = [im] * 8
-        imgsz = max(256, int(model.stride.max() * 4))  # max stride P5-32 and P6-64
-        a = m(batch, imgsz=imgsz, device=device, verbose=False)[0].boxes.data  # FP32 inference
+        imgsz = max(256, int(model.stride.max() * 4))  # 最大步幅 P5-32 和 P6-64
+        a = m(batch, imgsz=imgsz, device=device, verbose=False)[0].boxes.data  # FP32 推理
         with autocast(enabled=True):
-            b = m(batch, imgsz=imgsz, device=device, verbose=False)[0].boxes.data  # AMP inference
+            b = m(batch, imgsz=imgsz, device=device, verbose=False)[0].boxes.data  # AMP 推理
         del m
-        return a.shape == b.shape and torch.allclose(a, b.float(), atol=0.5)  # close to 0.5 absolute tolerance
+        return a.shape == b.shape and torch.allclose(a, b.float(), atol=0.5)  # 接近 0.5 的绝对容差
 
-    im = ASSETS / "bus.jpg"  # image to check
+    im = ASSETS / "bus.jpg"  # 用于检查的图像
     LOGGER.info(f"{prefix}running Automatic Mixed Precision (AMP) checks...")
     warning_msg = "Setting 'amp=True'. If you experience zero-mAP or NaN losses you can disable AMP with amp=False."
     try:
@@ -915,7 +909,7 @@ def check_amp(model):
 
 
 def check_multiple_install():
-    """Check if there are multiple Ultralytics installations."""
+    """检查是否存在多个 Ultralytics 安装。"""
     import sys
 
     try:
@@ -925,7 +919,7 @@ def check_multiple_install():
             "issues. See https://docs.ultralytics.com/quickstart/"
         )
         if result.returncode != 0:
-            if "not found" in result.stderr.lower():  # Package not pip-installed but locally imported
+            if "not found" in result.stderr.lower():  # 包未通过 pip 安装但本地导入了
                 LOGGER.warning(f"Ultralytics not found via pip but importing from: {ROOT}. {install_msg}")
             return
         yolo_path = (Path(re.findall(r"location:\s+(.+)", result.stdout, flags=re.I)[-1]) / "ultralytics").resolve()
@@ -939,21 +933,21 @@ def check_multiple_install():
 
 
 def print_args(args: dict | None = None, show_file=True, show_func=False):
-    """Print function arguments (optional args dict).
+    """打印函数参数（可选参数字典）。
 
-    Args:
-        args (dict, optional): Arguments to print.
-        show_file (bool): Whether to show the file name.
-        show_func (bool): Whether to show the function name.
+    参数:
+        args (dict, optional): 要打印的参数。
+        show_file (bool): 是否显示文件名。
+        show_func (bool): 是否显示函数名。
     """
 
     def strip_auth(v):
-        """Clean longer Ultralytics HUB URLs by stripping potential authentication information."""
+        """通过移除潜在的认证信息来清理较长的 Ultralytics HUB URL。"""
         return clean_url(v) if (isinstance(v, str) and v.startswith("http") and len(v) > 100) else v
 
-    x = inspect.currentframe().f_back  # previous frame
+    x = inspect.currentframe().f_back  # 上一帧
     file, _, func, _, _ = inspect.getframeinfo(x)
-    if args is None:  # get args automatically
+    if args is None:  # 自动获取参数
         args, _, _, frm = inspect.getargvalues(x)
         args = {k: v for k, v in frm.items() if k in args}
     try:
@@ -965,44 +959,44 @@ def print_args(args: dict | None = None, show_file=True, show_func=False):
 
 
 def cuda_device_count() -> int:
-    """Get the number of NVIDIA GPUs available in the environment.
+    """获取环境中可用的 NVIDIA GPU 数量。
 
-    Returns:
-        (int): The number of NVIDIA GPUs available.
+    返回:
+        (int): 可用的 NVIDIA GPU 数量。
     """
     if IS_JETSON:
-        # NVIDIA Jetson does not fully support nvidia-smi and therefore use PyTorch instead
+        # NVIDIA Jetson 不完全支持 nvidia-smi，因此使用 PyTorch
         return torch.cuda.device_count()
     else:
         try:
-            # Run the nvidia-smi command and capture its output
+            # 运行 nvidia-smi 命令并捕获输出
             output = subprocess.check_output(
                 ["nvidia-smi", "--query-gpu=count", "--format=csv,noheader,nounits"], encoding="utf-8"
             )
 
-            # Take the first line and strip any leading/trailing white space
+            # 取第一行并去除首尾空白
             first_line = output.strip().split("\n", 1)[0]
 
             return int(first_line)
         except (subprocess.CalledProcessError, FileNotFoundError, ValueError):
-            # If the command fails, nvidia-smi is not found, or output is not an integer, assume no GPUs are available
+            # 如果命令失败、nvidia-smi 未找到或输出不是整数，假设没有可用 GPU
             return 0
 
 
 def cuda_is_available() -> bool:
-    """Check if CUDA is available in the environment.
+    """检查环境中 CUDA 是否可用。
 
-    Returns:
-        (bool): True if one or more NVIDIA GPUs are available, False otherwise.
+    返回:
+        (bool): 如果有一个或多个 NVIDIA GPU 可用则为 True，否则为 False。
     """
     return cuda_device_count() > 0
 
 
 def is_rockchip():
-    """Check if the current environment is running on a Rockchip SoC.
+    """检查当前环境是否运行在 Rockchip SoC 上。
 
-    Returns:
-        (bool): True if running on a Rockchip SoC, False otherwise.
+    返回:
+        (bool): 运行在 Rockchip SoC 上为 True，否则为 False。
     """
     if LINUX and ARM64:
         try:
@@ -1018,30 +1012,30 @@ def is_rockchip():
 
 
 def is_intel():
-    """Check if the system has Intel hardware (CPU or GPU).
+    """检查系统是否有 Intel 硬件（CPU 或 GPU）。
 
-    Returns:
-        (bool): True if Intel hardware is detected, False otherwise.
+    返回:
+        (bool): 检测到 Intel 硬件为 True，否则为 False。
     """
     from ultralytics.utils.torch_utils import get_cpu_info
 
-    # Check CPU
+    # 检查 CPU
     if "intel" in get_cpu_info().lower():
         return True
 
-    # Check GPU via xpu-smi
+    # 通过 xpu-smi 检查 GPU
     try:
         result = subprocess.run(["xpu-smi", "discovery"], capture_output=True, text=True, timeout=5)
         return "intel" in result.stdout.lower()
-    except Exception:  # broad clause to capture all Intel GPU exception types
+    except Exception:  # 宽泛的子句以捕获所有 Intel GPU 异常类型
         return False
 
 
 def is_sudo_available() -> bool:
-    """Check if the sudo command is available in the environment.
+    """检查环境中 sudo 命令是否可用。
 
-    Returns:
-        (bool): True if the sudo command is available, False otherwise.
+    返回:
+        (bool): sudo 命令可用为 True，否则为 False。
     """
     if WINDOWS:
         return False
@@ -1050,8 +1044,8 @@ def is_sudo_available() -> bool:
 
 
 # Run checks and define constants
-check_python("3.8", hard=False, verbose=True)  # check python version
-check_torchvision()  # check torch-torchvision compatibility
+check_python("3.8", hard=False, verbose=True)  # 检查 Python 版本
+check_torchvision()  # 检查 torch-torchvision 兼容性
 
 # Define constants
 IS_PYTHON_3_8 = PYTHON_VERSION.startswith("3.8")

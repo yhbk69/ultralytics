@@ -6,35 +6,34 @@ from ultralytics.models.yolo.segment import SegmentationValidator
 
 
 class FastSAMValidator(SegmentationValidator):
-    """Custom validation class for FastSAM (Segment Anything Model) segmentation in the Ultralytics YOLO framework.
+    """Ultralytics YOLO 框架中用于 FastSAM（分割一切模型）分割的自定义验证类。
 
-    Extends the SegmentationValidator class, customizing the validation process specifically for FastSAM. This class
-    sets the task to 'segment' and uses the SegmentMetrics for evaluation. Additionally, plotting features are disabled
-    to avoid errors during validation.
+    继承自 SegmentationValidator 类，专门针对 FastSAM 定制验证流程。该类将任务设置为 'segment'，并使用
+    SegmentMetrics 进行评估。此外，禁用了绘图功能以避免验证过程中的错误。
 
     Attributes:
-        dataloader (torch.utils.data.DataLoader): The data loader object used for validation.
-        save_dir (Path): The directory where validation results will be saved.
-        args (SimpleNamespace): Additional arguments for customization of the validation process.
-        _callbacks (dict): Dictionary of callback functions to be invoked during validation.
-        metrics (SegmentMetrics): Segmentation metrics calculator for evaluation.
+        dataloader (torch.utils.data.DataLoader): 用于验证的数据加载器对象。
+        save_dir (Path): 验证结果保存目录。
+        args (SimpleNamespace): 用于自定义验证过程的附加参数。
+        _callbacks (dict): 验证期间要调用的回调函数字典。
+        metrics (SegmentMetrics): 用于评估的分割指标计算器。
 
     Methods:
-        __init__: Initialize the FastSAMValidator with custom settings for FastSAM.
+        __init__: 使用 FastSAM 的自定义设置初始化 FastSAMValidator。
     """
 
     def __init__(self, dataloader=None, save_dir=None, args=None, _callbacks: dict | None = None):
-        """Initialize the FastSAMValidator class, setting the task to 'segment' and metrics to SegmentMetrics.
+        """初始化 FastSAMValidator 类，将任务设置为 'segment'，指标设置为 SegmentMetrics。
 
         Args:
-            dataloader (torch.utils.data.DataLoader, optional): DataLoader to be used for validation.
-            save_dir (Path, optional): Directory to save results.
-            args (SimpleNamespace, optional): Configuration for the validator.
-            _callbacks (dict, optional): Dictionary of callback functions to be invoked during validation.
+            dataloader (torch.utils.data.DataLoader, optional): 用于验证的 DataLoader。
+            save_dir (Path, optional): 保存结果的目录。
+            args (SimpleNamespace, optional): 验证器的配置。
+            _callbacks (dict, optional): 验证期间要调用的回调函数字典。
 
         Notes:
-            Plots for ConfusionMatrix and other related metrics are disabled in this class to avoid errors.
+            为避免错误，该类中禁用了 ConfusionMatrix 和其他相关指标的绘图功能。
         """
         super().__init__(dataloader, save_dir, args, _callbacks)
         self.args.task = "segment"
-        self.args.plots = False  # disable ConfusionMatrix and other plots to avoid errors
+        self.args.plots = False  # 禁用 ConfusionMatrix 和其他绘图以避免错误

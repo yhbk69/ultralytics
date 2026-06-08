@@ -35,31 +35,31 @@ from ultralytics.utils.torch_utils import TORCH_2_0
 
 
 class InfiniteDataLoader(dataloader.DataLoader):
-    """DataLoader that reuses workers for infinite iteration.
+    """可重用工作进程以实现无限迭代的 DataLoader。
 
     This dataloader extends the PyTorch DataLoader to provide infinite recycling of workers, which improves efficiency
     for training loops that need to iterate through the dataset multiple times without recreating workers.
 
-    Attributes:
+    属性：
         batch_sampler (_RepeatSampler): A sampler that repeats indefinitely.
         iterator (Iterator): The iterator from the parent DataLoader.
 
-    Methods:
+    方法：
         __len__: Return the length of the batch sampler's sampler.
         __iter__: Yield batches from the underlying iterator.
         __del__: Ensure workers are properly terminated.
         reset: Reset the iterator, useful when modifying dataset settings during training.
 
-    Examples:
+    示例：
         Create an infinite DataLoader for training
         >>> dataset = YOLODataset(...)
         >>> dataloader = InfiniteDataLoader(dataset, batch_size=16, shuffle=True)
-        >>> for batch in dataloader:  # Infinite iteration
+        >>> for batch in dataloader:  # 无限迭代
         >>>     train_step(batch)
     """
 
     def __init__(self, *args: Any, **kwargs: Any):
-        """Initialize the InfiniteDataLoader with the same arguments as DataLoader."""
+        """使用与 DataLoader 相同的参数初始化 InfiniteDataLoader。"""
         if not TORCH_2_0:
             kwargs.pop("prefetch_factor", None)  # not supported by earlier versions
         super().__init__(*args, **kwargs)
@@ -67,16 +67,16 @@ class InfiniteDataLoader(dataloader.DataLoader):
         self.iterator = super().__iter__()
 
     def __len__(self) -> int:
-        """Return the length of the batch sampler's sampler."""
+        """返回批次采样器中采样器的长度。"""
         return len(self.batch_sampler.sampler)
 
     def __iter__(self) -> Iterator:
-        """Create an iterator that yields indefinitely from the underlying iterator."""
+        """创建从底层迭代器无限产出的迭代器。"""
         for _ in range(len(self)):
             yield next(self.iterator)
 
     def __del__(self):
-        """Ensure that workers are properly terminated when the DataLoader is deleted."""
+        """确保 DataLoader 被删除时工作进程正确终止。"""
         try:
             if not hasattr(self.iterator, "_workers"):
                 return
@@ -88,32 +88,32 @@ class InfiniteDataLoader(dataloader.DataLoader):
             pass
 
     def reset(self):
-        """Reset the iterator to allow modifications to the dataset during training."""
+        """重置迭代器以允许训练期间修改数据集。"""
         self.iterator = self._get_iterator()
 
 
 class _RepeatSampler:
-    """Sampler that repeats forever for infinite iteration.
+    """无限重复的采样器，用于无限迭代。
 
     This sampler wraps another sampler and yields its contents indefinitely, allowing for infinite iteration over a
     dataset without recreating the sampler.
 
-    Attributes:
+    属性：
         sampler (torch.utils.data.Sampler): The sampler to repeat.
     """
 
     def __init__(self, sampler: Any):
-        """Initialize the _RepeatSampler with a sampler to repeat indefinitely."""
+        """使用采样器初始化 _RepeatSampler，使其无限重复。"""
         self.sampler = sampler
 
     def __iter__(self) -> Iterator:
-        """Iterate over the sampler indefinitely, yielding its contents."""
+        """无限迭代采样器，产出其内容。"""
         while True:
             yield from iter(self.sampler)
 
 
 class ContiguousDistributedSampler(torch.utils.data.Sampler):
-    """Distributed sampler that assigns contiguous batch-aligned chunks of the dataset to each GPU.
+    """分布式采样器，为每个 GPU 分配连续的批次对齐数据集块。
 
     Unlike PyTorch's DistributedSampler which distributes samples in a round-robin fashion (GPU 0 gets indices
     [0,2,4,...], GPU 1 gets [1,3,5,...]), this sampler gives each GPU contiguous batches of the dataset (GPU 0 gets
@@ -124,7 +124,7 @@ class ContiguousDistributedSampler(torch.utils.data.Sampler):
     The sampler handles uneven batch counts by distributing remainder batches to the first few ranks, ensuring all
     samples are covered exactly once across all GPUs.
 
-    Args:
+    参数：
         dataset (Dataset): Dataset to sample from. Must implement __len__.
         num_replicas (int, optional): Number of distributed processes. Defaults to world size.
         batch_size (int, optional): Batch size used by dataloader. Defaults to dataset.batch_size or 1.
@@ -132,11 +132,11 @@ class ContiguousDistributedSampler(torch.utils.data.Sampler):
         shuffle (bool, optional): Whether to shuffle indices within each rank's chunk. Defaults to False. When True,
             shuffling is deterministic and controlled by set_epoch() for reproducibility.
 
-    Examples:
-        >>> # For validation with size-grouped images
+    示例：
+        >>> # 用于按尺寸分组图像的验证
         >>> sampler = ContiguousDistributedSampler(val_dataset, batch_size=32, shuffle=False)
         >>> loader = DataLoader(val_dataset, batch_size=32, sampler=sampler)
-        >>> # For training with shuffling
+        >>> # 用于带打乱的训练
         >>> sampler = ContiguousDistributedSampler(train_dataset, batch_size=32, shuffle=True)
         >>> for epoch in range(num_epochs):
         ...     sampler.set_epoch(epoch)
@@ -152,7 +152,7 @@ class ContiguousDistributedSampler(torch.utils.data.Sampler):
         rank: int | None = None,
         shuffle: bool = False,
     ) -> None:
-        """Initialize the sampler with dataset and distributed training parameters."""
+        """使用数据集和分布式训练参数初始化采样器。"""
         if num_replicas is None:
             num_replicas = dist.get_world_size() if dist.is_initialized() else 1
         if rank is None:
@@ -170,26 +170,26 @@ class ContiguousDistributedSampler(torch.utils.data.Sampler):
         self.num_batches = math.ceil(self.total_size / self.batch_size)
 
     def _get_rank_indices(self) -> tuple[int, int]:
-        """Calculate the start and end sample indices for this rank."""
-        # Calculate which batches this rank handles
+        """计算此 rank 的起始和结束样本索引。"""
+        # 计算当前 rank 处理的批次
         batches_per_rank_base = self.num_batches // self.num_replicas
         remainder = self.num_batches % self.num_replicas
 
-        # This rank gets an extra batch if rank < remainder
+        # 如果 rank < remainder，当前 rank 获得额外批次
         batches_for_this_rank = batches_per_rank_base + (1 if self.rank < remainder else 0)
 
-        # Calculate starting batch: base position + number of extra batches given to earlier ranks
+        # 计算起始批次：基准位置 + 分配给前面 rank 的额外批次数
         start_batch = self.rank * batches_per_rank_base + min(self.rank, remainder)
         end_batch = start_batch + batches_for_this_rank
 
-        # Convert batch indices to sample indices
+        # 将批次索引转换为样本索引
         start_idx = start_batch * self.batch_size
         end_idx = min(end_batch * self.batch_size, self.total_size)
 
         return start_idx, end_idx
 
     def __iter__(self) -> Iterator:
-        """Generate indices for this rank's contiguous chunk of the dataset."""
+        """为此 rank 的连续数据集块生成索引。"""
         start_idx, end_idx = self._get_rank_indices()
         indices = list(range(start_idx, end_idx))
 
@@ -201,21 +201,21 @@ class ContiguousDistributedSampler(torch.utils.data.Sampler):
         return iter(indices)
 
     def __len__(self) -> int:
-        """Return the number of samples in this rank's chunk."""
+        """返回此 rank 块中的样本数量。"""
         start_idx, end_idx = self._get_rank_indices()
         return end_idx - start_idx
 
     def set_epoch(self, epoch: int) -> None:
-        """Set the epoch for this sampler to ensure different shuffling patterns across epochs.
+        """设置此采样器的 epoch 以确保不同 epoch 有不同的打乱模式。
 
-        Args:
+        参数：
             epoch (int): Epoch number to use as the random seed for shuffling.
         """
         self.epoch = epoch
 
 
 def seed_worker(worker_id: int) -> None:
-    """Set dataloader worker seed for reproducibility across worker processes."""
+    """设置 DataLoader 工作进程的随机种子以确保可复现性。"""
     worker_seed = torch.initial_seed() % 2**32
     np.random.seed(worker_seed)
     random.seed(worker_seed)
@@ -231,14 +231,14 @@ def build_yolo_dataset(
     stride: int = 32,
     multi_modal: bool = False,
 ) -> Dataset:
-    """Build and return a YOLO dataset based on configuration parameters."""
+    """基于配置参数构建并返回 YOLO 数据集。"""
     dataset = YOLOMultiModalDataset if multi_modal else YOLODataset
     return dataset(
         img_path=img_path,
         imgsz=cfg.imgsz,
         batch_size=batch,
         augment=mode == "train",  # augmentation
-        hyp=cfg,  # TODO: probably add a get_hyps_from_cfg function
+        hyp=cfg,  # TODO: 可能需要添加 get_hyps_from_cfg 函数
         rect=cfg.rect or rect,  # rectangular batches
         cache=cfg.cache or None,
         single_cls=cfg.single_cls or False,
@@ -262,7 +262,7 @@ def build_grounding(
     stride: int = 32,
     max_samples: int = 80,
 ) -> Dataset:
-    """Build and return a GroundingDataset based on configuration parameters."""
+    """基于配置参数构建并返回 GroundingDataset。"""
     return GroundingDataset(
         img_path=img_path,
         json_file=json_file,
@@ -270,7 +270,7 @@ def build_grounding(
         imgsz=cfg.imgsz,
         batch_size=batch,
         augment=mode == "train",  # augmentation
-        hyp=cfg,  # TODO: probably add a get_hyps_from_cfg function
+        hyp=cfg,  # TODO: 可能需要添加 get_hyps_from_cfg 函数
         rect=cfg.rect or rect,  # rectangular batches
         cache=cfg.cache or None,
         single_cls=cfg.single_cls or False,
@@ -292,9 +292,9 @@ def build_dataloader(
     drop_last: bool = False,
     pin_memory: bool = True,
 ) -> InfiniteDataLoader:
-    """Create and return an InfiniteDataLoader for training or validation.
+    """创建并返回用于训练或验证的 InfiniteDataLoader。
 
-    Args:
+    参数：
         dataset (Dataset): Dataset to load data from.
         batch (int): Batch size for the dataloader.
         workers (int): Number of worker processes for data loading.
@@ -303,10 +303,10 @@ def build_dataloader(
         drop_last (bool, optional): Whether to drop the last incomplete batch.
         pin_memory (bool, optional): Whether to use pinned memory for dataloader.
 
-    Returns:
+    返回：
         (InfiniteDataLoader): A dataloader that can be used for training or validation.
 
-    Examples:
+    示例：
         Create a dataloader for training
         >>> dataset = YOLODataset(...)
         >>> dataloader = build_dataloader(dataset, batch=16, workers=4, shuffle=True)
@@ -341,12 +341,12 @@ def build_dataloader(
 def check_source(
     source: str | int | Path | list | tuple | np.ndarray | Image.Image | torch.Tensor,
 ) -> tuple[Any, bool, bool, bool, bool, bool]:
-    """Check the type of input source and return corresponding flag values.
+    """检查输入源类型并返回相应的标志值。
 
-    Args:
+    参数：
         source (str | int | Path | list | tuple | np.ndarray | PIL.Image | torch.Tensor): The input source to check.
 
-    Returns:
+    返回：
         source (str | int | Path | list | tuple | np.ndarray | PIL.Image | torch.Tensor): The processed source.
         webcam (bool): Whether the source is a webcam.
         screenshot (bool): Whether the source is a screenshot.
@@ -354,7 +354,7 @@ def check_source(
         in_memory (bool): Whether the source is an in-memory object.
         tensor (bool): Whether the source is a torch.Tensor.
 
-    Examples:
+    示例：
         Check a file path source
         >>> source, webcam, screenshot, from_img, in_memory, tensor = check_source("image.jpg")
 
@@ -395,9 +395,9 @@ def load_inference_source(
     buffer: bool = False,
     channels: int = 3,
 ):
-    """Load an inference source for object detection and apply necessary transformations.
+    """加载用于目标检测的推理源并应用必要的变换。
 
-    Args:
+    参数：
         source (str | int | Path | list | tuple | np.ndarray | PIL.Image | torch.Tensor): The input source for
             inference.
         batch (int, optional): Batch size for dataloaders.
@@ -405,10 +405,10 @@ def load_inference_source(
         buffer (bool, optional): Whether stream frames will be buffered.
         channels (int, optional): The number of input channels for the model.
 
-    Returns:
+    返回：
         (Dataset): A dataset object for the specified input source with attached source_type attribute.
 
-    Examples:
+    示例：
         Load an image source for inference
         >>> dataset = load_inference_source("image.jpg", batch=1)
 
@@ -418,7 +418,7 @@ def load_inference_source(
     source, stream, screenshot, from_img, in_memory, tensor = check_source(source)
     source_type = source.source_type if in_memory else SourceTypes(stream, screenshot, from_img, tensor)
 
-    # DataLoader
+    # DataLoader 数据加载器
     if tensor:
         dataset = LoadTensor(source)
     elif in_memory:
@@ -432,7 +432,7 @@ def load_inference_source(
     else:
         dataset = LoadImagesAndVideos(source, batch=batch, vid_stride=vid_stride, channels=channels)
 
-    # Attach source types to the dataset
+    # 将源类型附加到数据集
     setattr(dataset, "source_type", source_type)
 
     return dataset

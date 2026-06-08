@@ -12,34 +12,34 @@ from .base import BaseBackend
 
 
 class TritonBackend(BaseBackend):
-    """NVIDIA Triton Inference Server backend for remote model serving.
+    """NVIDIA Triton 推理服务器后端，用于远程模型服务。
 
-    Connects to and runs inference with models hosted on an NVIDIA Triton Inference Server instance via HTTP or gRPC
-    protocols. The model is specified using a triton:// URL scheme.
+    通过 HTTP 或 gRPC 协议连接并运行托管在 NVIDIA Triton 推理服务器上的模型。
+    模型通过 triton:// URL 方案指定。
     """
 
     def load_model(self, weight: str | Path) -> None:
-        """Connect to a remote model on an NVIDIA Triton Inference Server.
+        """连接到 NVIDIA Triton 推理服务器上的远程模型。
 
         Args:
-            weight (str | Path): Triton model URL (e.g., 'triton://host:8000/model_name').
+            weight (str | Path): Triton 模型 URL（如 'triton://host:8000/model_name'）。
         """
         check_requirements("tritonclient[all]")
         from ultralytics.utils.triton import TritonRemoteModel
 
         self.model = TritonRemoteModel(weight)
 
-        # Copy metadata from Triton model
+        # 从 Triton 模型中复制元数据（如有）
         if hasattr(self.model, "metadata"):
             self.apply_metadata(self.model.metadata)
 
     def forward(self, im: torch.Tensor) -> list:
-        """Run inference via the NVIDIA Triton Inference Server.
+        """通过 NVIDIA Triton 推理服务器执行远程推理。
 
         Args:
-            im (torch.Tensor): Input image tensor in BCHW format, normalized to [0, 1].
+            im (torch.Tensor): 输入图像张量，格式为 BCHW，值域为 [0, 1]。
 
         Returns:
-            (list): Model predictions as a list of numpy arrays from the Triton server.
+            (list): 来自 Triton 服务器的模型预测结果列表（numpy 数组）。
         """
         return self.model(im.cpu().numpy())

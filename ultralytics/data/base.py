@@ -21,12 +21,12 @@ from ultralytics.utils.patches import imread
 
 
 class BaseDataset(Dataset):
-    """Base dataset class for loading and processing image data.
+    """用于加载和处理图像数据的基类数据集。
 
     This class provides core functionality for loading images, caching, and preparing data for training and inference in
     object detection tasks.
 
-    Attributes:
+    属性：
         img_path (str | list[str]): Path to the folder containing images.
         imgsz (int): Target image size for resizing.
         augment (bool): Whether to apply data augmentation.
@@ -54,7 +54,7 @@ class BaseDataset(Dataset):
         batch_shapes (np.ndarray): Batch shapes for rectangular training.
         batch (np.ndarray): Batch index of each image.
 
-    Methods:
+    方法：
         get_img_files: Read image files from the specified path.
         update_labels: Update labels to include only specified classes.
         load_image: Load an image from the dataset.
@@ -86,9 +86,9 @@ class BaseDataset(Dataset):
         fraction: float = 1.0,
         channels: int = 3,
     ):
-        """Initialize BaseDataset with given configuration and options.
+        """使用给定配置和选项初始化 BaseDataset。
 
-        Args:
+        参数：
             img_path (str | list[str]): Path to the folder containing images or list of image paths.
             imgsz (int): Image size for resizing.
             cache (bool | str): Cache images to RAM or disk during training.
@@ -126,11 +126,11 @@ class BaseDataset(Dataset):
             assert self.batch_size is not None
             self.set_rectangle()
 
-        # Buffer thread for mosaic images
+        # 用于 mosaic 图像的缓冲线程
         self.buffer = []  # buffer size = batch size
         self.max_buffer_length = min((self.ni, self.batch_size * 8, 1000)) if self.augment else 0
 
-        # Cache images (options are cache = True, False, None, "ram", "disk")
+        # 缓存图像（选项：cache = True, False, None, "ram", "disk"）
         self.ims, self.im_hw0, self.im_hw = [None] * self.ni, [None] * self.ni, [None] * self.ni
         self.npy_files = [Path(f).with_suffix(".npy") for f in self.im_files]
         self.cache = cache.lower() if isinstance(cache, str) else "ram" if cache is True else None
@@ -144,19 +144,19 @@ class BaseDataset(Dataset):
         elif self.cache == "disk" and self.check_cache_disk():
             self.cache_images()
 
-        # Transforms
+        # 变换
         self.transforms = self.build_transforms(hyp=hyp)
 
     def get_img_files(self, img_path: str | list[str]) -> list[str]:
-        """Read image files from the specified path.
+        """从指定路径读取图像文件。
 
-        Args:
+        参数：
             img_path (str | list[str]): Path or list of paths to image directories or files.
 
-        Returns:
+        返回：
             (list[str]): List of image file paths.
 
-        Raises:
+        异常：
             FileNotFoundError: If no images are found or the path doesn't exist.
         """
         try:
@@ -185,9 +185,9 @@ class BaseDataset(Dataset):
         return im_files
 
     def update_labels(self, include_class: list[int] | None) -> None:
-        """Update labels to include only specified classes.
+        """更新标签以仅包含指定类别。
 
-        Args:
+        参数：
             include_class (list[int], optional): List of classes to include. If None, all classes are included.
         """
         include_class_array = np.array(include_class).reshape(1, -1)
@@ -208,18 +208,18 @@ class BaseDataset(Dataset):
                 self.labels[i]["cls"][:, 0] = 0
 
     def load_image(self, i: int, rect_mode: bool = True) -> tuple[np.ndarray, tuple[int, int], tuple[int, int]]:
-        """Load an image from dataset index 'i'.
+        """从数据集索引 'i' 加载图像。
 
-        Args:
+        参数：
             i (int): Index of the image to load.
             rect_mode (bool): Whether to use rectangular resizing.
 
-        Returns:
+        返回：
             im (np.ndarray): Loaded image as a NumPy array.
             hw_original (tuple[int, int]): Original image dimensions in (height, width) format.
             hw_resized (tuple[int, int]): Resized image dimensions in (height, width) format.
 
-        Raises:
+        异常：
             FileNotFoundError: If the image file is not found.
         """
         im, f, fn = self.ims[i], self.im_files[i], self.npy_files[i]
@@ -247,7 +247,7 @@ class BaseDataset(Dataset):
             if im.ndim == 2:
                 im = im[..., None]
 
-            # Add to buffer if training with augmentations
+            # 如果使用增强训练则添加到缓冲区
             if self.augment:
                 self.ims[i], self.im_hw0[i], self.im_hw[i] = im, (h0, w0), im.shape[:2]  # im, hw_original, hw_resized
                 self.buffer.append(i)
@@ -261,7 +261,7 @@ class BaseDataset(Dataset):
         return self.ims[i], self.im_hw0[i], self.im_hw[i]
 
     def cache_images(self) -> None:
-        """Cache images to memory or disk for faster training."""
+        """将图像缓存到内存或磁盘以加速训练。"""
         b, gb = 0, 1 << 30  # bytes of cached images, bytes per gigabytes
         fcn, storage = (self.cache_images_to_disk, "Disk") if self.cache == "disk" else (self.load_image, "RAM")
         with ThreadPool(NUM_THREADS) as pool:
@@ -277,7 +277,7 @@ class BaseDataset(Dataset):
             pbar.close()
 
     def cache_images_to_disk(self, i: int) -> None:
-        """Save an image as an *.npy file for faster loading."""
+        """将图像保存为 *.npy 文件以加快加载速度。"""
         f = self.npy_files[i]
         if not f.exists():
             try:
@@ -287,12 +287,12 @@ class BaseDataset(Dataset):
                 LOGGER.warning(f"{self.prefix}WARNING ⚠️ Failed to cache image {f}: {e}")
 
     def check_cache_disk(self, safety_margin: float = 0.5) -> bool:
-        """Check if there's enough disk space for caching images.
+        """检查是否有足够的磁盘空间用于缓存图像。
 
-        Args:
+        参数：
             safety_margin (float): Safety margin factor for disk space calculation.
 
-        Returns:
+        返回：
             (bool): True if there's enough disk space, False otherwise.
         """
         import shutil
@@ -322,12 +322,12 @@ class BaseDataset(Dataset):
         return True
 
     def check_cache_ram(self, safety_margin: float = 0.5) -> bool:
-        """Check if there's enough RAM for caching images.
+        """检查是否有足够的 RAM 用于缓存图像。
 
-        Args:
+        参数：
             safety_margin (float): Safety margin factor for RAM calculation.
 
-        Returns:
+        返回：
             (bool): True if there's enough RAM, False otherwise.
         """
         b, gb = 0, 1 << 30  # bytes of cached images, bytes per gigabytes
@@ -338,7 +338,7 @@ class BaseDataset(Dataset):
                 continue
             ratio = self.imgsz / max(im.shape[0], im.shape[1])  # max(h, w)  # ratio
             b += im.nbytes * ratio**2
-        mem_required = b * self.ni / n * (1 + safety_margin)  # GB required to cache dataset into RAM
+        mem_required = b * self.ni / n * (1 + safety_margin)  # 将数据集缓存到 RAM 所需的 GB 数
         mem = __import__("psutil").virtual_memory()
         if mem_required > mem.available:
             self.cache = None
@@ -351,7 +351,7 @@ class BaseDataset(Dataset):
         return True
 
     def set_rectangle(self) -> None:
-        """Sort images by aspect ratio and set batch shapes for rectangular training."""
+        """按宽高比对图像排序并设置矩形训练的批次形状。"""
         bi = np.floor(np.arange(self.ni) / self.batch_size).astype(int)  # batch index
         nb = bi[-1] + 1  # number of batches
 
@@ -362,7 +362,7 @@ class BaseDataset(Dataset):
         self.labels = [self.labels[i] for i in irect]
         ar = ar[irect]
 
-        # Set training image shapes
+        # 设置训练图像形状
         shapes = [[1, 1]] * nb
         for i in range(nb):
             ari = ar[bi == i]
@@ -376,16 +376,16 @@ class BaseDataset(Dataset):
         self.batch = bi  # batch index of image
 
     def __getitem__(self, index: int) -> dict[str, Any]:
-        """Return transformed label information for given index."""
+        """返回给定索引的变换后标签信息。"""
         return self.transforms(self.get_image_and_label(index))
 
     def get_image_and_label(self, index: int) -> dict[str, Any]:
-        """Get and return label information from the dataset.
+        """从数据集获取并返回标签信息。
 
-        Args:
+        参数：
             index (int): Index of the image to retrieve.
 
-        Returns:
+        返回：
             (dict[str, Any]): Label dictionary with image and metadata.
         """
         label = deepcopy(self.labels[index])  # requires deepcopy() https://github.com/ultralytics/ultralytics/pull/1948
@@ -400,30 +400,30 @@ class BaseDataset(Dataset):
         return self.update_labels_info(label)
 
     def __len__(self) -> int:
-        """Return the length of the labels list for the dataset."""
+        """返回数据集标签列表的长度。"""
         return len(self.labels)
 
     def update_labels_info(self, label: dict[str, Any]) -> dict[str, Any]:
-        """Customize your label format here."""
+        """在此处自定义标签格式。"""
         return label
 
     def build_transforms(self, hyp: dict[str, Any] | None = None):
-        """Users can customize augmentations here.
+        """用户可在此处自定义增强操作。
 
-        Examples:
+        示例：
             >>> if self.augment:
-            ...     # Training transforms
+            ...     # 训练变换
             ...     return Compose([])
             >>> else:
-            ...    # Val transforms
+            ...    # 验证变换
             ...    return Compose([])
         """
         raise NotImplementedError
 
     def get_labels(self) -> list[dict[str, Any]]:
-        """Users can customize their own format here.
+        """用户可在此处自定义格式。
 
-        Examples:
+        示例：
             Ensure output is a dictionary with the following keys:
             >>> dict(
             ...     im_file=im_file,

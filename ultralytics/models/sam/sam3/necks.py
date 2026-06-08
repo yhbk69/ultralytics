@@ -1,8 +1,8 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics 🚀 AGPL-3.0 许可证 - https://ultralytics.com/license
 
-# Copyright (c) Meta Platforms, Inc. and affiliates. All Rights Reserved
+# 版权所有 (c) Meta Platforms, Inc. 及其附属公司。保留所有权利。
 
-"""Necks are the interface between a vision backbone and the rest of the detection model."""
+"""Neck 是视觉骨干网络与检测模型其余部分之间的接口。"""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import torch.nn as nn
 
 
 class Sam3DualViTDetNeck(nn.Module):
-    """A neck that implements a simple FPN as in ViTDet, with support for dual necks (for SAM3 and SAM2)."""
+    """实现类似 ViTDet 中简单 FPN 的 Neck，支持双 Neck（用于 SAM3 和 SAM2）。"""
 
     def __init__(
         self,
@@ -24,15 +24,15 @@ class Sam3DualViTDetNeck(nn.Module):
         add_sam2_neck: bool = False,
     ):
         """
-        SimpleFPN neck a la ViTDet
-        (From detectron2, very lightly adapted)
-        It supports a "dual neck" setting, where we have two identical necks (for SAM3 and SAM2), with different weights.
+        类似 ViTDet 的 SimpleFPN Neck
+        （来自 detectron2，做了轻微适配）
+        支持双 Neck 设置，即拥有两个相同的 Neck（分别用于 SAM3 和 SAM2），但权重不同。
 
-        :param trunk: the backbone
-        :param position_encoding: the positional encoding to use
-        :param d_model: the dimension of the model
-        :param scale_factors: tuple of scale factors for each FPN level
-        :param add_sam2_neck: whether to add a second neck for SAM2
+        :param trunk: 骨干网络
+        :param position_encoding: 使用的位置编码
+        :param d_model: 模型维度
+        :param scale_factors: 每个 FPN 级别的缩放因子元组
+        :param add_sam2_neck: 是否添加第二个 Neck 用于 SAM2
         """
         super().__init__()
         self.trunk = trunk
@@ -100,13 +100,13 @@ class Sam3DualViTDetNeck(nn.Module):
 
         self.sam2_convs = None
         if add_sam2_neck:
-            # Assumes sam2 neck is just a clone of the original neck
+            # 假设 sam2 Neck 是原始 Neck 的克隆
             self.sam2_convs = deepcopy(self.convs)
 
     def forward(
         self, tensor_list: list[torch.Tensor]
     ) -> tuple[list[torch.Tensor], list[torch.Tensor], list[torch.Tensor] | None, list[torch.Tensor] | None]:
-        """Get feature maps and positional encodings from the neck."""
+        """获取特征图和位置编码。"""
         xs = self.trunk(tensor_list)
         x = xs[-1]  # simpleFPN
         sam3_out, sam3_pos = self.sam_forward_feature_levels(x, self.convs)
@@ -118,7 +118,7 @@ class Sam3DualViTDetNeck(nn.Module):
     def sam_forward_feature_levels(
         self, x: torch.Tensor, convs: nn.ModuleList
     ) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
-        """Run neck convolutions and compute positional encodings for each feature level."""
+        """运行 Neck 卷积并计算每个特征级别的位置编码。"""
         outs, poss = [], []
         for conv in convs:
             feat = conv(x)
@@ -127,5 +127,5 @@ class Sam3DualViTDetNeck(nn.Module):
         return outs, poss
 
     def set_imgsz(self, imgsz: list[int] = [1008, 1008]):
-        """Set the image size for the trunk backbone."""
+        """设置骨干网络 trunk 的图像尺寸。"""
         self.trunk.set_imgsz(imgsz)

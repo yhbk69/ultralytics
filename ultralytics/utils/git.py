@@ -7,24 +7,23 @@ from pathlib import Path
 
 
 class GitRepo:
-    """Represent a local Git repository and expose branch, commit, and remote metadata.
+    """表示本地 Git 仓库，暴露分支、提交和远程元数据。
 
-    This class discovers the repository root by searching for a .git entry from the given path upward, resolves the
-    actual .git directory (including worktrees), and reads Git metadata directly from on-disk files. It does not invoke
-    the git binary and therefore works in restricted environments. All metadata properties are resolved lazily and
-    cached; construct a new instance to refresh state.
+    该类通过从给定路径向上搜索 .git 条目来发现仓库根目录，解析实际的 .git 目录（包括工作树），
+    并直接从磁盘文件读取 Git 元数据。它不调用 git 二进制文件，因此可在受限环境中工作。
+    所有元数据属性都是延迟解析和缓存的；构造新实例以刷新状态。
 
-    Attributes:
-        root (Path | None): Repository root directory containing the .git entry; None if not in a repository.
-        gitdir (Path | None): Resolved .git directory path; handles worktrees; None if unresolved.
-        head (str | None): Raw contents of HEAD; a SHA for detached HEAD or "ref: <refname>" for branch heads.
-        is_repo (bool): Whether the provided path resides inside a Git repository.
-        branch (str | None): Current branch name when HEAD points to a branch; None for detached HEAD or non-repo.
-        commit (str | None): Current commit SHA for HEAD; None if not determinable.
-        origin (str | None): URL of the "origin" remote as read from gitdir/config; None if unset or unavailable.
+    属性:
+        root (Path | None): 包含 .git 条目的仓库根目录；如果不在仓库中则为 None。
+        gitdir (Path | None): 解析后的 .git 目录路径；处理工作树；未解析则为 None。
+        head (str | None): HEAD 的原始内容；分离 HEAD 时为 SHA，分支头时为 "ref: <refname>"。
+        is_repo (bool): 提供的路径是否位于 Git 仓库内。
+        branch (str | None): HEAD 指向分支时的当前分支名；分离 HEAD 或非仓库时为 None。
+        commit (str | None): HEAD 的当前提交 SHA；无法确定时为 None。
+        origin (str | None): 从 gitdir/config 读取的 "origin" 远程 URL；未设置或不可用时为 None。
 
-    Examples:
-        Initialize from the current working directory and read metadata
+    示例:
+        从当前工作目录初始化并读取元数据
         >>> from pathlib import Path
         >>> repo = GitRepo(Path.cwd())
         >>> repo.is_repo
@@ -32,28 +31,28 @@ class GitRepo:
         >>> repo.branch, repo.commit[:7], repo.origin
         ('main', '1a2b3c4', 'https://example.com/owner/repo.git')
 
-    Notes:
-        - Resolves metadata by reading files: HEAD, packed-refs, and config; no subprocess calls are used.
-        - Caches properties on first access using cached_property; recreate the object to reflect repository changes.
+    注意:
+        - 通过读取文件解析元数据：HEAD、packed-refs 和 config；不使用子进程调用。
+        - 首次访问时使用 cached_property 缓存属性；重新创建对象以反映仓库变更。
     """
 
     def __init__(self, path: Path = Path(__file__).resolve()):
-        """Initialize a Git repository context by discovering the repository root from a starting path.
+        """通过从起始路径发现仓库根目录来初始化 Git 仓库上下文。
 
-        Args:
-            path (Path, optional): File or directory path used as the starting point to locate the repository root.
+        参数:
+            path (Path, 可选): 用作定位仓库根目录起始点的文件或目录路径。
         """
         self.root = self._find_root(path)
         self.gitdir = self._gitdir(self.root) if self.root else None
 
     @staticmethod
     def _find_root(p: Path) -> Path | None:
-        """Return repo root or None."""
+        """返回仓库根目录或 None。"""
         return next((d for d in [p, *list(p.parents)] if (d / ".git").exists()), None)
 
     @staticmethod
     def _gitdir(root: Path) -> Path | None:
-        """Resolve actual .git directory (handles worktrees)."""
+        """解析实际的 .git 目录（处理工作树）。"""
         g = root / ".git"
         if g.is_dir():
             return g
@@ -65,16 +64,16 @@ class GitRepo:
 
     @staticmethod
     def _read(p: Path | None) -> str | None:
-        """Read and strip file if exists."""
+        """如果文件存在则读取并去除首尾空白。"""
         return p.read_text(errors="ignore").strip() if p and p.exists() else None
 
     @cached_property
     def head(self) -> str | None:
-        """HEAD file contents."""
+        """HEAD 文件内容。"""
         return self._read(self.gitdir / "HEAD" if self.gitdir else None)
 
     def _ref_commit(self, ref: str) -> str | None:
-        """Commit for ref (handles packed-refs)."""
+        """获取引用对应的提交（处理 packed-refs）。"""
         rf = self.gitdir / ref
         if s := self._read(rf):
             return s
@@ -91,12 +90,12 @@ class GitRepo:
 
     @property
     def is_repo(self) -> bool:
-        """True if inside a git repo."""
+        """如果在 git 仓库内则为 True。"""
         return self.gitdir is not None
 
     @cached_property
     def branch(self) -> str | None:
-        """Current branch or None."""
+        """当前分支名或 None。"""
         if not self.is_repo or not self.head or not self.head.startswith("ref: "):
             return None
         ref = self.head[5:].strip()
@@ -104,14 +103,14 @@ class GitRepo:
 
     @cached_property
     def commit(self) -> str | None:
-        """Current commit SHA or None."""
+        """当前提交 SHA 或 None。"""
         if not self.is_repo or not self.head:
             return None
         return self._ref_commit(self.head[5:].strip()) if self.head.startswith("ref: ") else self.head
 
     @cached_property
     def origin(self) -> str | None:
-        """Origin URL or None."""
+        """Origin URL 或 None。"""
         if not self.is_repo:
             return None
         cfg = self.gitdir / "config"

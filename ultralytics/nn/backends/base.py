@@ -10,34 +10,34 @@ import torch
 
 
 class BaseBackend(ABC):
-    """Base class for all inference backends.
+    """所有推理后端的基类。
 
-    This abstract class defines the interface that all inference backends must implement. It provides common
-    functionality for model loading, metadata processing, and device management.
+    此抽象类定义了所有推理后端必须实现的接口，提供模型加载、元数据处理
+    和设备管理的通用功能。
 
     Attributes:
-        model: The underlying inference model or runtime session.
-        device (torch.device): The device to run inference on.
-        fp16 (bool): Whether to use FP16 (half-precision) inference.
-        nhwc (bool): Whether the model expects NHWC input format instead of NCHW.
-        stride (int): Model stride, typically 32 for YOLO models.
-        names (dict): Dictionary mapping class indices to class names.
-        task (str | None): The task type (detect, segment, classify, pose, obb).
-        batch (int): Batch size for inference.
-        imgsz (tuple): Input image size as (height, width).
-        channels (int): Number of input channels, typically 3 for RGB.
-        end2end (bool): Whether the model includes end-to-end NMS post-processing.
-        dynamic (bool): Whether the model supports dynamic input shapes.
-        metadata (dict): Model metadata dictionary containing export configuration.
+        model: 底层推理模型或运行时会话。
+        device (torch.device): 执行推理的设备。
+        fp16 (bool): 是否使用 FP16（半精度）推理。
+        nhwc (bool): 模型是否期望 NHWC 输入格式（而非 NCHW）。
+        stride (int): 模型步长，YOLO 模型通常为 32。
+        names (dict): 类别索引到类别名称的映射字典。
+        task (str | None): 任务类型（detect/segment/classify/pose/obb）。
+        batch (int): 推理批次大小。
+        imgsz (tuple): 输入图像尺寸 (height, width)。
+        channels (int): 输入通道数，RGB 图像通常为 3。
+        end2end (bool): 模型是否包含端到端 NMS 后处理。
+        dynamic (bool): 模型是否支持动态输入形状。
+        metadata (dict): 模型元数据字典，包含导出时的配置信息。
     """
 
     def __init__(self, weight: str | torch.nn.Module, device: torch.device | str, fp16: bool = False):
-        """Initialize the base backend with common attributes and load the model.
+        """初始化基础后端，设置通用属性并加载模型。
 
         Args:
-            weight (str | torch.nn.Module): Path to the model weights file or a PyTorch module instance.
-            device (torch.device | str): Device to run inference on (e.g., 'cpu', 'cuda:0').
-            fp16 (bool): Whether to use FP16 half-precision inference.
+            weight (str | torch.nn.Module): 模型权重文件路径或 PyTorch 模块实例。
+            device (torch.device | str): 执行推理的设备（如 'cpu'、'cuda:0'）。
+            fp16 (bool): 是否使用 FP16 半精度推理。
         """
         self.device = device
         self.fp16 = fp16
@@ -55,57 +55,55 @@ class BaseBackend(ABC):
 
     @abstractmethod
     def load_model(self, weight: str | torch.nn.Module) -> None:
-        """Load the model from a weights file or module instance.
+        """从权重文件或模块实例中加载模型。
 
         Args:
-            weight (str | torch.nn.Module): Path to model weights or a PyTorch module.
+            weight (str | torch.nn.Module): 模型权重路径或 PyTorch 模块。
         """
         raise NotImplementedError
 
     @abstractmethod
     def forward(self, im: torch.Tensor) -> Any:
-        """Run inference on the input image tensor.
+        """对输入图像张量执行推理。
 
         Args:
-            im (torch.Tensor): Input image tensor in BCHW format, normalized to [0, 1].
+            im (torch.Tensor): 输入图像张量，格式为 BCHW，值域为 [0, 1]。
 
         Returns:
-            (Any): The raw output from the model's forward pass, which may require post-processing.
+            (Any): 模型前向传播的原始输出，可能需要后处理。
         """
         raise NotImplementedError
 
     def __call__(self, *args, **kwargs) -> Any:
-        """Allow the backend instance to be called directly to perform inference, forwarding arguments to the `forward`
-        method.
-        """
+        """允许直接调用后端实例执行推理，参数转发给 `forward` 方法。"""
         return self.forward(*args, **kwargs)
 
     def apply_metadata(self, metadata: dict | None) -> None:
-        """Process and apply model metadata to backend attributes.
+        """处理并应用模型元数据到后端属性。
 
-        Handles type conversions for common metadata fields (e.g., stride, batch, names) and sets them as
-        instance attributes. Also resolves end-to-end NMS and dynamic shape settings from export args.
+        对常用元数据字段（如 stride、batch、names）进行类型转换，
+        并设为实例属性。同时从导出参数中解析端到端 NMS 和动态形状设置。
 
         Args:
-            metadata (dict | None): Dictionary containing metadata key-value pairs from model export.
+            metadata (dict | None): 包含模型导出配置键值对的元数据字典。
         """
         if not metadata:
             return
 
-        # Store raw metadata
+        # 存储原始元数据
         self.metadata = metadata
 
-        # Process type conversions for known fields
+        # 对已知字段进行类型转换
         for k, v in metadata.items():
             if k in {"stride", "batch", "channels"}:
                 metadata[k] = int(v)
             elif k in {"imgsz", "names", "kpt_shape", "kpt_names", "args", "end2end"} and isinstance(v, str):
                 metadata[k] = ast.literal_eval(v)
 
-        # Handle models exported with end-to-end NMS
+        # 处理带端到端 NMS 导出的模型
         metadata["end2end"] = metadata.get("end2end", False) or metadata.get("args", {}).get("nms", False)
         metadata["dynamic"] = metadata.get("args", {}).get("dynamic", self.dynamic)
 
-        # Apply all metadata fields as backend attributes
+        # 将所有元数据字段设为后端属性
         for k, v in metadata.items():
             setattr(self, k, v)

@@ -17,14 +17,14 @@ from .utils import add_decomposed_rel_pos, apply_rotary_enc, compute_axial_cis, 
 
 
 class DropPath(nn.Module):
-    """Implements stochastic depth regularization for neural networks during training.
+    """在训练期间为神经网络实现随机深度正则化。
 
     Attributes:
-        drop_prob (float): Probability of dropping a path during training.
-        scale_by_keep (bool): Whether to scale the output by the keep probability.
+        drop_prob (float): 训练期间丢弃路径的概率。
+        scale_by_keep (bool): 是否按保留概率缩放输出。
 
     Methods:
-        forward: Applies stochastic depth to input tensor during training, with optional scaling.
+        forward: 在训练期间对输入张量应用随机深度，可选缩放。
 
     Examples:
         >>> drop_path = DropPath(drop_prob=0.2, scale_by_keep=True)
@@ -51,17 +51,16 @@ class DropPath(nn.Module):
 
 
 class MaskDownSampler(nn.Module):
-    """A mask downsampling and embedding module for efficient processing of input masks.
+    """一个掩码下采样和嵌入模块，用于高效处理输入掩码。
 
-    This class implements a mask downsampler that progressively reduces the spatial dimensions of input masks while
-    expanding their channel dimensions using convolutional layers, layer normalization, and activation functions.
+    此类实现了一个掩码下采样器，使用卷积层、层归一化和激活函数
+    逐步降低输入掩码的空间维度，同时扩展其通道维度。
 
     Attributes:
-        encoder (nn.Sequential): A sequential container of convolutional layers, layer normalization, and activation
-            functions for downsampling and embedding masks.
+        encoder (nn.Sequential): 用于下采样和嵌入掩码的卷积层、层归一化和激活函数顺序容器。
 
     Methods:
-        forward: Downsamples and encodes input mask to embed_dim channels.
+        forward: 将输入掩码下采样并编码到embed_dim通道。
 
     Examples:
         >>> mask_downsampler = MaskDownSampler(embed_dim=256, kernel_size=4, stride=4, padding=0, total_stride=16)
@@ -125,22 +124,21 @@ class MaskDownSampler(nn.Module):
 
 
 class CXBlock(nn.Module):
-    """ConvNeXt Block for efficient feature extraction in convolutional neural networks.
+    """用于卷积神经网络中高效特征提取的ConvNeXt块。
 
-    This block implements a modified version of the ConvNeXt architecture, offering improved performance and flexibility
-    in feature extraction.
+    此块实现了ConvNeXt架构的修改版本，在特征提取方面提供改进的性能和灵活性。
 
     Attributes:
-        dwconv (nn.Conv2d): Depthwise or standard 2D convolution layer.
-        norm (LayerNorm2d): Layer normalization applied to channels.
-        pwconv1 (nn.Linear): First pointwise convolution implemented as a linear layer.
-        act (nn.GELU): GELU activation function.
-        pwconv2 (nn.Linear): Second pointwise convolution implemented as a linear layer.
-        gamma (nn.Parameter | None): Learnable scale parameter for layer scaling.
-        drop_path (nn.Module): DropPath layer for stochastic depth regularization.
+        dwconv (nn.Conv2d): 深度可分离或标准二维卷积层。
+        norm (LayerNorm2d): 应用于通道的层归一化。
+        pwconv1 (nn.Linear): 作为线性层实现的第一个逐点卷积。
+        act (nn.GELU): GELU激活函数。
+        pwconv2 (nn.Linear): 作为线性层实现的第二个逐点卷积。
+        gamma (nn.Parameter | None): 用于层缩放的可学习尺度参数。
+        drop_path (nn.Module): 用于随机深度正则化的DropPath层。
 
     Methods:
-        forward: Processes the input tensor through the ConvNeXt block.
+        forward: 通过ConvNeXt块处理输入张量。
 
     Examples:
         >>> import torch
@@ -210,16 +208,16 @@ class CXBlock(nn.Module):
 
 
 class Fuser(nn.Module):
-    """A module for fusing features through multiple layers of a neural network.
+    """一个通过神经网络多层融合特征的模块。
 
-    This class applies a series of identical layers to an input tensor, optionally projecting the input first.
+    此类对输入张量应用一系列相同的层，可选地先对输入进行投影。
 
     Attributes:
-        proj (nn.Module): An optional input projection layer. Identity if no projection is needed.
-        layers (nn.ModuleList): A list of identical layers to be applied sequentially.
+        proj (nn.Module): 可选的输入投影层。如果不需要投影则为恒等映射。
+        layers (nn.ModuleList): 要顺序应用的相同层列表。
 
     Methods:
-        forward: Applies the fuser to an input tensor.
+        forward: 对输入张量应用fuser。
 
     Examples:
         >>> layer = CXBlock(dim=256)
@@ -258,25 +256,25 @@ class Fuser(nn.Module):
 
 
 class SAM2TwoWayAttentionBlock(TwoWayAttentionBlock):
-    """A two-way attention block for performing self-attention and cross-attention in both directions.
+    """一个用于在两个方向上执行自注意力和交叉注意力的双向注意力块。
 
-    This block extends the TwoWayAttentionBlock and consists of four main components: self-attention on sparse inputs,
-    cross-attention from sparse to dense inputs, an MLP block on sparse inputs, and cross-attention from dense to sparse
-    inputs.
+    此块扩展了TwoWayAttentionBlock，包含四个主要组件：稀疏输入上的自注意力、
+    从稀疏到密集输入的交叉注意力、稀疏输入上的MLP块，以及从密集到稀疏
+    输入的交叉注意力。
 
     Attributes:
-        self_attn (Attention): Self-attention layer for queries.
-        norm1 (nn.LayerNorm): Layer normalization after the first attention block.
-        cross_attn_token_to_image (Attention): Cross-attention layer from queries to keys.
-        norm2 (nn.LayerNorm): Layer normalization after the second attention block.
-        mlp (MLP): MLP block for transforming query embeddings.
-        norm3 (nn.LayerNorm): Layer normalization after the MLP block.
-        norm4 (nn.LayerNorm): Layer normalization after the third attention block.
-        cross_attn_image_to_token (Attention): Cross-attention layer from keys to queries.
-        skip_first_layer_pe (bool): Flag to skip positional encoding in the first layer.
+        self_attn (Attention): 查询的自注意力层。
+        norm1 (nn.LayerNorm): 第一个注意力块后的层归一化。
+        cross_attn_token_to_image (Attention): 从查询到键的交叉注意力层。
+        norm2 (nn.LayerNorm): 第二个注意力块后的层归一化。
+        mlp (MLP): 用于转换查询嵌入的MLP块。
+        norm3 (nn.LayerNorm): MLP块后的层归一化。
+        norm4 (nn.LayerNorm): 第三个注意力块后的层归一化。
+        cross_attn_image_to_token (Attention): 从键到查询的交叉注意力层。
+        skip_first_layer_pe (bool): 在第一层中跳过位置编码的标志。
 
     Methods:
-        forward: Processes input through the attention blocks and MLP.
+        forward: 通过注意力块和MLP处理输入。
 
     Examples:
         >>> block = SAM2TwoWayAttentionBlock(embedding_dim=256, num_heads=8)
@@ -313,23 +311,22 @@ class SAM2TwoWayAttentionBlock(TwoWayAttentionBlock):
 
 
 class SAM2TwoWayTransformer(TwoWayTransformer):
-    """A Two-Way Transformer module for simultaneous attention to image and query points.
+    """用于同时关注图像和查询点的双向Transformer模块。
 
-    This class extends the TwoWayTransformer, implementing a specialized transformer decoder that attends to an input
-    image using queries with supplied positional embeddings. It is particularly useful for tasks like object detection,
-    image segmentation, and point cloud processing.
+    此类扩展了TwoWayTransformer，实现了一个专门的transformer解码器，使用带有提供位置嵌入的查询
+    来关注输入图像。它特别适用于目标检测、图像分割和点云处理等任务。
 
     Attributes:
-        depth (int): Number of layers in the transformer.
-        embedding_dim (int): Channel dimension for input embeddings.
-        num_heads (int): Number of heads for multihead attention.
-        mlp_dim (int): Internal channel dimension for the MLP block.
-        layers (nn.ModuleList): List of SAM2TwoWayAttentionBlock layers comprising the transformer.
-        final_attn_token_to_image (Attention): Final attention layer from queries to image.
-        norm_final_attn (nn.LayerNorm): Layer normalization applied to final queries.
+        depth (int): transformer中的层数。
+        embedding_dim (int): 输入嵌入的通道维度。
+        num_heads (int): 多头注意力的头数。
+        mlp_dim (int): MLP块的内部通道维度。
+        layers (nn.ModuleList): 构成transformer的SAM2TwoWayAttentionBlock层列表。
+        final_attn_token_to_image (Attention): 从查询到图像的最终注意力层。
+        norm_final_attn (nn.LayerNorm): 应用于最终查询的层归一化。
 
     Methods:
-        forward: Processes input image embeddings and query embeddings through the transformer.
+        forward: 通过transformer处理输入图像嵌入和查询嵌入。
 
     Examples:
         >>> transformer = SAM2TwoWayTransformer(depth=5, embedding_dim=256, num_heads=8, mlp_dim=2048)
@@ -349,18 +346,18 @@ class SAM2TwoWayTransformer(TwoWayTransformer):
         activation: type[nn.Module] = nn.ReLU,
         attention_downsample_rate: int = 2,
     ) -> None:
-        """Initialize a SAM2TwoWayTransformer instance.
+        """初始化SAM2TwoWayTransformer实例。
 
-        This transformer decoder attends to an input image using queries with supplied positional embeddings. It is
-        designed for tasks like object detection, image segmentation, and point cloud processing.
+        此transformer解码器使用带有提供位置嵌入的查询来关注输入图像。它设计用于
+        目标检测、图像分割和点云处理等任务。
 
         Args:
-            depth (int): Number of layers in the transformer.
-            embedding_dim (int): Channel dimension for the input embeddings.
-            num_heads (int): Number of heads for multihead attention. Must divide embedding_dim.
-            mlp_dim (int): Channel dimension internal to the MLP block.
-            activation (type[nn.Module]): Activation function to use in the MLP block.
-            attention_downsample_rate (int): Downsampling rate for attention computations.
+            depth (int): transformer中的层数。
+            embedding_dim (int): 输入嵌入的通道维度。
+            num_heads (int): 多头注意力的头数。必须能整除embedding_dim。
+            mlp_dim (int): MLP块的内部通道维度。
+            activation (type[nn.Module]): MLP块中使用的激活函数。
+            attention_downsample_rate (int): 注意力计算的下采样率。
         """
         super().__init__(depth, embedding_dim, num_heads, mlp_dim, activation, attention_downsample_rate)
         self.layers = nn.ModuleList()
@@ -378,18 +375,17 @@ class SAM2TwoWayTransformer(TwoWayTransformer):
 
 
 class RoPEAttention(Attention):
-    """Implements rotary position encoding for attention mechanisms in transformer architectures.
+    """为transformer架构中的注意力机制实现旋转位置编码。
 
-    This class extends the base Attention class by incorporating Rotary Position Encoding (RoPE) to enhance the
-    positional awareness of the attention mechanism.
+    此类通过引入旋转位置编码（RoPE）来扩展基础Attention类，以增强注意力机制的位置感知能力。
 
     Attributes:
-        compute_cis (Callable): Function to compute axial complex numbers for rotary encoding.
-        freqs_cis (torch.Tensor): Precomputed frequency tensor for rotary encoding.
-        rope_k_repeat (bool): Flag to repeat query RoPE to match key length for cross-attention to memories.
+        compute_cis (Callable): 用于计算旋转编码轴向复数的函数。
+        freqs_cis (torch.Tensor): 旋转编码的预计算频率张量。
+        rope_k_repeat (bool): 是否重复查询RoPE以匹配键长度，用于与内存的交叉注意力。
 
     Methods:
-        forward: Applies rotary position encoding and computes attention between query, key, and value tensors.
+        forward: 应用旋转位置编码并计算查询、键和值张量之间的注意力。
 
     Examples:
         >>> rope_attn = RoPEAttention(embedding_dim=256, num_heads=8, rope_theta=10000.0, feat_sizes=(32, 32))
@@ -409,7 +405,7 @@ class RoPEAttention(Attention):
         feat_sizes: tuple[int, int] = (32, 32),  # [w, h] for stride 16 feats at 512 resolution
         **kwargs,
     ):
-        """Initialize RoPEAttention with rotary position encoding for enhanced positional awareness."""
+        """初始化RoPEAttention，使用旋转位置编码增强位置感知能力。"""
         super().__init__(*args, **kwargs)
 
         self.compute_cis = partial(compute_axial_cis, dim=self.internal_dim // self.num_heads, theta=rope_theta)
@@ -418,7 +414,7 @@ class RoPEAttention(Attention):
         self.rope_k_repeat = rope_k_repeat  # repeat q rope to match k length, needed for cross-attention to memories
 
     def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, num_k_exclude_rope: int = 0) -> torch.Tensor:
-        """Apply rotary position encoding and compute attention between query, key, and value tensors."""
+        """应用旋转位置编码并计算查询、键和值张量之间的注意力。"""
         q = self.q_proj(q)
         k = self.k_proj(k)
         v = self.v_proj(v)
@@ -454,7 +450,7 @@ class RoPEAttention(Attention):
 
 
 def do_pool(x: torch.Tensor, pool: nn.Module, norm: nn.Module = None) -> torch.Tensor:
-    """Apply pooling and optional normalization to a tensor, handling spatial dimension permutations."""
+    """对张量应用池化和可选的归一化，处理空间维度排列变换。"""
     if pool is None:
         return x
     # (B, H, W, C) -> (B, C, H, W)
@@ -469,23 +465,22 @@ def do_pool(x: torch.Tensor, pool: nn.Module, norm: nn.Module = None) -> torch.T
 
 
 class MultiScaleAttention(nn.Module):
-    """Implements multiscale self-attention with optional query pooling for efficient feature extraction.
+    """实现多尺度自注意力，支持可选查询下采样，用于高效特征提取。
 
-    This class provides a flexible implementation of multiscale attention, allowing for optional downsampling of query
-    features through pooling. It's designed to enhance the model's ability to capture multiscale information in visual
-    tasks.
+    此类提供了多尺度注意力的灵活实现，允许通过池化对查询特征进行可选下采样。
+    它旨在增强模型在视觉任务中捕获多尺度信息的能力。
 
     Attributes:
-        dim (int): Input dimension of the feature map.
-        dim_out (int): Output dimension of the attention module.
-        num_heads (int): Number of attention heads.
-        scale (float): Scaling factor for dot-product attention.
-        q_pool (nn.Module | None): Optional pooling module for query features.
-        qkv (nn.Linear): Linear projection for query, key, and value.
-        proj (nn.Linear): Output projection.
+        dim (int): 特征图的输入维度。
+        dim_out (int): 注意力模块的输出维度。
+        num_heads (int): 注意力头数。
+        scale (float): 点积注意力的缩放因子。
+        q_pool (nn.Module | None): 查询特征的可选池化模块。
+        qkv (nn.Linear): 查询、键和值的线性投影。
+        proj (nn.Linear): 输出投影。
 
     Methods:
-        forward: Applies multiscale attention to the input tensor.
+        forward: 对输入张量应用多尺度注意力。
 
     Examples:
         >>> import torch
@@ -504,7 +499,7 @@ class MultiScaleAttention(nn.Module):
         num_heads: int,
         q_pool: nn.Module = None,
     ):
-        """Initialize multiscale attention with optional query pooling for efficient feature extraction."""
+        """初始化多尺度注意力，支持可选查询下采样，用于高效特征提取。"""
         super().__init__()
 
         self.dim = dim
@@ -519,7 +514,7 @@ class MultiScaleAttention(nn.Module):
         self.proj = nn.Linear(dim_out, dim_out)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply multiscale attention with optional query pooling to extract multiscale features."""
+        """应用多尺度注意力，可选查询下采样以提取多尺度特征。"""
         B, H, W, _ = x.shape
         # qkv with shape (B, H * W, 3, nHead, C)
         qkv = self.qkv(x).reshape(B, H * W, 3, self.num_heads, -1)
@@ -548,26 +543,25 @@ class MultiScaleAttention(nn.Module):
 
 
 class MultiScaleBlock(nn.Module):
-    """A multiscale attention block with window partitioning and query pooling for efficient vision transformers.
+    """一种具有窗口分区和查询下采样的多尺度注意力块，用于高效的视觉transformer。
 
-    This class implements a multiscale attention mechanism with optional window partitioning and downsampling, designed
-    for use in vision transformer architectures.
+    此类实现了多尺度注意力机制，支持可选的窗口分区和下采样，专为视觉transformer架构设计。
 
     Attributes:
-        dim (int): Input dimension of the block.
-        dim_out (int): Output dimension of the block.
-        norm1 (nn.Module): First normalization layer.
-        window_size (int): Size of the window for partitioning.
-        pool (nn.Module | None): Pooling layer for query downsampling.
-        q_stride (tuple[int, int] | None): Stride for query pooling.
-        attn (MultiScaleAttention): Multi-scale attention module.
-        drop_path (nn.Module): Drop path layer for regularization.
-        norm2 (nn.Module): Second normalization layer.
-        mlp (MLP): Multi-layer perceptron module.
-        proj (nn.Linear | None): Projection layer for dimension mismatch.
+        dim (int): 块的输入维度。
+        dim_out (int): 块的输出维度。
+        norm1 (nn.Module): 第一归一化层。
+        window_size (int): 分区的窗口大小。
+        pool (nn.Module | None): 用于查询下采样的池化层。
+        q_stride (tuple[int, int] | None): 查询池化的步幅。
+        attn (MultiScaleAttention): 多尺度注意力模块。
+        drop_path (nn.Module): 用于正则化的drop path层。
+        norm2 (nn.Module): 第二归一化层。
+        mlp (MLP): 多层感知机模块。
+        proj (nn.Linear | None): 维度不匹配时的投影层。
 
     Methods:
-        forward: Processes input tensor through the multiscale block.
+        forward: 通过多尺度块处理输入张量。
 
     Examples:
         >>> block = MultiScaleBlock(dim=256, dim_out=512, num_heads=8, window_size=7)
@@ -589,7 +583,7 @@ class MultiScaleBlock(nn.Module):
         act_layer: type[nn.Module] = nn.GELU,
         window_size: int = 0,
     ):
-        """Initialize a multiscale attention block with window partitioning and optional query pooling."""
+        """初始化具有窗口分区和可选查询下采样的多尺度注意力块。"""
         super().__init__()
 
         if isinstance(norm_layer, str):
@@ -626,7 +620,7 @@ class MultiScaleBlock(nn.Module):
             self.proj = nn.Linear(dim, dim_out)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Process input through multiscale attention and MLP, with optional windowing and downsampling."""
+        """通过多尺度注意力和MLP处理输入，支持可选的窗口化和下采样。"""
         shortcut = x  # B, H, W, C
         x = self.norm1(x)
 
@@ -662,23 +656,22 @@ class MultiScaleBlock(nn.Module):
 
 
 class PositionEmbeddingSine(nn.Module):
-    """A module for generating sinusoidal positional embeddings for 2D inputs like images.
+    """用于为图像等二维输入生成正弦位置嵌入的模块。
 
-    This class implements sinusoidal position encoding for 2D spatial positions, which can be used in transformer-based
-    models for computer vision tasks.
+    此类为二维空间位置实现正弦位置编码，可用于计算机视觉任务中基于transformer的模型。
 
     Attributes:
-        num_pos_feats (int): Number of positional features (half of the embedding dimension).
-        temperature (int): Temperature parameter for the sinusoidal functions.
-        normalize (bool): Whether to normalize the positional embeddings.
-        scale (float): Scaling factor for the embeddings when normalize is True.
-        cache (dict): Cache for storing precomputed embeddings.
+        num_pos_feats (int): 位置特征的数量（嵌入维度的一半）。
+        temperature (int): 正弦函数的温度参数。
+        normalize (bool): 是否对位置嵌入进行归一化。
+        scale (float): normalize为True时嵌入的缩放因子。
+        cache (dict): 用于存储预计算嵌入的缓存。
 
     Methods:
-        _encode_xy: Encodes 2D positions using sine and cosine functions.
-        encode_boxes: Encodes box coordinates and dimensions into positional embeddings.
-        encode_points: Encodes 2D point coordinates with sinusoidal positional embeddings.
-        forward: Generates sinusoidal position embeddings for 2D inputs.
+        _encode_xy: 使用正弦和余弦函数编码二维位置。
+        encode_boxes: 将框坐标和尺寸编码为位置嵌入。
+        encode_points: 使用正弦位置嵌入编码二维点坐标。
+        forward: 为二维输入生成正弦位置嵌入。
 
     Examples:
         >>> pos_emb = PositionEmbeddingSine(num_pos_feats=128)
@@ -695,7 +688,7 @@ class PositionEmbeddingSine(nn.Module):
         normalize: bool = True,
         scale: float | None = None,
     ):
-        """Initialize sinusoidal position embeddings for 2D image inputs."""
+        """为二维图像输入初始化正弦位置嵌入。"""
         super().__init__()
         assert num_pos_feats % 2 == 0, "Expecting even model width"
         self.num_pos_feats = num_pos_feats // 2
@@ -710,7 +703,7 @@ class PositionEmbeddingSine(nn.Module):
         self.cache = {}
 
     def _encode_xy(self, x: torch.Tensor, y: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Encode 2D positions using sine/cosine functions for transformer positional embeddings."""
+        """使用正弦/余弦函数编码二维位置，用于transformer位置嵌入。"""
         assert len(x) == len(y) and x.ndim == y.ndim == 1
         x_embed = x * self.scale
         y_embed = y * self.scale
@@ -726,7 +719,7 @@ class PositionEmbeddingSine(nn.Module):
 
     @torch.no_grad()
     def encode_boxes(self, x: torch.Tensor, y: torch.Tensor, w: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
-        """Encode box coordinates and dimensions into positional embeddings for detection."""
+        """将框坐标和尺寸编码为用于检测的位置嵌入。"""
         pos_x, pos_y = self._encode_xy(x, y)
         return torch.cat((pos_y, pos_x, h[:, None], w[:, None]), dim=1)
 
@@ -734,7 +727,7 @@ class PositionEmbeddingSine(nn.Module):
 
     @torch.no_grad()
     def encode_points(self, x: torch.Tensor, y: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
-        """Encode 2D points with sinusoidal embeddings and append labels."""
+        """使用正弦嵌入编码二维点并附加标签。"""
         (bx, nx), (by, ny), (bl, nl) = x.shape, y.shape, labels.shape
         assert bx == by and nx == ny and bx == bl and nx == nl
         pos_x, pos_y = self._encode_xy(x.flatten(), y.flatten())
@@ -743,7 +736,7 @@ class PositionEmbeddingSine(nn.Module):
 
     @torch.no_grad()
     def forward(self, x: torch.Tensor) -> Tensor:
-        """Generate sinusoidal position embeddings for 2D inputs like images."""
+        """为图像等二维输入生成正弦位置嵌入。"""
         cache_key = (x.shape[-2], x.shape[-1])
         if cache_key in self.cache:
             return self.cache[cache_key][None].repeat(x.shape[0], 1, 1, 1)
@@ -776,18 +769,17 @@ class PositionEmbeddingSine(nn.Module):
 
 
 class PositionEmbeddingRandom(nn.Module):
-    """Positional encoding using random spatial frequencies.
+    """使用随机空间频率的位置编码。
 
-    This class generates positional embeddings for input coordinates using random spatial frequencies. It is
-    particularly useful for transformer-based models that require position information.
+    此类使用随机空间频率为输入坐标生成位置嵌入。它特别适用于需要位置信息的基于transformer的模型。
 
     Attributes:
-        positional_encoding_gaussian_matrix (torch.Tensor): A buffer containing random values for encoding.
+        positional_encoding_gaussian_matrix (torch.Tensor): 包含用于编码的随机值的缓冲区。
 
     Methods:
-        _pe_encoding: Positionally encodes points that are normalized to [0,1].
-        forward: Generates positional encoding for a grid of the specified size.
-        forward_with_coords: Positionally encodes points that are not normalized to [0,1].
+        _pe_encoding: 对归一化到[0,1]的点进行位置编码。
+        forward: 为指定大小的网格生成位置编码。
+        forward_with_coords: 对未归一化到[0,1]的点进行位置编码。
 
     Examples:
         >>> pe = PositionEmbeddingRandom(num_pos_feats=64)
@@ -798,7 +790,7 @@ class PositionEmbeddingRandom(nn.Module):
     """
 
     def __init__(self, num_pos_feats: int = 64, scale: float | None = None) -> None:
-        """Initialize random spatial frequency position embedding for transformers."""
+        """为transformer初始化随机空间频率位置嵌入。"""
         super().__init__()
         if scale is None or scale <= 0.0:
             scale = 1.0
@@ -809,7 +801,7 @@ class PositionEmbeddingRandom(nn.Module):
         torch.backends.cudnn.deterministic = False
 
     def _pe_encoding(self, coords: torch.Tensor) -> torch.Tensor:
-        """Encode normalized [0,1] coordinates using random spatial frequencies."""
+        """使用随机空间频率编码归一化后的[0,1]坐标。"""
         # Assuming coords are in [0, 1]^2 square and have d_1 x ... x d_n x 2 shape
         coords = 2 * coords - 1
         coords = coords @ self.positional_encoding_gaussian_matrix
@@ -818,7 +810,7 @@ class PositionEmbeddingRandom(nn.Module):
         return torch.cat([torch.sin(coords), torch.cos(coords)], dim=-1)
 
     def forward(self, size: tuple[int, int]) -> torch.Tensor:
-        """Generate positional encoding for a grid using random spatial frequencies."""
+        """使用随机空间频率为网格生成位置编码。"""
         h, w = size
         grid = torch.ones(
             (h, w),
@@ -834,7 +826,7 @@ class PositionEmbeddingRandom(nn.Module):
         return pe.permute(2, 0, 1)  # C x H x W
 
     def forward_with_coords(self, coords_input: torch.Tensor, image_size: tuple[int, int]) -> torch.Tensor:
-        """Positionally encode input coordinates, normalizing them to [0,1] based on the given image size."""
+        """对输入坐标进行位置编码，根据给定图像大小将其归一化到[0,1]。"""
         coords = coords_input.clone()
         coords[:, :, 0] = coords[:, :, 0] / image_size[1]
         coords[:, :, 1] = coords[:, :, 1] / image_size[0]
@@ -842,21 +834,20 @@ class PositionEmbeddingRandom(nn.Module):
 
 
 class Block(nn.Module):
-    """Transformer block with support for window attention and residual propagation.
+    """支持窗口注意力和残差传播的Transformer块。
 
-    This class implements a transformer block that can use either global or windowed self-attention, followed by a
-    feed-forward network. It supports relative positional embeddings and is designed for use in vision transformer
-    architectures.
+    此类实现了一个transformer块，可以使用全局或窗口自注意力，后跟前馈网络。
+    它支持相对位置嵌入，专为视觉transformer架构设计。
 
     Attributes:
-        norm1 (nn.Module): First normalization layer.
-        attn (REAttention): Self-attention layer with optional relative positional encoding.
-        norm2 (nn.Module): Second normalization layer.
-        mlp (MLPBlock): Multi-layer perceptron block.
-        window_size (int): Size of attention window. If 0, global attention is used.
+        norm1 (nn.Module): 第一归一化层。
+        attn (REAttention): 支持可选相对位置编码的自注意力层。
+        norm2 (nn.Module): 第二归一化层。
+        mlp (MLPBlock): 多层感知机块。
+        window_size (int): 注意力窗口大小。如果为0，则使用全局注意力。
 
     Methods:
-        forward: Processes input through the transformer block.
+        forward: 通过transformer块处理输入。
 
     Examples:
         >>> import torch
@@ -880,23 +871,22 @@ class Block(nn.Module):
         window_size: int = 0,
         input_size: tuple[int, int] | None = None,
     ) -> None:
-        """Initialize a transformer block with optional window attention and relative positional embeddings.
+        """初始化支持可选窗口注意力和相对位置嵌入的transformer块。
 
-        This constructor sets up a transformer block that can use either global or windowed self-attention, followed by
-        a feed-forward network. It supports relative positional embeddings and is designed for use in vision transformer
-        architectures.
+        此构造函数设置一个transformer块，可以使用全局或窗口自注意力，后跟前馈网络。
+        它支持相对位置嵌入，专为视觉transformer架构设计。
 
         Args:
-            dim (int): Number of input channels.
-            num_heads (int): Number of attention heads in the self-attention layer.
-            mlp_ratio (float): Ratio of mlp hidden dimension to embedding dimension.
-            qkv_bias (bool): If True, adds a learnable bias to query, key, value projections.
-            norm_layer (type[nn.Module]): Type of normalization layer to use.
-            act_layer (type[nn.Module]): Type of activation function to use in the MLP block.
-            use_rel_pos (bool): If True, uses relative positional embeddings in attention.
-            rel_pos_zero_init (bool): If True, initializes relative positional parameters to zero.
-            window_size (int): Size of attention window. If 0, uses global attention.
-            input_size (tuple[int, int] | None): Input resolution for calculating relative positional parameter size.
+            dim (int): 输入通道数。
+            num_heads (int): 自注意力层中的注意力头数。
+            mlp_ratio (float): MLP隐藏维度与嵌入维度的比率。
+            qkv_bias (bool): 如果为True，为query、key、value投影添加可学习的偏置。
+            norm_layer (type[nn.Module]): 要使用的归一化层类型。
+            act_layer (type[nn.Module]): MLP块中使用的激活函数类型。
+            use_rel_pos (bool): 如果为True，在注意力中使用相对位置嵌入。
+            rel_pos_zero_init (bool): 如果为True，将相对位置参数初始化为零。
+            window_size (int): 注意力窗口大小。如果为0，使用全局注意力。
+            input_size (tuple[int, int] | None): 输入分辨率，用于计算相对位置参数的大小。
         """
         super().__init__()
         self.norm1 = norm_layer(dim)
@@ -915,7 +905,7 @@ class Block(nn.Module):
         self.window_size = window_size
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Process input through transformer block with optional windowed self-attention and residual connection."""
+        """通过transformer块处理输入，支持可选窗口自注意力和残差连接。"""
         shortcut = x
         x = self.norm1(x)
         # Window partition
@@ -933,22 +923,21 @@ class Block(nn.Module):
 
 
 class REAttention(nn.Module):
-    """Relative Position Attention module for efficient self-attention in transformer architectures.
+    """相对位置注意力模块，用于transformer架构中的高效自注意力。
 
-    This class implements a multi-head attention mechanism with relative positional embeddings, designed for use in
-    vision transformer models.
+    此类实现了具有相对位置嵌入的多头注意力机制，专为视觉transformer模型设计。
 
     Attributes:
-        num_heads (int): Number of attention heads.
-        scale (float): Scaling factor for attention computation.
-        qkv (nn.Linear): Linear projection for query, key, and value.
-        proj (nn.Linear): Output projection layer.
-        use_rel_pos (bool): Whether to use relative positional embeddings.
-        rel_pos_h (nn.Parameter): Relative positional embeddings for height dimension.
-        rel_pos_w (nn.Parameter): Relative positional embeddings for width dimension.
+        num_heads (int): 注意力头数。
+        scale (float): 注意力计算的缩放因子。
+        qkv (nn.Linear): 查询、键和值的线性投影。
+        proj (nn.Linear): 输出投影层。
+        use_rel_pos (bool): 是否使用相对位置嵌入。
+        rel_pos_h (nn.Parameter): 高度维度的相对位置嵌入。
+        rel_pos_w (nn.Parameter): 宽度维度的相对位置嵌入。
 
     Methods:
-        forward: Applies multi-head attention with optional relative positional encoding to input tensor.
+        forward: 对输入张量应用具有可选相对位置编码的多头注意力。
 
     Examples:
         >>> attention = REAttention(dim=256, num_heads=8, input_size=(32, 32))
@@ -967,19 +956,18 @@ class REAttention(nn.Module):
         rel_pos_zero_init: bool = True,
         input_size: tuple[int, int] | None = None,
     ) -> None:
-        """Initialize a Relative Position Attention module for transformer-based architectures.
+        """初始化用于基于transformer架构的相对位置注意力模块。
 
-        This module implements multi-head attention with optional relative positional encodings, designed specifically
-        for vision tasks in transformer models.
+        此模块实现了多头注意力，支持可选相对位置编码，专为transformer模型中的视觉任务设计。
 
         Args:
-            dim (int): Number of input channels.
-            num_heads (int): Number of attention heads.
-            qkv_bias (bool): If True, adds a learnable bias to query, key, value projections.
-            use_rel_pos (bool): If True, uses relative positional encodings.
-            rel_pos_zero_init (bool): If True, initializes relative positional parameters to zero.
-            input_size (tuple[int, int] | None): Input resolution for calculating relative positional parameter size.
-                Required if use_rel_pos is True.
+            dim (int): 输入通道数。
+            num_heads (int): 注意力头数。
+            qkv_bias (bool): 如果为True，为query、key、value投影添加可学习的偏置。
+            use_rel_pos (bool): 如果为True，使用相对位置编码。
+            rel_pos_zero_init (bool): 如果为True，将相对位置参数初始化为零。
+            input_size (tuple[int, int] | None): 用于计算相对位置参数大小的输入分辨率。
+                如果use_rel_pos为True，此参数必填。
         """
         super().__init__()
         self.num_heads = num_heads
@@ -997,7 +985,7 @@ class REAttention(nn.Module):
             self.rel_pos_w = nn.Parameter(torch.zeros(2 * input_size[1] - 1, head_dim))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply multi-head attention with optional relative positional encoding to input tensor."""
+        """对输入张量应用具有可选相对位置编码的多头注意力。"""
         B, H, W, _ = x.shape
         # qkv with shape (3, B, nHead, H * W, C)
         qkv = self.qkv(x).reshape(B, H * W, 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
@@ -1015,17 +1003,16 @@ class REAttention(nn.Module):
 
 
 class PatchEmbed(nn.Module):
-    """Image to Patch Embedding module for vision transformer architectures.
+    """用于视觉transformer架构的图像到图块嵌入模块。
 
-    This module converts an input image into a sequence of patch embeddings using a convolutional layer. It is commonly
-    used as the first layer in vision transformer architectures to transform image data into a suitable format for
-    subsequent transformer blocks.
+    此模块使用卷积层将输入图像转换为图块嵌入序列。它通常作为视觉transformer架构的第一层，
+    将图像数据转换为适合后续transformer块的格式。
 
     Attributes:
-        proj (nn.Conv2d): Convolutional layer for projecting image patches to embeddings.
+        proj (nn.Conv2d): 用于将图像图块投影到嵌入的卷积层。
 
     Methods:
-        forward: Applies patch embedding to the input tensor.
+        forward: 对输入张量应用图块嵌入。
 
     Examples:
         >>> patch_embed = PatchEmbed(kernel_size=(16, 16), stride=(16, 16), in_chans=3, embed_dim=768)
@@ -1044,23 +1031,22 @@ class PatchEmbed(nn.Module):
         embed_dim: int = 768,
         bias: bool = True,
     ) -> None:
-        """Initialize the PatchEmbed module for converting image patches to embeddings.
+        """初始化PatchEmbed模块，用于将图像图块转换为嵌入。
 
-        This module is typically used as the first layer in vision transformer architectures to transform image data
-        into a suitable format for subsequent transformer blocks.
+        此模块通常用作视觉transformer架构的第一层，将图像数据转换为适合后续transformer块的格式。
 
         Args:
-            kernel_size (tuple[int, int]): Size of the convolutional kernel for patch extraction.
-            stride (tuple[int, int]): Stride of the convolutional operation.
-            padding (tuple[int, int]): Padding applied to the input before convolution.
-            in_chans (int): Number of input image channels.
-            embed_dim (int): Dimensionality of the output patch embeddings.
-            bias (bool): Whether to include a bias term in the convolutional layer.
+            kernel_size (tuple[int, int]): 用于图块提取的卷积核大小。
+            stride (tuple[int, int]): 卷积操作的步幅。
+            padding (tuple[int, int]): 在卷积前应用于输入的填充。
+            in_chans (int): 输入图像通道数。
+            embed_dim (int): 输出图块嵌入的维度。
+            bias (bool): 卷积层是否包含偏置项。
         """
         super().__init__()
 
         self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute patch embedding by applying convolution and transposing resulting tensor."""
+        """通过应用卷积并转置结果张量来计算图块嵌入。"""
         return self.proj(x).permute(0, 2, 3, 1)  # B C H W -> B H W C

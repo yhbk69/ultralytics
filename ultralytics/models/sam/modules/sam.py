@@ -23,31 +23,31 @@ NO_OBJ_SCORE = -1024.0
 
 
 class SAMModel(nn.Module):
-    """Segment Anything Model (SAM) for object segmentation tasks.
+    """用于目标分割任务的Segment Anything Model (SAM)。
 
-    This class combines image encoders, prompt encoders, and mask decoders to predict object masks from images and input
-    prompts.
+    此类结合了图像编码器、提示编码器和掩码解码器，用于从图像和输入
+    提示中预测目标掩码。
 
     Attributes:
-        mask_threshold (float): Threshold value for mask prediction.
-        image_encoder (ImageEncoderViT): Backbone for encoding images into embeddings.
-        prompt_encoder (PromptEncoder): Encoder for various types of input prompts.
-        mask_decoder (MaskDecoder): Predicts object masks from image and prompt embeddings.
-        pixel_mean (torch.Tensor): Mean values for normalizing pixels in the input image.
-        pixel_std (torch.Tensor): Standard deviation values for normalizing pixels in the input image.
+        mask_threshold (float): 掩码预测的阈值。
+        image_encoder (ImageEncoderViT): 将图像编码为嵌入的主干网络。
+        prompt_encoder (PromptEncoder): 用于各种类型输入提示的编码器。
+        mask_decoder (MaskDecoder): 从图像和提示嵌入中预测目标掩码。
+        pixel_mean (torch.Tensor): 输入图像中像素归一化的均值。
+        pixel_std (torch.Tensor): 输入图像中像素归一化的标准差。
 
     Methods:
-        set_imgsz: Set image size to make model compatible with different image sizes.
+        set_imgsz: 设置图像大小以使模型兼容不同的图像尺寸。
 
     Examples:
         >>> image_encoder = ImageEncoderViT(...)
         >>> prompt_encoder = PromptEncoder(...)
         >>> mask_decoder = MaskDecoder(...)
         >>> sam_model = SAMModel(image_encoder, prompt_encoder, mask_decoder)
-        >>> # Further usage depends on SAMPredictor class
+        >>> # 后续使用取决于SAMPredictor类
 
     Notes:
-        All forward() operations are implemented in the SAMPredictor class.
+        所有forward()操作都在SAMPredictor类中实现。
     """
 
     mask_threshold: float = 0.0
@@ -60,17 +60,17 @@ class SAMModel(nn.Module):
         pixel_mean: list[float] = (123.675, 116.28, 103.53),
         pixel_std: list[float] = (58.395, 57.12, 57.375),
     ) -> None:
-        """Initialize the SAMModel class to predict object masks from an image and input prompts.
+        """初始化SAMModel类，从图像和输入提示中预测目标掩码。
 
         Args:
-            image_encoder (ImageEncoderViT): The backbone used to encode the image into image embeddings.
-            prompt_encoder (PromptEncoder): Encodes various types of input prompts.
-            mask_decoder (MaskDecoder): Predicts masks from the image embeddings and encoded prompts.
-            pixel_mean (list[float]): Mean values for normalizing pixels in the input image.
-            pixel_std (list[float]): Standard deviation values for normalizing pixels in the input image.
+            image_encoder (ImageEncoderViT): 用于将图像编码为图像嵌入的主干网络。
+            prompt_encoder (PromptEncoder): 编码各种类型的输入提示。
+            mask_decoder (MaskDecoder): 从图像嵌入和编码后的提示中预测掩码。
+            pixel_mean (list[float]): 输入图像中像素归一化的均值。
+            pixel_std (list[float]): 输入图像中像素归一化的标准差。
 
         Notes:
-            All forward() operations moved to SAMPredictor.
+            所有forward()操作已移至SAMPredictor。
         """
         super().__init__()
         self.image_encoder = image_encoder
@@ -89,67 +89,60 @@ class SAMModel(nn.Module):
 
 
 class SAM2Model(torch.nn.Module):
-    """SAM2Model class for Segment Anything Model 2 with memory-based video object segmentation capabilities.
+    """具有基于内存的视频目标分割能力的SAM2Model类。
 
-    This class extends the functionality of SAM to handle video sequences, incorporating memory mechanisms for temporal
-    consistency and efficient tracking of objects across frames.
+    此类扩展了SAM的功能以处理视频序列，结合了内存机制来确保时间
+    一致性以及跨帧的高效目标跟踪。
 
     Attributes:
-        mask_threshold (float): Threshold value for mask prediction.
-        image_encoder (ImageEncoderViT): Visual encoder for extracting image features.
-        memory_attention (nn.Module): Module for attending to memory features.
-        memory_encoder (nn.Module): Encoder for generating memory representations.
-        num_maskmem (int): Number of accessible memory frames.
-        image_size (int): Size of input images.
-        backbone_stride (int): Stride of the backbone network output.
-        sam_prompt_embed_dim (int): Dimension of SAM prompt embeddings.
-        sam_image_embedding_size (int): Size of SAM image embeddings.
-        sam_prompt_encoder (PromptEncoder): Encoder for processing input prompts.
-        sam_mask_decoder (SAM2MaskDecoder): Decoder for generating object masks.
-        obj_ptr_proj (nn.Module): Projection layer for object pointers.
-        obj_ptr_tpos_proj (nn.Module): Projection for temporal positional encoding in object pointers.
-        hidden_dim (int): Hidden dimension of the model.
-        mem_dim (int): Memory dimension for encoding features.
-        use_high_res_features_in_sam (bool): Whether to use high-resolution feature maps in the SAM mask decoder.
-        use_obj_ptrs_in_encoder (bool): Whether to cross-attend to object pointers from other frames in the encoder.
-        max_obj_ptrs_in_encoder (int): Maximum number of object pointers from other frames in encoder cross-attention.
-        add_tpos_enc_to_obj_ptrs (bool): Whether to add temporal positional encoding to object pointers.
-        proj_tpos_enc_in_obj_ptrs (bool): Whether to add an extra linear projection layer for temporal positional
-            encoding in object pointers.
-        use_signed_tpos_enc_to_obj_ptrs (bool): Whether to use signed distance in temporal positional encoding.
-        only_obj_ptrs_in_the_past_for_eval (bool): Whether to only attend to object pointers in the past during
-            evaluation.
-        pred_obj_scores (bool): Whether to predict if there is an object in the frame.
-        pred_obj_scores_mlp (bool): Whether to use an MLP to predict object scores.
-        fixed_no_obj_ptr (bool): Whether to have a fixed no-object pointer when there is no object present.
-        soft_no_obj_ptr (bool): Whether to mix in no-object pointer softly for easier recovery and error mitigation.
-        use_mlp_for_obj_ptr_proj (bool): Whether to use MLP for object pointer projection.
-        no_obj_embed_spatial (torch.Tensor | None): No-object embedding for spatial frames.
-        max_cond_frames_in_attn (int): Maximum number of conditioning frames to participate in memory attention.
-        directly_add_no_mem_embed (bool): Whether to directly add no-memory embedding to image feature on the first
-            frame.
-        multimask_output_in_sam (bool): Whether to output multiple masks for the first click on initial conditioning
-            frames.
-        multimask_min_pt_num (int): Minimum number of clicks to use multimask output in SAM.
-        multimask_max_pt_num (int): Maximum number of clicks to use multimask output in SAM.
-        multimask_output_for_tracking (bool): Whether to use multimask output for tracking.
-        use_multimask_token_for_obj_ptr (bool): Whether to use multimask tokens for object pointers.
-        iou_prediction_use_sigmoid (bool): Whether to use sigmoid to restrict IoU prediction to [0-1].
-        memory_temporal_stride_for_eval (int): Memory bank's temporal stride during evaluation.
-        non_overlap_masks_for_mem_enc (bool): Whether to apply non-overlapping constraints on object masks in memory
-            encoder during evaluation.
-        sigmoid_scale_for_mem_enc (float): Scale factor for mask sigmoid probability.
-        sigmoid_bias_for_mem_enc (float): Bias factor for mask sigmoid probability.
-        binarize_mask_from_pts_for_mem_enc (bool): Whether to binarize sigmoid mask logits on interacted frames with
-            clicks during evaluation.
-        use_mask_input_as_output_without_sam (bool): Whether to directly output the input mask without using SAM prompt
-            encoder and mask decoder on frames with mask input.
+        mask_threshold (float): 掩码预测的阈值。
+        image_encoder (ImageEncoderViT): 用于提取图像特征的视觉编码器。
+        memory_attention (nn.Module): 用于关注内存特征的模块。
+        memory_encoder (nn.Module): 用于生成内存表示的编码器。
+        num_maskmem (int): 可访问的内存帧数量。
+        image_size (int): 输入图像的大小。
+        backbone_stride (int): 主干网络输出的步幅。
+        sam_prompt_embed_dim (int): SAM提示嵌入的维度。
+        sam_image_embedding_size (int): SAM图像嵌入的大小。
+        sam_prompt_encoder (PromptEncoder): 用于处理输入提示的编码器。
+        sam_mask_decoder (SAM2MaskDecoder): 用于生成目标掩码的解码器。
+        obj_ptr_proj (nn.Module): 目标指针的投影层。
+        obj_ptr_tpos_proj (nn.Module): 目标指针中时间位置编码的投影。
+        hidden_dim (int): 模型的隐藏维度。
+        mem_dim (int): 用于编码特征的内存维度。
+        use_high_res_features_in_sam (bool): 是否在SAM掩码解码器中使用高分辨率特征图。
+        use_obj_ptrs_in_encoder (bool): 是否在编码器中交叉关注来自其他帧的目标指针。
+        max_obj_ptrs_in_encoder (int): 编码器中来自其他帧的最大目标指针数量。
+        add_tpos_enc_to_obj_ptrs (bool): 是否向目标指针添加时间位置编码。
+        proj_tpos_enc_in_obj_ptrs (bool): 是否为目标指针中的时间位置编码添加额外的线性投影层。
+        use_signed_tpos_enc_to_obj_ptrs (bool): 是否在时间位置编码中使用有符号距离。
+        only_obj_ptrs_in_the_past_for_eval (bool): 是否在评估期间仅关注过去的目标指针。
+        pred_obj_scores (bool): 是否预测帧中是否存在目标。
+        pred_obj_scores_mlp (bool): 是否使用MLP预测目标分数。
+        fixed_no_obj_ptr (bool): 当没有目标存在时是否使用固定的无目标指针。
+        soft_no_obj_ptr (bool): 是否柔和地混合无目标指针以便于恢复和错误缓解。
+        use_mlp_for_obj_ptr_proj (bool): 是否使用MLP进行目标指针投影。
+        no_obj_embed_spatial (torch.Tensor | None): 空间帧的无目标嵌入。
+        max_cond_frames_in_attn (int): 参与内存注意力的最大调节帧数。
+        directly_add_no_mem_embed (bool): 是否在第一帧上直接将无内存嵌入添加到图像特征。
+        multimask_output_in_sam (bool): 是否在初始调节帧的第一次点击时输出多个掩码。
+        multimask_min_pt_num (int): 在SAM中使用多掩码输出的最小点击次数。
+        multimask_max_pt_num (int): 在SAM中使用多掩码输出的最大点击次数。
+        multimask_output_for_tracking (bool): 是否使用多掩码输出进行跟踪。
+        use_multimask_token_for_obj_ptr (bool): 是否使用多掩码令牌作为目标指针。
+        iou_prediction_use_sigmoid (bool): 是否使用sigmoid将IoU预测限制在[0-1]范围内。
+        memory_temporal_stride_for_eval (int): 评估期间内存 bank 的时间步幅。
+        non_overlap_masks_for_mem_enc (bool): 是否在评估期间对内存编码器中的目标掩码应用非重叠约束。
+        sigmoid_scale_for_mem_enc (float): 掩码sigmoid概率的缩放因子。
+        sigmoid_bias_for_mem_enc (float): 掩码sigmoid概率的偏置因子。
+        binarize_mask_from_pts_for_mem_enc (bool): 是否在评估期间对带有点击的交互帧上的sigmoid掩码logits进行二值化。
+        use_mask_input_as_output_without_sam (bool): 是否在具有掩码输入的帧上直接使用输入掩码而不使用SAM提示编码器和掩码解码器。
 
     Methods:
-        forward_image: Process image batch through encoder to extract multi-level features.
-        track_step: Perform a single tracking step, updating object masks and memory features.
-        set_binarize: Set binarize for VideoPredictor.
-        set_imgsz: Set image size to make model compatible with different image sizes.
+        forward_image: 通过编码器处理图像批次以提取多层次特征。
+        track_step: 执行单个跟踪步骤，更新目标掩码和内存特征。
+        set_binarize: 为VideoPredictor设置二值化。
+        set_imgsz: 设置图像大小以使模型兼容不同的图像尺寸。
 
     Examples:
         >>> model = SAM2Model(image_encoder, memory_attention, memory_encoder)
@@ -198,46 +191,45 @@ class SAM2Model(torch.nn.Module):
         sam_mask_decoder_extra_args=None,
         compile_image_encoder: bool = False,
     ):
-        """Initialize the SAM2Model for video object segmentation with memory-based tracking.
+        """为具有基于内存跟踪的视频目标分割初始化SAM2Model。
 
         Args:
-            image_encoder (nn.Module): Visual encoder for extracting image features.
-            memory_attention (nn.Module): Module for attending to memory features.
-            memory_encoder (nn.Module): Encoder for generating memory representations.
-            num_maskmem (int): Number of accessible memory frames.
-            image_size (int): Size of input images.
-            backbone_stride (int): Stride of the image backbone output.
-            sigmoid_scale_for_mem_enc (float): Scale factor for mask sigmoid probability.
-            sigmoid_bias_for_mem_enc (float): Bias factor for mask sigmoid probability.
-            binarize_mask_from_pts_for_mem_enc (bool): Whether to binarize sigmoid mask logits on interacted frames with
-                clicks during evaluation.
-            use_mask_input_as_output_without_sam (bool): Whether to directly output the input mask without using SAM
-                prompt encoder and mask decoder on frames with mask input.
-            max_cond_frames_in_attn (int): Maximum number of conditioning frames to participate in memory attention.
-            directly_add_no_mem_embed (bool): Whether to directly add no-memory embedding to image feature on the first
-                frame.
-            use_high_res_features_in_sam (bool): Whether to use high-resolution feature maps in the SAM mask decoder.
-            multimask_output_in_sam (bool): Whether to output multiple masks for the first click on initial conditioning
-                frames.
-            multimask_min_pt_num (int): Minimum number of clicks to use multimask output in SAM.
-            multimask_max_pt_num (int): Maximum number of clicks to use multimask output in SAM.
-            multimask_output_for_tracking (bool): Whether to use multimask output for tracking.
-            use_multimask_token_for_obj_ptr (bool): Whether to use multimask tokens for object pointers.
-            iou_prediction_use_sigmoid (bool): Whether to use sigmoid to restrict IoU prediction to [0-1].
-            memory_temporal_stride_for_eval (int): Memory bank's temporal stride during evaluation.
-            non_overlap_masks_for_mem_enc (bool): Whether to apply non-overlapping constraints on object masks in memory
-                encoder during evaluation.
-            use_obj_ptrs_in_encoder (bool): Whether to cross-attend to object pointers from other frames in the encoder.
-            max_obj_ptrs_in_encoder (int): Maximum number of object pointers from other frames in encoder
-                cross-attention.
-            add_tpos_enc_to_obj_ptrs (bool): Whether to add temporal positional encoding to object pointers in the
-                encoder.
-            proj_tpos_enc_in_obj_ptrs (bool): Whether to add an extra linear projection layer for temporal positional
-                encoding in object pointers.
-            use_signed_tpos_enc_to_obj_ptrs (bool): Whether to use signed distance in the temporal positional encoding
-                in the object pointers.
-            only_obj_ptrs_in_the_past_for_eval (bool): Whether to only attend to object pointers in the past during
-                evaluation.
+            image_encoder (nn.Module): 用于提取图像特征的视觉编码器。
+            memory_attention (nn.Module): 用于关注内存特征的模块。
+            memory_encoder (nn.Module): 用于生成内存表示的编码器。
+            num_maskmem (int): 可访问的内存帧数量。
+            image_size (int): 输入图像的大小。
+            backbone_stride (int): 图像主干网络输出的步幅。
+            sigmoid_scale_for_mem_enc (float): 掩码sigmoid概率的缩放因子。
+            sigmoid_bias_for_mem_enc (float): 掩码sigmoid概率的偏置因子。
+            binarize_mask_from_pts_for_mem_enc (bool): 是否在评估期间对带有点击的交互帧上的sigmoid掩码logits进行二值化。
+            use_mask_input_as_output_without_sam (bool): 是否在具有掩码输入的帧上直接输出输入掩码，而不使用SAM提示编码器和掩码解码器。
+            max_cond_frames_in_attn (int): 参与内存注意力的最大调节帧数。
+            directly_add_no_mem_embed (bool): 是否在第一帧上直接将无内存嵌入添加到图像特征。
+            use_high_res_features_in_sam (bool): 是否在SAM掩码解码器中使用高分辨率特征图。
+            multimask_output_in_sam (bool): 是否在初始调节帧的第一次点击时输出多个掩码。
+            multimask_min_pt_num (int): 在SAM中使用多掩码输出的最小点击次数。
+            multimask_max_pt_num (int): 在SAM中使用多掩码输出的最大点击次数。
+            multimask_output_for_tracking (bool): 是否使用多掩码输出进行跟踪。
+            use_multimask_token_for_obj_ptr (bool): 是否使用多掩码令牌作为目标指针。
+            iou_prediction_use_sigmoid (bool): 是否使用sigmoid将IoU预测限制在[0-1]范围内。
+            memory_temporal_stride_for_eval (int): 评估期间内存 bank 的时间步幅。
+            non_overlap_masks_for_mem_enc (bool): 是否在评估期间对内存编码器中的目标掩码应用非重叠约束。
+            use_obj_ptrs_in_encoder (bool): 是否在编码器中交叉关注来自其他帧的目标指针。
+            max_obj_ptrs_in_encoder (int): 编码器交叉注意力中来自其他帧的最大目标指针数。
+            add_tpos_enc_to_obj_ptrs (bool): 是否在编码器中向目标指针添加时间位置编码。
+            proj_tpos_enc_in_obj_ptrs (bool): 是否为目标指针中的时间位置编码添加额外的线性投影层。
+            use_signed_tpos_enc_to_obj_ptrs (bool): 是否在目标指针的时间位置编码中使用有符号距离。
+            only_obj_ptrs_in_the_past_for_eval (bool): 是否在评估期间仅关注过去的目标指针。
+            pred_obj_scores (bool): 是否预测帧中是否存在目标。
+            pred_obj_scores_mlp (bool): 是否使用MLP预测目标分数。
+            fixed_no_obj_ptr (bool): 当没有目标存在时是否使用固定的无目标指针。
+            soft_no_obj_ptr (bool): 是否柔和地混合无目标指针以便于恢复和错误缓解。
+            use_mlp_for_obj_ptr_proj (bool): 是否使用MLP进行目标指针投影。
+            no_obj_embed_spatial (bool): 是否使用空间无目标嵌入。
+            sam_mask_decoder_extra_args: SAM掩码解码器的额外参数。
+            compile_image_encoder (bool): 是否编译图像编码器。
+        """
             pred_obj_scores (bool): Whether to predict if there is an object in the frame.
             pred_obj_scores_mlp (bool): Whether to use an MLP to predict object scores.
             fixed_no_obj_ptr (bool): Whether to have a fixed no-object pointer when there is no object present.
@@ -249,55 +241,52 @@ class SAM2Model(torch.nn.Module):
         """
         super().__init__()
 
-        # Part 1: the image backbone
+        # Part 1: 图像主干网络
         self.image_encoder = image_encoder
-        # Use level 0, 1, 2 for high-res setting, or just level 2 for the default setting
+        # 在高分辨率设置下使用级别0、1、2，或仅使用级别2作为默认设置
         self.use_high_res_features_in_sam = use_high_res_features_in_sam
         self.num_feature_levels = 3 if use_high_res_features_in_sam else 1
         self.use_obj_ptrs_in_encoder = use_obj_ptrs_in_encoder
         self.max_obj_ptrs_in_encoder = max_obj_ptrs_in_encoder
         if use_obj_ptrs_in_encoder:
-            # A conv layer to downsample the mask prompt to stride 4 (the same stride as
-            # low-res SAM mask logits) and to change its scales from 0~1 to SAM logit scale,
-            # so that it can be fed into the SAM mask decoder to generate a pointer.
+            # 一个卷积层，将掩码提示下采样到步幅4（与低分辨率SAM掩码logits的步幅相同），
+            # 并将其尺度从0~1转换为SAM logit尺度，以便输入到SAM掩码解码器中生成指针。
             self.mask_downsample = torch.nn.Conv2d(1, 1, kernel_size=4, stride=4)
         self.add_tpos_enc_to_obj_ptrs = add_tpos_enc_to_obj_ptrs
         if proj_tpos_enc_in_obj_ptrs:
-            assert add_tpos_enc_to_obj_ptrs  # these options need to be used together
+            assert add_tpos_enc_to_obj_ptrs  # 这些选项需要一起使用
         self.proj_tpos_enc_in_obj_ptrs = proj_tpos_enc_in_obj_ptrs
         self.use_signed_tpos_enc_to_obj_ptrs = use_signed_tpos_enc_to_obj_ptrs
         self.only_obj_ptrs_in_the_past_for_eval = only_obj_ptrs_in_the_past_for_eval
 
-        # Part 2: memory attention to condition current frame's visual features
-        # with memories (and obj ptrs) from past frames
+        # Part 2: 内存注意力，用于将当前帧的视觉特征与过去帧的内存（和目标指针）进行条件化
         self.memory_attention = memory_attention
         self.hidden_dim = memory_attention.d_model
 
-        # Part 3: memory encoder for the previous frame's outputs
+        # Part 3: 前一帧输出的内存编码器
         self.memory_encoder = memory_encoder
         self.mem_dim = self.hidden_dim
         if hasattr(self.memory_encoder, "out_proj") and hasattr(self.memory_encoder.out_proj, "weight"):
-            # if there is compression of memories along channel dim
+            # 如果内存在通道维度上有压缩
             self.mem_dim = self.memory_encoder.out_proj.weight.shape[0]
-        self.num_maskmem = num_maskmem  # Number of memories accessible
-        # Temporal encoding of the memories
+        self.num_maskmem = num_maskmem  # 可访问的内存数量
+        # 内存的时间编码
         self.maskmem_tpos_enc = torch.nn.Parameter(torch.zeros(num_maskmem, 1, 1, self.mem_dim))
         trunc_normal_(self.maskmem_tpos_enc, std=0.02)
-        # a single token to indicate no memory embedding from previous frames
+        # 一个单独的token，用于指示没有来自前帧的内存嵌入
         self.no_mem_embed = torch.nn.Parameter(torch.zeros(1, 1, self.hidden_dim))
         self.no_mem_pos_enc = torch.nn.Parameter(torch.zeros(1, 1, self.hidden_dim))
         trunc_normal_(self.no_mem_embed, std=0.02)
         trunc_normal_(self.no_mem_pos_enc, std=0.02)
         self.directly_add_no_mem_embed = directly_add_no_mem_embed
-        # Apply sigmoid to the output raw mask logits (to turn them from
-        # range (-inf, +inf) to range (0, 1)) before feeding them into the memory encoder
+        # 对输出的原始掩码logits应用sigmoid（将其从(-inf, +inf)范围转换到(0, 1)范围），
+        # 然后再馈入内存编码器
         self.sigmoid_scale_for_mem_enc = sigmoid_scale_for_mem_enc
         self.sigmoid_bias_for_mem_enc = sigmoid_bias_for_mem_enc
         self.binarize_mask_from_pts_for_mem_enc = binarize_mask_from_pts_for_mem_enc
         self.non_overlap_masks_for_mem_enc = non_overlap_masks_for_mem_enc
         self.memory_temporal_stride_for_eval = memory_temporal_stride_for_eval
-        # On frames with mask input, whether to directly output the input mask without
-        # using a SAM prompt encoder + mask decoder
+        # 在具有掩码输入的帧上，是否直接输出输入掩码而不使用SAM提示编码器和掩码解码器
         self.use_mask_input_as_output_without_sam = use_mask_input_as_output_without_sam
         self.multimask_output_in_sam = multimask_output_in_sam
         self.multimask_min_pt_num = multimask_min_pt_num
@@ -306,8 +295,8 @@ class SAM2Model(torch.nn.Module):
         self.use_multimask_token_for_obj_ptr = use_multimask_token_for_obj_ptr
         self.iou_prediction_use_sigmoid = iou_prediction_use_sigmoid
 
-        # Part 4: SAM-style prompt encoder (for both mask and point inputs)
-        # and SAM-style mask decoder for the final mask output
+        # Part 4: SAM风格的提示编码器（用于掩码和点输入）
+        # 和SAM风格的掩码解码器用于最终掩码输出
         self.image_size = image_size
         self.backbone_stride = backbone_stride
         self.sam_mask_decoder_extra_args = sam_mask_decoder_extra_args
@@ -331,9 +320,9 @@ class SAM2Model(torch.nn.Module):
         self.max_cond_frames_in_attn = max_cond_frames_in_attn
         self.add_all_frames_to_correct_as_cond = True
 
-        # Model compilation
+        # 模型编译
         if compile_image_encoder:
-            # Compile the forward function (not the full module) to allow loading checkpoints.
+            # 编译前向函数（而不是完整模块）以允许加载检查点。
             LOGGER.info("Image encoder compilation is enabled. First forward pass will be slow.")
             self.image_encoder.forward = torch.compile(
                 self.image_encoder.forward,

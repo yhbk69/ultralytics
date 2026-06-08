@@ -15,28 +15,29 @@ from .base import BaseBackend
 
 
 class MNNBackend(BaseBackend):
-    """MNN (Mobile Neural Network) inference backend.
+    """MNN（Mobile Neural Network）推理后端。
 
-    Loads and runs inference with MNN models (.mnn files) using the Alibaba MNN framework. Optimized for mobile and edge
-    deployment with configurable thread count and precision.
+    使用阿里巴巴 MNN 框架加载并运行 MNN 模型（.mnn 文件）。
+    针对移动端和边缘设备部署优化，支持可配置的线程数和推理精度。
     """
 
     def load_model(self, weight: str | Path) -> None:
-        """Load an Alibaba MNN model from a .mnn file.
+        """从 .mnn 文件加载阿里巴巴 MNN 模型。
 
         Args:
-            weight (str | Path): Path to the .mnn model file.
+            weight (str | Path): .mnn 模型文件路径。
         """
         LOGGER.info(f"Loading {weight} for MNN inference...")
         check_requirements("MNN")
         import MNN
 
+        # 使用低精度 CPU 模式，线程数取 CPU 核数的一半（平衡性能与功耗）
         config = {"precision": "low", "backend": "CPU", "numThread": (os.cpu_count() + 1) // 2}
         rt = MNN.nn.create_runtime_manager((config,))
         self.net = MNN.nn.load_module_from_file(weight, [], [], runtime_manager=rt, rearrange=True)
         self.expr = MNN.expr
 
-        # Load metadata from bizCode
+        # 从模型的 bizCode 字段中读取元数据（JSON 格式）
         info = self.net.get_info()
         if "bizCode" in info:
             try:
@@ -45,15 +46,15 @@ class MNNBackend(BaseBackend):
                 pass
 
     def forward(self, im: torch.Tensor) -> list:
-        """Run inference using the MNN runtime.
+        """使用 MNN 运行时执行推理。
 
         Args:
-            im (torch.Tensor): Input image tensor in BCHW format, normalized to [0, 1].
+            im (torch.Tensor): 输入图像张量，格式为 BCHW，值域为 [0, 1]。
 
         Returns:
-            (list): Model predictions as a list of numpy arrays.
+            (list): 模型预测结果列表，每个元素为 numpy 数组。
         """
         input_var = self.expr.const(im.data_ptr(), im.shape)
         output_var = self.net.onForward([input_var])
-        # NOTE: need this copy(), or it'd get incorrect results on ARM devices
+        # 注意：必须调用 copy()，否则在 ARM 设备上会得到错误结果
         return [x.read().copy() for x in output_var]

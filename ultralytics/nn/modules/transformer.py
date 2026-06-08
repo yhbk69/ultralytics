@@ -1,5 +1,5 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
-"""Transformer modules."""
+"""Transformer 模块。"""
 
 from __future__ import annotations
 
@@ -30,22 +30,21 @@ __all__ = (
 
 
 class TransformerEncoderLayer(nn.Module):
-    """A single layer of the transformer encoder.
+    """Transformer 编码器的单层。
 
-    This class implements a standard transformer encoder layer with multi-head attention and feedforward network,
-    supporting both pre-normalization and post-normalization configurations.
+    该类实现了一个标准的 Transformer 编码器层，包含多头注意力机制和前馈网络，支持前置归一化和后置归一化两种配置。
 
     Attributes:
-        ma (nn.MultiheadAttention): Multi-head attention module.
-        fc1 (nn.Linear): First linear layer in the feedforward network.
-        fc2 (nn.Linear): Second linear layer in the feedforward network.
-        norm1 (nn.LayerNorm): Layer normalization after attention.
-        norm2 (nn.LayerNorm): Layer normalization after feedforward network.
-        dropout (nn.Dropout): Dropout layer for the feedforward network.
-        dropout1 (nn.Dropout): Dropout layer after attention.
-        dropout2 (nn.Dropout): Dropout layer after feedforward network.
-        act (nn.Module): Activation function.
-        normalize_before (bool): Whether to apply normalization before attention and feedforward.
+        ma (nn.MultiheadAttention): 多头注意力模块。
+        fc1 (nn.Linear): 前馈网络中的第一个线性层。
+        fc2 (nn.Linear): 前馈网络中的第二个线性层。
+        norm1 (nn.LayerNorm): 注意力层后的层归一化。
+        norm2 (nn.LayerNorm): 前馈网络后的层归一化。
+        dropout (nn.Dropout): 前馈网络的 Dropout 层。
+        dropout1 (nn.Dropout): 注意力层后的 Dropout 层。
+        dropout2 (nn.Dropout): 前馈网络后的 Dropout 层。
+        act (nn.Module): 激活函数。
+        normalize_before (bool): 是否在注意力和前馈网络之前应用归一化。
     """
 
     def __init__(
@@ -57,15 +56,15 @@ class TransformerEncoderLayer(nn.Module):
         act: nn.Module = nn.GELU(),
         normalize_before: bool = False,
     ):
-        """Initialize the TransformerEncoderLayer with specified parameters.
+        """初始化 TransformerEncoderLayer，使用指定的参数。
 
         Args:
-            c1 (int): Input dimension.
-            cm (int): Hidden dimension in the feedforward network.
-            num_heads (int): Number of attention heads.
-            dropout (float): Dropout probability.
-            act (nn.Module): Activation function.
-            normalize_before (bool): Whether to apply normalization before attention and feedforward.
+            c1 (int): 输入维度。
+            cm (int): 前馈网络中的隐藏维度。
+            num_heads (int): 注意力头数。
+            dropout (float): Dropout 概率。
+            act (nn.Module): 激活函数。
+            normalize_before (bool): 是否在注意力和前馈网络之前应用归一化。
         """
         super().__init__()
         from ...utils.torch_utils import TORCH_1_9
@@ -75,7 +74,7 @@ class TransformerEncoderLayer(nn.Module):
                 "TransformerEncoderLayer() requires torch>=1.9 to use nn.MultiheadAttention(batch_first=True)."
             )
         self.ma = nn.MultiheadAttention(c1, num_heads, dropout=dropout, batch_first=True)
-        # Implementation of Feedforward model
+        # 前馈网络模型的实现
         self.fc1 = nn.Linear(c1, cm)
         self.fc2 = nn.Linear(cm, c1)
 
@@ -90,7 +89,7 @@ class TransformerEncoderLayer(nn.Module):
 
     @staticmethod
     def with_pos_embed(tensor: torch.Tensor, pos: torch.Tensor | None = None) -> torch.Tensor:
-        """Add position embeddings to the tensor if provided."""
+        """如果提供了位置嵌入，则将其添加到输入张量上。"""
         return tensor if pos is None else tensor + pos
 
     def forward_post(
@@ -100,16 +99,16 @@ class TransformerEncoderLayer(nn.Module):
         src_key_padding_mask: torch.Tensor | None = None,
         pos: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        """Perform forward pass with post-normalization.
+        """执行后置归一化的前向传播。
 
         Args:
-            src (torch.Tensor): Input tensor.
-            src_mask (torch.Tensor, optional): Mask for the src sequence.
-            src_key_padding_mask (torch.Tensor, optional): Mask for the src keys per batch.
-            pos (torch.Tensor, optional): Positional encoding.
+            src (torch.Tensor): 输入张量。
+            src_mask (torch.Tensor, optional): 源序列的掩码。
+            src_key_padding_mask (torch.Tensor, optional): 按批次对源键进行填充的掩码。
+            pos (torch.Tensor, optional): 位置编码。
 
         Returns:
-            (torch.Tensor): Output tensor after attention and feedforward.
+            (torch.Tensor): 经过注意力和前馈网络后的输出张量。
         """
         q = k = self.with_pos_embed(src, pos)
         src2 = self.ma(q, k, value=src, attn_mask=src_mask, key_padding_mask=src_key_padding_mask)[0]
@@ -126,16 +125,16 @@ class TransformerEncoderLayer(nn.Module):
         src_key_padding_mask: torch.Tensor | None = None,
         pos: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        """Perform forward pass with pre-normalization.
+        """执行前置归一化的前向传播。
 
         Args:
-            src (torch.Tensor): Input tensor.
-            src_mask (torch.Tensor, optional): Mask for the src sequence.
-            src_key_padding_mask (torch.Tensor, optional): Mask for the src keys per batch.
-            pos (torch.Tensor, optional): Positional encoding.
+            src (torch.Tensor): 输入张量。
+            src_mask (torch.Tensor, optional): 源序列的掩码。
+            src_key_padding_mask (torch.Tensor, optional): 按批次对源键进行填充的掩码。
+            pos (torch.Tensor, optional): 位置编码。
 
         Returns:
-            (torch.Tensor): Output tensor after attention and feedforward.
+            (torch.Tensor): 经过注意力和前馈网络后的输出张量。
         """
         src2 = self.norm1(src)
         q = k = self.with_pos_embed(src2, pos)
@@ -152,16 +151,16 @@ class TransformerEncoderLayer(nn.Module):
         src_key_padding_mask: torch.Tensor | None = None,
         pos: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        """Forward propagate the input through the encoder module.
+        """将输入通过编码器模块进行前向传播。
 
         Args:
-            src (torch.Tensor): Input tensor.
-            src_mask (torch.Tensor, optional): Mask for the src sequence.
-            src_key_padding_mask (torch.Tensor, optional): Mask for the src keys per batch.
-            pos (torch.Tensor, optional): Positional encoding.
+            src (torch.Tensor): 输入张量。
+            src_mask (torch.Tensor, optional): 源序列的掩码。
+            src_key_padding_mask (torch.Tensor, optional): 按批次对源键进行填充的掩码。
+            pos (torch.Tensor, optional): 位置编码。
 
         Returns:
-            (torch.Tensor): Output tensor after transformer encoder layer.
+            (torch.Tensor): Transformer 编码器层处理后的输出张量。
         """
         if self.normalize_before:
             return self.forward_pre(src, src_mask, src_key_padding_mask, pos)
@@ -169,10 +168,10 @@ class TransformerEncoderLayer(nn.Module):
 
 
 class AIFI(TransformerEncoderLayer):
-    """AIFI transformer layer for 2D data with positional embeddings.
+    """AIFI Transformer 层，用于带有位置嵌入的 2D 数据。
 
-    This class extends TransformerEncoderLayer to work with 2D feature maps by adding 2D sine-cosine positional
-    embeddings and handling the spatial dimensions appropriately.
+    该类继承自 TransformerEncoderLayer，通过添加 2D 正弦-余弦位置嵌入并适当处理空间维度，
+    使其能够处理 2D 特征图。
     """
 
     def __init__(
@@ -184,30 +183,30 @@ class AIFI(TransformerEncoderLayer):
         act: nn.Module = nn.GELU(),
         normalize_before: bool = False,
     ):
-        """Initialize the AIFI instance with specified parameters.
+        """使用指定的参数初始化 AIFI 实例。
 
         Args:
-            c1 (int): Input dimension.
-            cm (int): Hidden dimension in the feedforward network.
-            num_heads (int): Number of attention heads.
-            dropout (float): Dropout probability.
-            act (nn.Module): Activation function.
-            normalize_before (bool): Whether to apply normalization before attention and feedforward.
+            c1 (int): 输入维度。
+            cm (int): 前馈网络中的隐藏维度。
+            num_heads (int): 注意力头数。
+            dropout (float): Dropout 概率。
+            act (nn.Module): 激活函数。
+            normalize_before (bool): 是否在注意力和前馈网络之前应用归一化。
         """
         super().__init__(c1, cm, num_heads, dropout, act, normalize_before)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass for the AIFI transformer layer.
+        """AIFI Transformer 层的前向传播。
 
         Args:
-            x (torch.Tensor): Input tensor with shape [B, C, H, W].
+            x (torch.Tensor): 输入张量，形状为 [B, C, H, W]。
 
         Returns:
-            (torch.Tensor): Output tensor with shape [B, C, H, W].
+            (torch.Tensor): 输出张量，形状为 [B, C, H, W]。
         """
         c, h, w = x.shape[1:]
         pos_embed = self.build_2d_sincos_position_embedding(w, h, c)
-        # Flatten [B, C, H, W] to [B, HxW, C]
+        # 将 [B, C, H, W] 展平为 [B, HxW, C]
         x = super().forward(x.flatten(2).permute(0, 2, 1), pos=pos_embed.to(device=x.device, dtype=x.dtype))
         return x.permute(0, 2, 1).view([-1, c, h, w]).contiguous()
 
@@ -215,16 +214,16 @@ class AIFI(TransformerEncoderLayer):
     def build_2d_sincos_position_embedding(
         w: int, h: int, embed_dim: int = 256, temperature: float = 10000.0
     ) -> torch.Tensor:
-        """Build 2D sine-cosine position embedding.
+        """构建 2D 正弦-余弦位置嵌入。
 
         Args:
-            w (int): Width of the feature map.
-            h (int): Height of the feature map.
-            embed_dim (int): Embedding dimension.
-            temperature (float): Temperature for the sine/cosine functions.
+            w (int): 特征图的宽度。
+            h (int): 特征图的高度。
+            embed_dim (int): 嵌入维度。
+            temperature (float): 正弦/余弦函数的温度参数。
 
         Returns:
-            (torch.Tensor): Position embedding with shape [1, h*w, embed_dim].
+            (torch.Tensor): 位置嵌入，形状为 [1, h*w, embed_dim]。
         """
         assert embed_dim % 4 == 0, "Embed dimension must be divisible by 4 for 2D sin-cos position embedding"
         grid_w = torch.arange(w, dtype=torch.float32)
@@ -241,14 +240,14 @@ class AIFI(TransformerEncoderLayer):
 
 
 class TransformerLayer(nn.Module):
-    """Transformer layer https://arxiv.org/abs/2010.11929 (LayerNorm layers removed for better performance)."""
+    """Transformer 层 https://arxiv.org/abs/2010.11929（为了更好的性能移除了 LayerNorm 层）。"""
 
     def __init__(self, c: int, num_heads: int):
-        """Initialize a self-attention mechanism using linear transformations and multi-head attention.
+        """使用线性变换和多头注意力初始化自注意力机制。
 
         Args:
-            c (int): Input and output channel dimension.
-            num_heads (int): Number of attention heads.
+            c (int): 输入和输出通道维度。
+            num_heads (int): 注意力头数。
         """
         super().__init__()
         self.q = nn.Linear(c, c, bias=False)
@@ -259,56 +258,56 @@ class TransformerLayer(nn.Module):
         self.fc2 = nn.Linear(c, c, bias=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply a transformer block to the input x and return the output.
+        """对输入 x 应用 Transformer 块并返回输出。
 
         Args:
-            x (torch.Tensor): Input tensor.
+            x (torch.Tensor): 输入张量。
 
         Returns:
-            (torch.Tensor): Output tensor after transformer layer.
+            (torch.Tensor): Transformer 层处理后的输出张量。
         """
         x = self.ma(self.q(x), self.k(x), self.v(x))[0] + x
         return self.fc2(self.fc1(x)) + x
 
 
 class TransformerBlock(nn.Module):
-    """Vision Transformer block based on https://arxiv.org/abs/2010.11929.
+    """基于 https://arxiv.org/abs/2010.11929 的 Vision Transformer 块。
 
-    This class implements a complete transformer block with optional convolution layer for channel adjustment, learnable
-    position embedding, and multiple transformer layers.
+    该类实现了一个完整的 Transformer 块，包含可选的卷积层用于通道调整、可学习的位置嵌入
+    以及多个 Transformer 层。
 
     Attributes:
-        conv (Conv, optional): Convolution layer if input and output channels differ.
-        linear (nn.Linear): Learnable position embedding.
-        tr (nn.Sequential): Sequential container of transformer layers.
-        c2 (int): Output channel dimension.
+        conv (Conv, optional): 输入和输出通道不同时使用的卷积层。
+        linear (nn.Linear): 可学习的位置嵌入。
+        tr (nn.Sequential): Transformer 层的顺序容器。
+        c2 (int): 输出通道维度。
     """
 
     def __init__(self, c1: int, c2: int, num_heads: int, num_layers: int):
-        """Initialize a Transformer module with position embedding and specified number of heads and layers.
+        """初始化 Transformer 模块，包含位置嵌入和指定数量的注意力头与层数。
 
         Args:
-            c1 (int): Input channel dimension.
-            c2 (int): Output channel dimension.
-            num_heads (int): Number of attention heads.
-            num_layers (int): Number of transformer layers.
+            c1 (int): 输入通道维度。
+            c2 (int): 输出通道维度。
+            num_heads (int): 注意力头数。
+            num_layers (int): Transformer 层数。
         """
         super().__init__()
         self.conv = None
         if c1 != c2:
             self.conv = Conv(c1, c2)
-        self.linear = nn.Linear(c2, c2)  # learnable position embedding
+        self.linear = nn.Linear(c2, c2)  # 可学习的位置嵌入
         self.tr = nn.Sequential(*(TransformerLayer(c2, num_heads) for _ in range(num_layers)))
         self.c2 = c2
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward propagate the input through the transformer block.
+        """将输入通过 Transformer 块进行前向传播。
 
         Args:
-            x (torch.Tensor): Input tensor with shape [b, c1, h, w].
+            x (torch.Tensor): 输入张量，形状为 [b, c1, h, w]。
 
         Returns:
-            (torch.Tensor): Output tensor with shape [b, c2, h, w].
+            (torch.Tensor): 输出张量，形状为 [b, c2, h, w]。
         """
         if self.conv is not None:
             x = self.conv(x)
@@ -318,15 +317,15 @@ class TransformerBlock(nn.Module):
 
 
 class MLPBlock(nn.Module):
-    """A single block of a multi-layer perceptron."""
+    """多层感知机的单个模块。"""
 
     def __init__(self, embedding_dim: int, mlp_dim: int, act=nn.GELU):
-        """Initialize the MLPBlock with specified embedding dimension, MLP dimension, and activation function.
+        """使用指定的嵌入维度、MLP 维度和激活函数初始化 MLPBlock。
 
         Args:
-            embedding_dim (int): Input and output dimension.
-            mlp_dim (int): Hidden dimension.
-            act (type): Activation function class.
+            embedding_dim (int): 输入和输出维度。
+            mlp_dim (int): 隐藏维度。
+            act (type): 激活函数类。
         """
         super().__init__()
         self.lin1 = nn.Linear(embedding_dim, mlp_dim)
@@ -334,28 +333,27 @@ class MLPBlock(nn.Module):
         self.act = act()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass for the MLPBlock.
+        """MLPBlock 的前向传播。
 
         Args:
-            x (torch.Tensor): Input tensor.
+            x (torch.Tensor): 输入张量。
 
         Returns:
-            (torch.Tensor): Output tensor after MLP block.
+            (torch.Tensor): MLP 块处理后的输出张量。
         """
         return self.lin2(self.act(self.lin1(x)))
 
 
 class MLP(nn.Module):
-    """A simple multi-layer perceptron (also called FFN).
+    """一个简单的多层感知机（也称为 FFN）。
 
-    This class implements a configurable MLP with multiple linear layers, activation functions, and optional sigmoid
-    output activation.
+    该类实现了一个可配置的 MLP，包含多个线性层、激活函数以及可选的 sigmoid 输出激活。
 
     Attributes:
-        num_layers (int): Number of layers in the MLP.
-        layers (nn.ModuleList): List of linear layers.
-        sigmoid (bool): Whether to apply sigmoid to the output.
-        act (nn.Module): Activation function.
+        num_layers (int): MLP 中的层数。
+        layers (nn.ModuleList): 线性层列表。
+        sigmoid (bool): 是否对输出应用 sigmoid。
+        act (nn.Module): 激活函数。
     """
 
     def __init__(
@@ -369,17 +367,17 @@ class MLP(nn.Module):
         residual: bool = False,
         out_norm: nn.Module = None,
     ):
-        """Initialize the MLP with specified input, hidden, output dimensions and number of layers.
+        """使用指定的输入、隐藏、输出维度和层数初始化 MLP。
 
         Args:
-            input_dim (int): Input dimension.
-            hidden_dim (int): Hidden dimension.
-            output_dim (int): Output dimension.
-            num_layers (int): Number of layers.
-            act (type): Activation function class.
-            sigmoid (bool): Whether to apply sigmoid to the output.
-            residual (bool): Whether to use residual connections.
-            out_norm (nn.Module, optional): Normalization layer for the output.
+            input_dim (int): 输入维度。
+            hidden_dim (int): 隐藏维度。
+            output_dim (int): 输出维度。
+            num_layers (int): 层数。
+            act (type): 激活函数类。
+            sigmoid (bool): 是否对输出应用 sigmoid。
+            residual (bool): 是否使用残差连接。
+            out_norm (nn.Module, optional): 输出的归一化层。
         """
         super().__init__()
         self.num_layers = num_layers
@@ -390,18 +388,18 @@ class MLP(nn.Module):
         if residual and input_dim != output_dim:
             raise ValueError("residual is only supported if input_dim == output_dim")
         self.residual = residual
-        # whether to apply a normalization layer to the output
+        # 是否对输出应用归一化层
         assert isinstance(out_norm, nn.Module) or out_norm is None
         self.out_norm = out_norm or nn.Identity()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass for the entire MLP.
+        """整个 MLP 的前向传播。
 
         Args:
-            x (torch.Tensor): Input tensor.
+            x (torch.Tensor): 输入张量。
 
         Returns:
-            (torch.Tensor): Output tensor after MLP.
+            (torch.Tensor): MLP 处理后的输出张量。
         """
         orig_x = x
         for i, layer in enumerate(self.layers):
@@ -413,15 +411,14 @@ class MLP(nn.Module):
 
 
 class LayerNorm2d(nn.Module):
-    """2D Layer Normalization module inspired by Detectron2 and ConvNeXt implementations.
+    """受 Detectron2 和 ConvNeXt 实现启发的 2D 层归一化模块。
 
-    This class implements layer normalization for 2D feature maps, normalizing across the channel dimension while
-    preserving spatial dimensions.
+    该类实现了用于 2D 特征图的层归一化，在保留空间维度的同时跨通道维度进行归一化。
 
     Attributes:
-        weight (nn.Parameter): Learnable scale parameter.
-        bias (nn.Parameter): Learnable bias parameter.
-        eps (float): Small constant for numerical stability.
+        weight (nn.Parameter): 可学习的缩放参数。
+        bias (nn.Parameter): 可学习的偏置参数。
+        eps (float): 用于数值稳定性的小常数。
 
     References:
         https://github.com/facebookresearch/detectron2/blob/main/detectron2/layers/batch_norm.py
@@ -429,11 +426,11 @@ class LayerNorm2d(nn.Module):
     """
 
     def __init__(self, num_channels: int, eps: float = 1e-6):
-        """Initialize LayerNorm2d with the given parameters.
+        """使用给定的参数初始化 LayerNorm2d。
 
         Args:
-            num_channels (int): Number of channels in the input.
-            eps (float): Small constant for numerical stability.
+            num_channels (int): 输入中的通道数。
+            eps (float): 用于数值稳定性的小常数。
         """
         super().__init__()
         self.weight = nn.Parameter(torch.ones(num_channels))
@@ -441,13 +438,13 @@ class LayerNorm2d(nn.Module):
         self.eps = eps
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Perform forward pass for 2D layer normalization.
+        """执行 2D 层归一化的前向传播。
 
         Args:
-            x (torch.Tensor): Input tensor.
+            x (torch.Tensor): 输入张量。
 
         Returns:
-            (torch.Tensor): Normalized output tensor.
+            (torch.Tensor): 归一化后的输出张量。
         """
         u = x.mean(1, keepdim=True)
         s = (x - u).pow(2).mean(1, keepdim=True)
@@ -456,40 +453,39 @@ class LayerNorm2d(nn.Module):
 
 
 class MSDeformAttn(nn.Module):
-    """Multiscale Deformable Attention Module based on Deformable-DETR and PaddleDetection implementations.
+    """基于 Deformable-DETR 和 PaddleDetection 实现的多尺度可变形注意力模块。
 
-    This module implements multiscale deformable attention that can attend to features at multiple scales with learnable
-    sampling locations and attention weights.
+    该模块实现了多尺度可变形注意力，可以在多个尺度上关注特征，具有可学习的采样位置和注意力权重。
 
     Attributes:
-        im2col_step (int): Step size for im2col operations.
-        d_model (int): Model dimension.
-        n_levels (int): Number of feature levels.
-        n_heads (int): Number of attention heads.
-        n_points (int): Number of sampling points per attention head per feature level.
-        sampling_offsets (nn.Linear): Linear layer for generating sampling offsets.
-        attention_weights (nn.Linear): Linear layer for generating attention weights.
-        value_proj (nn.Linear): Linear layer for projecting values.
-        output_proj (nn.Linear): Linear layer for projecting output.
+        im2col_step (int): im2col 操作的步长。
+        d_model (int): 模型维度。
+        n_levels (int): 特征层级数。
+        n_heads (int): 注意力头数。
+        n_points (int): 每个注意力头在每个特征层级上的采样点数。
+        sampling_offsets (nn.Linear): 用于生成采样偏移量的线性层。
+        attention_weights (nn.Linear): 用于生成注意力权重的线性层。
+        value_proj (nn.Linear): 用于投影值的线性层。
+        output_proj (nn.Linear): 用于投影输出的线性层。
 
     References:
         https://github.com/fundamentalvision/Deformable-DETR/blob/main/models/ops/modules/ms_deform_attn.py
     """
 
     def __init__(self, d_model: int = 256, n_levels: int = 4, n_heads: int = 8, n_points: int = 4):
-        """Initialize MSDeformAttn with the given parameters.
+        """使用给定的参数初始化 MSDeformAttn。
 
         Args:
-            d_model (int): Model dimension.
-            n_levels (int): Number of feature levels.
-            n_heads (int): Number of attention heads.
-            n_points (int): Number of sampling points per attention head per feature level.
+            d_model (int): 模型维度。
+            n_levels (int): 特征层级数。
+            n_heads (int): 注意力头数。
+            n_points (int): 每个注意力头在每个特征层级上的采样点数。
         """
         super().__init__()
         if d_model % n_heads != 0:
             raise ValueError(f"d_model must be divisible by n_heads, but got {d_model} and {n_heads}")
         _d_per_head = d_model // n_heads
-        # Better to set _d_per_head to a power of 2 which is more efficient in a CUDA implementation
+        # 最好将 _d_per_head 设置为 2 的幂，这在 CUDA 实现中更高效
         assert _d_per_head * n_heads == d_model, "`d_model` must be divisible by `n_heads`"
 
         self.im2col_step = 64
@@ -507,7 +503,7 @@ class MSDeformAttn(nn.Module):
         self._reset_parameters()
 
     def _reset_parameters(self):
-        """Reset module parameters."""
+        """重置模块参数。"""
         constant_(self.sampling_offsets.weight.data, 0.0)
         thetas = torch.arange(self.n_heads, dtype=torch.float32) * (2.0 * math.pi / self.n_heads)
         grid_init = torch.stack([thetas.cos(), thetas.sin()], -1)
@@ -535,19 +531,19 @@ class MSDeformAttn(nn.Module):
         value_shapes: list,
         value_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        """Perform forward pass for multiscale deformable attention.
+        """执行多尺度可变形注意力的前向传播。
 
         Args:
-            query (torch.Tensor): Query tensor with shape [bs, query_length, C].
-            refer_bbox (torch.Tensor): Reference bounding boxes with shape [bs, query_length, n_levels, 2 or 4], range
-                in [0, 1], top-left (0,0), bottom-right (1, 1), including padding area.
-            value (torch.Tensor): Value tensor with shape [bs, value_length, C].
-            value_shapes (list): List with shape [n_levels, 2], [(H_0, W_0), (H_1, W_1), ..., (H_{L-1}, W_{L-1})].
-            value_mask (torch.Tensor, optional): Mask tensor with shape [bs, value_length], True for padding elements,
-                False for non-padding elements.
+            query (torch.Tensor): 查询张量，形状为 [bs, query_length, C]。
+            refer_bbox (torch.Tensor): 参考边界框，形状为 [bs, query_length, n_levels, 2 或 4]，
+                范围在 [0, 1] 内，左上角为 (0,0)，右下角为 (1, 1)，包含填充区域。
+            value (torch.Tensor): 值张量，形状为 [bs, value_length, C]。
+            value_shapes (list): 形状为 [n_levels, 2] 的列表，[(H_0, W_0), (H_1, W_1), ..., (H_{L-1}, W_{L-1})]。
+            value_mask (torch.Tensor, optional): 掩码张量，形状为 [bs, value_length]，True 表示填充元素，
+                False 表示非填充元素。
 
         Returns:
-            (torch.Tensor): Output tensor with shape [bs, Length_{query}, C].
+            (torch.Tensor): 输出张量，形状为 [bs, Length_{query}, C]。
 
         References:
             https://github.com/PaddlePaddle/PaddleDetection/blob/develop/ppdet/modeling/transformers/deformable_transformer.py
@@ -579,24 +575,23 @@ class MSDeformAttn(nn.Module):
 
 
 class DeformableTransformerDecoderLayer(nn.Module):
-    """Deformable Transformer Decoder Layer inspired by PaddleDetection and Deformable-DETR implementations.
+    """受 PaddleDetection 和 Deformable-DETR 实现启发的可变形 Transformer 解码器层。
 
-    This class implements a single decoder layer with self-attention, cross-attention using multiscale deformable
-    attention, and a feedforward network.
+    该类实现了一个单独的解码器层，包含自注意力、使用多尺度可变形注意力的交叉注意力以及前馈网络。
 
     Attributes:
-        self_attn (nn.MultiheadAttention): Self-attention module.
-        dropout1 (nn.Dropout): Dropout after self-attention.
-        norm1 (nn.LayerNorm): Layer normalization after self-attention.
-        cross_attn (MSDeformAttn): Cross-attention module.
-        dropout2 (nn.Dropout): Dropout after cross-attention.
-        norm2 (nn.LayerNorm): Layer normalization after cross-attention.
-        linear1 (nn.Linear): First linear layer in the feedforward network.
-        act (nn.Module): Activation function.
-        dropout3 (nn.Dropout): Dropout in the feedforward network.
-        linear2 (nn.Linear): Second linear layer in the feedforward network.
-        dropout4 (nn.Dropout): Dropout after the feedforward network.
-        norm3 (nn.LayerNorm): Layer normalization after the feedforward network.
+        self_attn (nn.MultiheadAttention): 自注意力模块。
+        dropout1 (nn.Dropout): 自注意力后的 Dropout。
+        norm1 (nn.LayerNorm): 自注意力后的层归一化。
+        cross_attn (MSDeformAttn): 交叉注意力模块。
+        dropout2 (nn.Dropout): 交叉注意力后的 Dropout。
+        norm2 (nn.LayerNorm): 交叉注意力后的层归一化。
+        linear1 (nn.Linear): 前馈网络中的第一个线性层。
+        act (nn.Module): 激活函数。
+        dropout3 (nn.Dropout): 前馈网络中的 Dropout。
+        linear2 (nn.Linear): 前馈网络中的第二个线性层。
+        dropout4 (nn.Dropout): 前馈网络后的 Dropout。
+        norm3 (nn.LayerNorm): 前馈网络后的层归一化。
 
     References:
         https://github.com/PaddlePaddle/PaddleDetection/blob/develop/ppdet/modeling/transformers/deformable_transformer.py
@@ -613,25 +608,25 @@ class DeformableTransformerDecoderLayer(nn.Module):
         n_levels: int = 4,
         n_points: int = 4,
     ):
-        """Initialize the DeformableTransformerDecoderLayer with the given parameters.
+        """使用给定的参数初始化 DeformableTransformerDecoderLayer。
 
         Args:
-            d_model (int): Model dimension.
-            n_heads (int): Number of attention heads.
-            d_ffn (int): Dimension of the feedforward network.
-            dropout (float): Dropout probability.
-            act (nn.Module): Activation function.
-            n_levels (int): Number of feature levels.
-            n_points (int): Number of sampling points.
+            d_model (int): 模型维度。
+            n_heads (int): 注意力头数。
+            d_ffn (int): 前馈网络的维度。
+            dropout (float): Dropout 概率。
+            act (nn.Module): 激活函数。
+            n_levels (int): 特征层级数。
+            n_points (int): 采样点数。
         """
         super().__init__()
 
-        # Self attention
+        # 自注意力
         self.self_attn = nn.MultiheadAttention(d_model, n_heads, dropout=dropout)
         self.dropout1 = nn.Dropout(dropout)
         self.norm1 = nn.LayerNorm(d_model)
 
-        # Cross attention
+        # 交叉注意力
         self.cross_attn = MSDeformAttn(d_model, n_levels, n_heads, n_points)
         self.dropout2 = nn.Dropout(dropout)
         self.norm2 = nn.LayerNorm(d_model)
@@ -646,17 +641,17 @@ class DeformableTransformerDecoderLayer(nn.Module):
 
     @staticmethod
     def with_pos_embed(tensor: torch.Tensor, pos: torch.Tensor | None) -> torch.Tensor:
-        """Add positional embeddings to the input tensor, if provided."""
+        """将位置嵌入添加到输入张量上（如果提供了的话）。"""
         return tensor if pos is None else tensor + pos
 
     def forward_ffn(self, tgt: torch.Tensor) -> torch.Tensor:
-        """Perform forward pass through the Feed-Forward Network part of the layer.
+        """执行层中前馈网络部分的前向传播。
 
         Args:
-            tgt (torch.Tensor): Input tensor.
+            tgt (torch.Tensor): 输入张量。
 
         Returns:
-            (torch.Tensor): Output tensor after FFN.
+            (torch.Tensor): FFN 处理后的输出张量。
         """
         tgt2 = self.linear2(self.dropout3(self.act(self.linear1(tgt))))
         tgt = tgt + self.dropout4(tgt2)
@@ -672,21 +667,21 @@ class DeformableTransformerDecoderLayer(nn.Module):
         attn_mask: torch.Tensor | None = None,
         query_pos: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        """Perform the forward pass through the entire decoder layer.
+        """执行整个解码器层的前向传播。
 
         Args:
-            embed (torch.Tensor): Input embeddings.
-            refer_bbox (torch.Tensor): Reference bounding boxes.
-            feats (torch.Tensor): Feature maps.
-            shapes (list): Feature shapes.
-            padding_mask (torch.Tensor, optional): Padding mask.
-            attn_mask (torch.Tensor, optional): Attention mask.
-            query_pos (torch.Tensor, optional): Query position embeddings.
+            embed (torch.Tensor): 输入嵌入。
+            refer_bbox (torch.Tensor): 参考边界框。
+            feats (torch.Tensor): 特征图。
+            shapes (list): 特征形状。
+            padding_mask (torch.Tensor, optional): 填充掩码。
+            attn_mask (torch.Tensor, optional): 注意力掩码。
+            query_pos (torch.Tensor, optional): 查询位置嵌入。
 
         Returns:
-            (torch.Tensor): Output tensor after decoder layer.
+            (torch.Tensor): 解码器层处理后的输出张量。
         """
-        # Self attention
+        # 自注意力
         q = k = self.with_pos_embed(embed, query_pos)
         tgt = self.self_attn(q.transpose(0, 1), k.transpose(0, 1), embed.transpose(0, 1), attn_mask=attn_mask)[
             0
@@ -694,7 +689,7 @@ class DeformableTransformerDecoderLayer(nn.Module):
         embed = embed + self.dropout1(tgt)
         embed = self.norm1(embed)
 
-        # Cross attention
+        # 交叉注意力
         tgt = self.cross_attn(
             self.with_pos_embed(embed, query_pos), refer_bbox.unsqueeze(2), feats, shapes, padding_mask
         )
@@ -706,29 +701,28 @@ class DeformableTransformerDecoderLayer(nn.Module):
 
 
 class DeformableTransformerDecoder(nn.Module):
-    """Deformable Transformer Decoder based on PaddleDetection implementation.
+    """基于 PaddleDetection 实现的可变形 Transformer 解码器。
 
-    This class implements a complete deformable transformer decoder with multiple decoder layers and prediction heads
-    for bounding box regression and classification.
+    该类实现了一个完整的可变形 Transformer 解码器，包含多个解码器层以及用于边界框回归和分类的预测头。
 
     Attributes:
-        layers (nn.ModuleList): List of decoder layers.
-        num_layers (int): Number of decoder layers.
-        hidden_dim (int): Hidden dimension.
-        eval_idx (int): Index of the layer to use during evaluation.
+        layers (nn.ModuleList): 解码器层列表。
+        num_layers (int): 解码器层数。
+        hidden_dim (int): 隐藏维度。
+        eval_idx (int): 评估期间使用的层的索引。
 
     References:
         https://github.com/PaddlePaddle/PaddleDetection/blob/develop/ppdet/modeling/transformers/deformable_transformer.py
     """
 
     def __init__(self, hidden_dim: int, decoder_layer: nn.Module, num_layers: int, eval_idx: int = -1):
-        """Initialize the DeformableTransformerDecoder with the given parameters.
+        """使用给定的参数初始化 DeformableTransformerDecoder。
 
         Args:
-            hidden_dim (int): Hidden dimension.
-            decoder_layer (nn.Module): Decoder layer module.
-            num_layers (int): Number of decoder layers.
-            eval_idx (int): Index of the layer to use during evaluation.
+            hidden_dim (int): 隐藏维度。
+            decoder_layer (nn.Module): 解码器层模块。
+            num_layers (int): 解码器层数。
+            eval_idx (int): 评估期间使用的层的索引。
         """
         super().__init__()
         self.layers = _get_clones(decoder_layer, num_layers)
@@ -738,32 +732,32 @@ class DeformableTransformerDecoder(nn.Module):
 
     def forward(
         self,
-        embed: torch.Tensor,  # decoder embeddings
-        refer_bbox: torch.Tensor,  # anchor
-        feats: torch.Tensor,  # image features
-        shapes: list,  # feature shapes
+        embed: torch.Tensor,  # 解码器嵌入
+        refer_bbox: torch.Tensor,  # 锚点
+        feats: torch.Tensor,  # 图像特征
+        shapes: list,  # 特征形状
         bbox_head: nn.Module,
         score_head: nn.Module,
         pos_mlp: nn.Module,
         attn_mask: torch.Tensor | None = None,
         padding_mask: torch.Tensor | None = None,
     ):
-        """Perform the forward pass through the entire decoder.
+        """执行整个解码器的前向传播。
 
         Args:
-            embed (torch.Tensor): Decoder embeddings.
-            refer_bbox (torch.Tensor): Reference bounding boxes.
-            feats (torch.Tensor): Image features.
-            shapes (list): Feature shapes.
-            bbox_head (nn.Module): Bounding box prediction head.
-            score_head (nn.Module): Score prediction head.
-            pos_mlp (nn.Module): Position MLP.
-            attn_mask (torch.Tensor, optional): Attention mask.
-            padding_mask (torch.Tensor, optional): Padding mask.
+            embed (torch.Tensor): 解码器嵌入。
+            refer_bbox (torch.Tensor): 参考边界框。
+            feats (torch.Tensor): 图像特征。
+            shapes (list): 特征形状。
+            bbox_head (nn.Module): 边界框预测头。
+            score_head (nn.Module): 分数预测头。
+            pos_mlp (nn.Module): 位置 MLP。
+            attn_mask (torch.Tensor, optional): 注意力掩码。
+            padding_mask (torch.Tensor, optional): 填充掩码。
 
         Returns:
-            dec_bboxes (torch.Tensor): Decoded bounding boxes.
-            dec_cls (torch.Tensor): Decoded classification scores.
+            dec_bboxes (torch.Tensor): 解码后的边界框。
+            dec_cls (torch.Tensor): 解码后的分类分数。
         """
         output = embed
         dec_bboxes = []

@@ -12,23 +12,22 @@ from .val import RTDETRDataset, RTDETRValidator
 
 
 class RTDETRTrainer(DetectionTrainer):
-    """Trainer class for the RT-DETR model developed by Baidu for real-time object detection.
+    """百度开发的 RT-DETR 模型训练器类，用于实时目标检测。
 
-    This class extends the DetectionTrainer class for YOLO to adapt to the specific features and architecture of
-    RT-DETR. The model leverages Vision Transformers and has capabilities like IoU-aware query selection and adaptable
-    inference speed.
+    该类继承自 YOLO 的 DetectionTrainer 类，以适应 RT-DETR 的特定特性和架构。该模型利用 Vision Transformer，
+    具备基于 IoU 的查询选择和可调节推理速度等能力。
 
     Attributes:
-        loss_names (tuple): Names of the loss components used for training.
-        data (dict): Dataset configuration containing class count and other parameters.
-        args (dict): Training arguments and hyperparameters.
-        save_dir (Path): Directory to save training results.
-        test_loader (DataLoader): DataLoader for validation/testing data.
+        loss_names (tuple): 训练中使用的损失组件名称。
+        data (dict): 包含类别数量和其他参数的数据集配置。
+        args (dict): 训练参数和超参数。
+        save_dir (Path): 保存训练结果的目录。
+        test_loader (DataLoader): 用于验证/测试数据的 DataLoader。
 
     Methods:
-        get_model: Initialize and return an RT-DETR model for object detection tasks.
-        build_dataset: Build and return an RT-DETR dataset for training or validation.
-        get_validator: Return a DetectionValidator suitable for RT-DETR model validation.
+        get_model: 初始化并返回用于目标检测任务的 RT-DETR 模型。
+        build_dataset: 构建并返回用于训练或验证的 RT-DETR 数据集。
+        get_validator: 返回适用于 RT-DETR 模型验证的 DetectionValidator。
 
     Examples:
         >>> from ultralytics.models.rtdetr.train import RTDETRTrainer
@@ -37,20 +36,20 @@ class RTDETRTrainer(DetectionTrainer):
         >>> trainer.train()
 
     Notes:
-        - F.grid_sample used in RT-DETR does not support the `deterministic=True` argument.
-        - AMP training can lead to NaN outputs and may produce errors during bipartite graph matching.
+        - RT-DETR 中使用的 F.grid_sample 不支持 `deterministic=True` 参数。
+        - AMP 训练可能导致 NaN 输出，并可能在二分图匹配时产生错误。
     """
 
     def get_model(self, cfg: dict | None = None, weights: str | None = None, verbose: bool = True):
-        """Initialize and return an RT-DETR model for object detection tasks.
+        """初始化并返回用于目标检测任务的 RT-DETR 模型。
 
         Args:
-            cfg (dict, optional): Model configuration.
-            weights (str, optional): Path to pre-trained model weights.
-            verbose (bool): Verbose logging if True.
+            cfg (dict, optional): 模型配置。
+            weights (str, optional): 预训练模型权重的路径。
+            verbose (bool): 如果为 True，则进行详细日志记录。
 
         Returns:
-            (RTDETRDetectionModel): Initialized model.
+            (RTDETRDetectionModel): 初始化后的模型。
         """
         model = RTDETRDetectionModel(cfg, nc=self.data["nc"], ch=self.data["channels"], verbose=verbose and RANK == -1)
         if weights:
@@ -58,15 +57,15 @@ class RTDETRTrainer(DetectionTrainer):
         return model
 
     def build_dataset(self, img_path: str, mode: str = "val", batch: int | None = None):
-        """Build and return an RT-DETR dataset for training or validation.
+        """构建并返回用于训练或验证的 RT-DETR 数据集。
 
         Args:
-            img_path (str): Path to the folder containing images.
-            mode (str): Dataset mode, either 'train' or 'val'.
-            batch (int, optional): Batch size for rectangle training.
+            img_path (str): 包含图像的文件夹路径。
+            mode (str): 数据集模式，'train' 或 'val'。
+            batch (int, optional): 矩形训练的批次大小。
 
         Returns:
-            (RTDETRDataset): Dataset object for the specific mode.
+            (RTDETRDataset): 用于特定模式的数据集对象。
         """
         return RTDETRDataset(
             img_path=img_path,
@@ -84,6 +83,6 @@ class RTDETRTrainer(DetectionTrainer):
         )
 
     def get_validator(self):
-        """Return an RTDETRValidator suitable for RT-DETR model validation."""
+        """返回适用于 RT-DETR 模型验证的 RTDETRValidator。"""
         self.loss_names = "giou_loss", "cls_loss", "l1_loss"
         return RTDETRValidator(self.test_loader, save_dir=self.save_dir, args=copy(self.args))

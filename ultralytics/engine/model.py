@@ -27,47 +27,46 @@ from ultralytics.utils import (
 
 
 class Model(torch.nn.Module):
-    """A base class for implementing YOLO models, unifying APIs across different model types.
+    """实现 YOLO 模型的基类，统一不同模型类型的 API。
 
-    This class provides a common interface for various operations related to YOLO models, such as training, validation,
-    prediction, exporting, and benchmarking. It handles different types of models, including those loaded from local
-    files, Ultralytics HUB, or Triton Server.
+    此类为 YOLO 模型的各种操作提供通用接口，如训练、验证、预测、导出和基准测试。
+    它处理不同类型的模型，包括从本地文件、Ultralytics HUB 或 Triton Server 加载的模型。
 
     Attributes:
-        callbacks (dict): A dictionary of callback functions for various events during model operations.
-        predictor (BasePredictor): The predictor object used for making predictions.
-        model (torch.nn.Module): The underlying PyTorch model.
-        trainer (BaseTrainer): The trainer object used for training the model.
-        ckpt (dict): The checkpoint data if the model is loaded from a *.pt file.
-        cfg (str): The configuration of the model if loaded from a *.yaml file.
-        ckpt_path (str): The path to the checkpoint file.
-        overrides (dict): A dictionary of overrides for model configuration.
-        metrics (ultralytics.utils.metrics.DetMetrics): The latest training/validation metrics.
-        session (HUBTrainingSession): The Ultralytics HUB session, if applicable.
-        task (str): The type of task the model is intended for.
-        model_name (str): The name of the model.
+        callbacks (dict): 模型操作期间各种事件的回调函数字典。
+        predictor (BasePredictor): 用于进行预测的预测器对象。
+        model (torch.nn.Module): 底层的 PyTorch 模型。
+        trainer (BaseTrainer): 用于训练模型的训练器对象。
+        ckpt (dict): 如果模型是从 *.pt 文件加载的，则为检查点数据。
+        cfg (str): 如果模型是从 *.yaml 文件加载的，则为模型配置。
+        ckpt_path (str): 检查点文件的路径。
+        overrides (dict): 模型配置的覆盖项字典。
+        metrics (ultralytics.utils.metrics.DetMetrics): 最新的训练/验证指标。
+        session (HUBTrainingSession): Ultralytics HUB 会话（如果适用）。
+        task (str): 模型适用的任务类型。
+        model_name (str): 模型的名称。
 
     Methods:
-        __call__: Alias for the predict method, enabling the model instance to be callable.
-        _new: Initialize a new model based on a configuration file.
-        _load: Load a model from a checkpoint file.
-        _check_is_pytorch_model: Ensure that the model is a PyTorch model.
-        reset_weights: Reset the model's weights to their initial state.
-        load: Load model weights from a specified file.
-        save: Save the current state of the model to a file.
-        info: Log or return information about the model.
-        fuse: Fuse Conv2d and BatchNorm2d layers for optimized inference.
-        predict: Perform predictions on given image sources.
-        track: Perform object tracking.
-        val: Validate the model on a dataset.
-        benchmark: Benchmark the model on various export formats.
-        export: Export the model to different formats.
-        train: Train the model on a dataset.
-        tune: Perform hyperparameter tuning.
-        _apply: Apply a function to the model's tensors.
-        add_callback: Add a callback function for an event.
-        clear_callback: Clear all callbacks for an event.
-        reset_callbacks: Reset all callbacks to their default functions.
+        __call__: predict 方法的别名，使模型实例可调用。
+        _new: 基于配置文件初始化新模型。
+        _load: 从检查点文件加载模型。
+        _check_is_pytorch_model: 确保模型是 PyTorch 模型。
+        reset_weights: 将模型的权重重置为初始状态。
+        load: 从指定文件加载模型权重。
+        save: 将模型的当前状态保存到文件。
+        info: 记录或返回模型的信息。
+        fuse: 融合 Conv2d 和 BatchNorm2d 层以优化推理。
+        predict: 对给定图像源执行预测。
+        track: 执行目标跟踪。
+        val: 在数据集上验证模型。
+        benchmark: 在各种导出格式上对模型进行基准测试。
+        export: 将模型导出为不同格式。
+        train: 在数据集上训练模型。
+        tune: 执行超参数调优。
+        _apply: 将函数应用于模型的张量。
+        add_callback: 为事件添加回调函数。
+        clear_callback: 清除事件的所有回调。
+        reset_callbacks: 将所有回调重置为默认函数。
 
     Examples:
         >>> from ultralytics import YOLO
@@ -84,66 +83,66 @@ class Model(torch.nn.Module):
         task: str | None = None,
         verbose: bool = False,
     ) -> None:
-        """Initialize a new instance of the YOLO model class.
+        """初始化 YOLO 模型类的新实例。
 
-        This constructor sets up the model based on the provided model path or name. It handles various types of model
-        sources, including local files, Ultralytics HUB models, and Triton Server models. The method initializes several
-        important attributes of the model and prepares it for operations like training, prediction, or export.
+        此构造函数基于提供的模型路径或名称设置模型。它处理各种类型的模型源，
+        包括本地文件、Ultralytics HUB 模型和 Triton Server 模型。该方法初始化模型的
+        几个重要属性，并为其准备训练、预测或导出等操作。
 
         Args:
-            model (str | Path | Model): Path or name of the model to load or create. Can be a local file path, a model
-                name from Ultralytics HUB, a Triton Server model, or an already initialized Model instance.
-            task (str, optional): The specific task for the model. If None, it will be inferred from the config.
-            verbose (bool): If True, enables verbose output during the model's initialization and subsequent operations.
+            model (str | Path | Model): 要加载或创建的模型路径或名称。可以是本地文件路径、
+                Ultralytics HUB 的模型名称、Triton Server 模型或已初始化的 Model 实例。
+            task (str, optional): 模型的具体任务。如果为 None，将从配置中推断。
+            verbose (bool): 如果为 True，在模型初始化和后续操作中启用详细输出。
 
         Raises:
-            FileNotFoundError: If the specified model file does not exist or is inaccessible.
-            ValueError: If the model file or configuration is invalid or unsupported.
-            ImportError: If required dependencies for specific model types (like HUB SDK) are not installed.
+            FileNotFoundError: 如果指定的模型文件不存在或不可访问。
+            ValueError: 如果模型文件或配置无效或不支持。
+            ImportError: 如果未安装特定模型类型（如 HUB SDK）所需的依赖项。
         """
         if isinstance(model, Model):
-            self.__dict__ = model.__dict__  # accepts an already initialized Model
+            self.__dict__ = model.__dict__  # 接受已初始化的 Model
             return
         super().__init__()
         self.callbacks = callbacks.get_default_callbacks()
-        self.predictor = None  # reuse predictor
-        self.model = None  # model object
-        self.trainer = None  # trainer object
-        self.ckpt = {}  # if loaded from *.pt
-        self.cfg = None  # if loaded from *.yaml
+        self.predictor = None  # 重用预测器
+        self.model = None  # 模型对象
+        self.trainer = None  # 训练器对象
+        self.ckpt = {}  # 如果从 *.pt 加载
+        self.cfg = None  # 如果从 *.yaml 加载
         self.ckpt_path = None
-        self.overrides = {}  # overrides for trainer object
-        self.metrics = None  # validation/training metrics
-        self.session = None  # HUB session
-        self.task = task  # task type
-        self.model_name = None  # model name
+        self.overrides = {}  # 训练器对象的覆盖项
+        self.metrics = None  # 验证/训练指标
+        self.session = None  # HUB 会话
+        self.task = task  # 任务类型
+        self.model_name = None  # 模型名称
         model = str(model).strip()
 
-        # Check if Ultralytics HUB model from https://hub.ultralytics.com
+        # 检查是否来自 https://hub.ultralytics.com 的 Ultralytics HUB 模型
         if self.is_hub_model(model):
             from ultralytics.hub import HUBTrainingSession
 
-            # Fetch model from HUB
+            # 从 HUB 获取模型
             checks.check_requirements("hub-sdk>=0.0.12")
             session = HUBTrainingSession.create_session(model)
             model = session.model_file
-            if session.train_args:  # training sent from HUB
+            if session.train_args:  # 从 HUB 发送的训练
                 self.session = session
 
-        # Check if Triton Server model
+        # 检查是否为 Triton Server 模型
         elif self.is_triton_model(model):
             self.model_name = self.model = model
-            self.overrides["task"] = task or "detect"  # set `task=detect` if not explicitly set
+            self.overrides["task"] = task or "detect"  # 如果未明确设置，则设置 `task=detect`
             return
 
-        # Load or create new YOLO model
-        __import__("os").environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"  # to avoid deterministic warnings
+        # 加载或创建新的 YOLO 模型
+        __import__("os").environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"  # 避免确定性警告
         if str(model).endswith((".yaml", ".yml")):
             self._new(model, task=task, verbose=verbose)
         else:
             self._load(model, task=task)
 
-        # Delete super().training for accessing self.model.training
+        # 删除 super().training 以访问 self.model.training
         del self.training
 
     def __call__(
@@ -152,21 +151,18 @@ class Model(torch.nn.Module):
         stream: bool = False,
         **kwargs: Any,
     ) -> list:
-        """Alias for the predict method, enabling the model instance to be callable for predictions.
+        """predict 方法的别名，使模型实例可直接调用进行预测。
 
-        This method simplifies the process of making predictions by allowing the model instance to be called directly
-        with the required arguments.
+        此方法通过允许直接使用所需参数调用模型实例来简化预测过程。
 
         Args:
-            source (str | Path | int | PIL.Image | np.ndarray | torch.Tensor | list | tuple): The source of the image(s)
-                to make predictions on. Can be a file path, URL, PIL image, numpy array, PyTorch tensor, or a list/tuple
-                of these.
-            stream (bool): If True, treat the input source as a continuous stream for predictions.
-            **kwargs (Any): Additional keyword arguments to configure the prediction process.
+            source (str | Path | int | PIL.Image | np.ndarray | torch.Tensor | list | tuple): 要进行预测的
+                图像源。可以是文件路径、URL、PIL 图像、numpy 数组、PyTorch 张量或这些的列表/元组。
+            stream (bool): 如果为 True，将输入源视为连续流进行预测。
+            **kwargs (Any): 配置预测过程的额外关键字参数。
 
         Returns:
-            (list[ultralytics.engine.results.Results]): A list of prediction results, each encapsulated in a Results
-                object.
+            (list[ultralytics.engine.results.Results]): 预测结果列表，每个结果封装在 Results 对象中。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
@@ -178,16 +174,16 @@ class Model(torch.nn.Module):
 
     @staticmethod
     def is_triton_model(model: str) -> bool:
-        """Check if the given model string is a Triton Server URL.
+        """检查给定的模型字符串是否为 Triton Server URL。
 
-        This static method determines whether the provided model string represents a valid Triton Server URL by parsing
-        its components using urllib.parse.urlsplit().
+        此静态方法通过使用 urllib.parse.urlsplit() 解析其组件来确定提供的模型字符串是否代表
+        有效的 Triton Server URL。
 
         Args:
-            model (str): The model string to be checked.
+            model (str): 要检查的模型字符串。
 
         Returns:
-            (bool): True if the model string is a valid Triton Server URL, False otherwise.
+            (bool): 如果模型字符串是有效的 Triton Server URL，则为 True，否则为 False。
 
         Examples:
             >>> Model.is_triton_model("http://localhost:8000/v2/models/yolo11n")
@@ -202,16 +198,15 @@ class Model(torch.nn.Module):
 
     @staticmethod
     def is_hub_model(model: str) -> bool:
-        """Check if the provided model is an Ultralytics HUB model.
+        """检查提供的模型是否为 Ultralytics HUB 模型。
 
-        This static method determines whether the given model string represents a valid Ultralytics HUB model
-        identifier.
+        此静态方法确定给定的模型字符串是否代表有效的 Ultralytics HUB 模型标识符。
 
         Args:
-            model (str): The model string to check.
+            model (str): 要检查的模型字符串。
 
         Returns:
-            (bool): True if the model is a valid Ultralytics HUB model, False otherwise.
+            (bool): 如果模型是有效的 Ultralytics HUB 模型，则为 True，否则为 False。
 
         Examples:
             >>> Model.is_hub_model("https://hub.ultralytics.com/models/MODEL")
@@ -224,21 +219,21 @@ class Model(torch.nn.Module):
         return model.startswith(f"{HUB_WEB_ROOT}/models/")
 
     def _new(self, cfg: str, task=None, model=None, verbose=False) -> None:
-        """Initialize a new model and infer the task type from model definitions.
+        """初始化新模型并从模型定义中推断任务类型。
 
-        Creates a new model instance based on the provided configuration file. Loads the model configuration, infers the
-        task type if not specified, and initializes the model using the appropriate class from the task map.
+        基于提供的配置文件创建新模型实例。加载模型配置，如果未指定则推断任务类型，
+        并使用任务映射中的适当类初始化模型。
 
         Args:
-            cfg (str): Path to the model configuration file in YAML format.
-            task (str, optional): The specific task for the model. If None, it will be inferred from the config.
-            model (type[torch.nn.Module], optional): A custom model class. If provided, it will be used instead of the
-                default model class from the task map.
-            verbose (bool): If True, displays model information during loading.
+            cfg (str): YAML 格式的模型配置文件路径。
+            task (str, optional): 模型的具体任务。如果为 None，将从配置中推断。
+            model (type[torch.nn.Module], optional): 自定义模型类。如果提供，将使用它而不是
+                任务映射中的默认模型类。
+            verbose (bool): 如果为 True，在加载期间显示模型信息。
 
         Raises:
-            ValueError: If the configuration file is invalid or the task cannot be inferred.
-            ImportError: If the required dependencies for the specified task are not installed.
+            ValueError: 如果配置文件无效或无法推断任务。
+            ImportError: 如果未安装指定任务所需的依赖项。
 
         Examples:
             >>> model = Model()
@@ -247,28 +242,28 @@ class Model(torch.nn.Module):
         cfg_dict = yaml_model_load(cfg)
         self.cfg = cfg
         self.task = task or guess_model_task(cfg_dict)
-        self.model = (model or self._smart_load("model"))(cfg_dict, verbose=verbose and RANK == -1)  # build model
+        self.model = (model or self._smart_load("model"))(cfg_dict, verbose=verbose and RANK == -1)  # 构建模型
         self.overrides["model"] = self.cfg
         self.overrides["task"] = self.task
 
-        # Below added to allow export from YAMLs
-        self.model.args = {**DEFAULT_CFG_DICT, **self.overrides}  # combine default and model args (prefer model args)
+        # 以下添加以允许从 YAML 导出
+        self.model.args = {**DEFAULT_CFG_DICT, **self.overrides}  # 合并默认和模型参数（优先使用模型参数）
         self.model.task = self.task
         self.model_name = cfg
 
     def _load(self, weights: str, task=None) -> None:
-        """Load a model from a checkpoint file or initialize it from a weights file.
+        """从检查点文件加载模型或从权重文件初始化。
 
-        This method handles loading models from either .pt checkpoint files or other weight file formats. It sets up the
-        model, task, and related attributes based on the loaded weights.
+        此方法处理从 .pt 检查点文件或其他权重文件格式加载模型。它基于加载的权重
+        设置模型、任务和相关属性。
 
         Args:
-            weights (str): Path to the model weights file to be loaded.
-            task (str, optional): The task associated with the model. If None, it will be inferred from the model.
+            weights (str): 要加载的模型权重文件路径。
+            task (str, optional): 与模型关联的任务。如果为 None，将从模型中推断。
 
         Raises:
-            FileNotFoundError: If the specified weights file does not exist or is inaccessible.
-            ValueError: If the weights file format is unsupported or invalid.
+            FileNotFoundError: 如果指定的权重文件不存在或不可访问。
+            ValueError: 如果权重文件格式不受支持或无效。
 
         Examples:
             >>> model = Model()
@@ -276,8 +271,8 @@ class Model(torch.nn.Module):
             >>> model._load("path/to/weights.pth", task="detect")
         """
         if weights.lower().startswith(checks.REMOTE_FILE_PREFIXES):
-            weights = checks.check_file(weights, download_dir=SETTINGS["weights_dir"])  # download and return local file
-        weights = checks.check_model_file_from_stem(weights)  # add suffix, i.e. yolo26 -> yolo26n.pt
+            weights = checks.check_file(weights, download_dir=SETTINGS["weights_dir"])  # 下载并返回本地文件
+        weights = checks.check_model_file_from_stem(weights)  # 添加后缀，即 yolo26 -> yolo26n.pt
 
         if str(weights).rpartition(".")[-1] == "pt":
             self.model, self.ckpt = load_checkpoint(weights)
@@ -285,7 +280,7 @@ class Model(torch.nn.Module):
             self.overrides = self.model.args = self._reset_ckpt_args(self.model.args)
             self.ckpt_path = self.model.pt_path
         else:
-            weights = checks.check_file(weights)  # runs in all cases, not redundant with above call
+            weights = checks.check_file(weights)  # 在所有情况下运行，与上述调用不重复
             self.model, self.ckpt = weights, None
             self.task = task or guess_model_task(weights)
             self.ckpt_path = weights
@@ -294,20 +289,20 @@ class Model(torch.nn.Module):
         self.model_name = weights
 
     def _check_is_pytorch_model(self) -> None:
-        """Check if the model is a PyTorch model and raise TypeError if it's not.
+        """检查模型是否为 PyTorch 模型，如果不是则抛出 TypeError。
 
-        This method verifies that the model is either a PyTorch module or a .pt file. It's used to ensure that certain
-        operations that require a PyTorch model are only performed on compatible model types.
+        此方法验证模型是 PyTorch 模块还是 .pt 文件。它用于确保需要 PyTorch 模型的
+        某些操作仅在兼容的模型类型上执行。
 
         Raises:
-            TypeError: If the model is not a PyTorch module or a .pt file. The error message provides detailed
-                information about supported model formats and operations.
+            TypeError: 如果模型不是 PyTorch 模块或 .pt 文件。错误消息提供有关支持的
+                模型格式和操作的详细信息。
 
         Examples:
             >>> model = Model("yolo26n.pt")
-            >>> model._check_is_pytorch_model()  # No error raised
+            >>> model._check_is_pytorch_model()  # 不抛出错误
             >>> model = Model("yolo26n.onnx")
-            >>> model._check_is_pytorch_model()  # Raises TypeError
+            >>> model._check_is_pytorch_model()  # 抛出 TypeError
         """
         pt_str = isinstance(self.model, (str, Path)) and str(self.model).rpartition(".")[-1] == "pt"
         pt_module = isinstance(self.model, torch.nn.Module)
@@ -321,17 +316,16 @@ class Model(torch.nn.Module):
             )
 
     def reset_weights(self) -> Model:
-        """Reset the model's weights to their initial state.
+        """将模型的权重重置为初始状态。
 
-        This method iterates through all modules in the model and resets their parameters if they have a
-        'reset_parameters' method. It also ensures that all parameters have 'requires_grad' set to True, enabling them
-        to be updated during training.
+        此方法遍历模型中的所有模块，如果它们有 'reset_parameters' 方法，则重置其参数。
+        它还将所有参数的 'requires_grad' 设置为 True，使它们在训练期间可以更新。
 
         Returns:
-            (Model): The instance of the class with reset weights.
+            (Model): 权重已重置的类实例。
 
         Raises:
-            TypeError: If the model is not a PyTorch model.
+            TypeError: 如果模型不是 PyTorch 模型。
 
         Examples:
             >>> model = Model("yolo26n.pt")
@@ -346,19 +340,18 @@ class Model(torch.nn.Module):
         return self
 
     def load(self, weights: str | Path = "yolo26n.pt") -> Model:
-        """Load parameters from the specified weights file into the model.
+        """从指定的权重文件加载参数到模型中。
 
-        This method supports loading weights from a file or directly from a weights object. It matches parameters by
-        name and shape and transfers them to the model.
+        此方法支持从文件或直接从权重对象加载权重。它按名称和形状匹配参数并将其传输到模型。
 
         Args:
-            weights (str | Path): Path to the weights file or a weights object.
+            weights (str | Path): 权重文件的路径或权重对象。
 
         Returns:
-            (Model): The instance of the class with loaded weights.
+            (Model): 已加载权重的类实例。
 
         Raises:
-            TypeError: If the model is not a PyTorch model.
+            TypeError: 如果模型不是 PyTorch 模型。
 
         Examples:
             >>> model = Model()
@@ -367,22 +360,22 @@ class Model(torch.nn.Module):
         """
         self._check_is_pytorch_model()
         if isinstance(weights, (str, Path)):
-            self.overrides["pretrained"] = weights  # remember the weights for DDP training
+            self.overrides["pretrained"] = weights  # 记住权重用于 DDP 训练
             weights, self.ckpt = load_checkpoint(weights)
         self.model.load(weights)
         return self
 
     def save(self, filename: str | Path = "saved_model.pt") -> None:
-        """Save the current model state to a file.
+        """将当前模型状态保存到文件。
 
-        This method exports the model's checkpoint (ckpt) to the specified filename. It includes metadata such as the
-        date, Ultralytics version, license information, and a link to the documentation.
+        此方法将模型的检查点（ckpt）导出到指定的文件名。它包括元数据，如日期、
+        Ultralytics 版本、许可信息和文档链接。
 
         Args:
-            filename (str | Path): The name of the file to save the model to.
+            filename (str | Path): 保存模型的文件名。
 
         Raises:
-            TypeError: If the model is not a PyTorch model.
+            TypeError: 如果模型不是 PyTorch 模型。
 
         Examples:
             >>> model = Model("yolo26n.pt")
@@ -404,43 +397,40 @@ class Model(torch.nn.Module):
         torch.save({**self.ckpt, **updates}, filename)
 
     def info(self, detailed: bool = False, verbose: bool = True, imgsz: int | list[int, int] = 640):
-        """Display model information.
+        """显示模型信息。
 
-        This method provides an overview or detailed information about the model, depending on the arguments
-        passed. It can control the verbosity of the output.
+        此方法根据传入的参数提供模型的概览或详细信息。它可以控制输出的详细程度。
 
         Args:
-            detailed (bool): If True, shows detailed information about the model layers and parameters.
-            verbose (bool): If True, prints the information and returns model summary. If False, returns None.
-            imgsz (int | list[int, int]): Input image size used for FLOPs calculation.
+            detailed (bool): 如果为 True，显示模型层和参数的详细信息。
+            verbose (bool): 如果为 True，打印信息并返回模型摘要。如果为 False，返回 None。
+            imgsz (int | list[int, int]): 用于 FLOPs 计算的输入图像尺寸。
 
         Returns:
-            (tuple): A tuple containing the number of layers (int), number of parameters (int), number of gradients
-                (int), and GFLOPs (float). Returns None if verbose is False.
+            (tuple): 包含层数（int）、参数数（int）、梯度数（int）和 GFLOPs（float）的元组。
+                如果 verbose 为 False，返回 None。
 
         Examples:
             >>> model = Model("yolo26n.pt")
-            >>> model.info()  # Prints model summary and returns tuple
-            >>> model.info(detailed=True)  # Prints detailed info and returns tuple
+            >>> model.info()  # 打印模型摘要并返回元组
+            >>> model.info(detailed=True)  # 打印详细信息并返回元组
         """
         self._check_is_pytorch_model()
         return self.model.info(detailed=detailed, verbose=verbose, imgsz=imgsz)
 
     def fuse(self) -> Model:
-        """Fuse Conv2d and BatchNorm2d layers in the model for optimized inference.
+        """融合模型中的 Conv2d 和 BatchNorm2d 层以优化推理。
 
-        This method iterates through the model's modules and fuses consecutive Conv2d and BatchNorm2d layers into a
-        single layer. This fusion can significantly improve inference speed by reducing the number of operations and
-        memory accesses required during forward passes.
+        此方法遍历模型的模块，将连续的 Conv2d 和 BatchNorm2d 层融合为单个层。
+        这种融合可以通过减少前向传播期间所需的操作和内存访问次数来显著提高推理速度。
 
-        The fusion process typically involves folding the BatchNorm2d parameters (mean, variance, weight, and
-        bias) into the preceding Conv2d layer's weights and biases. This results in a single Conv2d layer that
-        performs both convolution and normalization in one step.
+        融合过程通常涉及将 BatchNorm2d 参数（均值、方差、权重和偏置）折叠到
+        前一 Conv2d 层的权重和偏置中。这会产生一个同时执行卷积和归一化的 Conv2d 层。
 
         Examples:
             >>> model = Model("yolo26n.pt")
             >>> model.fuse()
-            >>> # Model is now fused and ready for optimized inference
+            >>> # 模型现在已融合，可用于优化推理
         """
         self._check_is_pytorch_model()
         self.model.fuse()
@@ -452,19 +442,19 @@ class Model(torch.nn.Module):
         stream: bool = False,
         **kwargs: Any,
     ) -> list:
-        """Generate image embeddings based on the provided source.
+        """基于提供的源生成图像嵌入。
 
-        This method is a wrapper around the 'predict()' method, focusing on generating embeddings from an image
-        source. It allows customization of the embedding process through various keyword arguments.
+        此方法是 'predict()' 方法的包装器，专注于从图像源生成嵌入。
+        它允许通过各种关键字参数自定义嵌入过程。
 
         Args:
-            source (str | Path | int | list | tuple | np.ndarray | torch.Tensor): The source of the image for generating
-                embeddings. Can be a file path, URL, numpy array, etc.
-            stream (bool): If True, predictions are streamed.
-            **kwargs (Any): Additional keyword arguments for configuring the embedding process.
+            source (str | Path | int | list | tuple | np.ndarray | torch.Tensor): 用于生成嵌入的
+                图像源。可以是文件路径、URL、numpy 数组等。
+            stream (bool): 如果为 True，预测结果以流式传输。
+            **kwargs (Any): 配置嵌入过程的额外关键字参数。
 
         Returns:
-            (list[torch.Tensor]): A list containing the image embeddings.
+            (list[torch.Tensor]): 包含图像嵌入的列表。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
@@ -473,7 +463,7 @@ class Model(torch.nn.Module):
             >>> print(embeddings[0].shape)
         """
         if not kwargs.get("embed"):
-            kwargs["embed"] = [len(self.model.model) - 2]  # embed second-to-last layer if no indices passed
+            kwargs["embed"] = [len(self.model.model) - 2]  # 如果未传索引，则嵌入倒数第二层
         return self.predict(source, stream, **kwargs)
 
     def predict(
@@ -483,35 +473,32 @@ class Model(torch.nn.Module):
         predictor=None,
         **kwargs: Any,
     ) -> list[Results]:
-        """Perform predictions on the given image source using the YOLO model.
+        """使用 YOLO 模型对给定图像源执行预测。
 
-        This method facilitates the prediction process, allowing various configurations through keyword arguments. It
-        supports predictions with custom predictors or the default predictor method. The method handles different types
-        of image sources and can operate in a streaming mode.
+        此方法促进预测过程，允许通过各种关键字参数进行配置。它支持使用自定义预测器
+        或默认预测器方法。该方法处理不同类型的图像源，并可在流模式下运行。
 
         Args:
-            source (str | Path | int | PIL.Image | np.ndarray | torch.Tensor | list | tuple): The source of the image(s)
-                to make predictions on. Accepts various types including file paths, URLs, PIL images, numpy arrays, and
-                torch tensors.
-            stream (bool): If True, treats the input source as a continuous stream for predictions.
-            predictor (BasePredictor, optional): An instance of a custom predictor class for making predictions. If
-                None, the method uses a default predictor.
-            **kwargs (Any): Additional keyword arguments for configuring the prediction process.
+            source (str | Path | int | PIL.Image | np.ndarray | torch.Tensor | list | tuple): 要进行预测的
+                图像源。接受各种类型，包括文件路径、URL、PIL 图像、numpy 数组和 torch 张量。
+            stream (bool): 如果为 True，将输入源视为连续流进行预测。
+            predictor (BasePredictor, optional): 用于进行预测的自定义预测器类实例。
+                如果为 None，该方法使用默认预测器。
+            **kwargs (Any): 配置预测过程的额外关键字参数。
 
         Returns:
-            (list[ultralytics.engine.results.Results]): A list of prediction results, each encapsulated in a Results
-                object.
+            (list[ultralytics.engine.results.Results]): 预测结果列表，每个结果封装在 Results 对象中。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
             >>> results = model.predict(source="path/to/image.jpg", conf=0.25)
             >>> for r in results:
-            ...     print(r.boxes.data)  # print detection bounding boxes
+            ...     print(r.boxes.data)  # 打印检测边界框
 
         Notes:
-            - If 'source' is not provided, it defaults to the ASSETS constant with a warning.
-            - The method sets up a new predictor if not already present and updates its arguments with each call.
-            - For SAM-type models, 'prompts' can be passed as a keyword argument.
+            - 如果未提供 'source'，则默认使用 ASSETS 常量并发出警告。
+            - 该方法会设置新的预测器（如果尚未存在），并在每次调用时更新其参数。
+            - 对于 SAM 类型的模型，'prompts' 可以作为关键字参数传入。
         """
         if source is None:
             source = "https://ultralytics.com/images/boats.jpg" if self.task == "obb" else ASSETS
@@ -521,18 +508,18 @@ class Model(torch.nn.Module):
             x in ARGV for x in ("predict", "track", "mode=predict", "mode=track")
         )
 
-        custom = {"conf": 0.25, "batch": 1, "save": is_cli, "mode": "predict", "rect": True}  # method defaults
-        args = {**self.overrides, **custom, **kwargs}  # highest priority args on the right
-        prompts = args.pop("prompts", None)  # for SAM-type models
+        custom = {"conf": 0.25, "batch": 1, "save": is_cli, "mode": "predict", "rect": True}  # 方法默认值
+        args = {**self.overrides, **custom, **kwargs}  # 最高优先级的参数在右侧
+        prompts = args.pop("prompts", None)  # 用于 SAM 类型模型
 
         if not self.predictor or self.predictor.args.device != args.get("device", self.predictor.args.device):
             self.predictor = (predictor or self._smart_load("predictor"))(overrides=args, _callbacks=self.callbacks)
             self.predictor.setup_model(model=self.model, verbose=is_cli)
-        else:  # only update args if predictor is already setup
+        else:  # 仅在预测器已设置时更新参数
             self.predictor.args = get_cfg(self.predictor.args, args)
             if "project" in args or "name" in args:
                 self.predictor.save_dir = get_save_dir(self.predictor.args)
-        if prompts and hasattr(self.predictor, "set_prompts"):  # for SAM-type models
+        if prompts and hasattr(self.predictor, "set_prompts"):  # 用于 SAM 类型模型
             self.predictor.set_prompts(prompts)
         return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
 
@@ -543,39 +530,39 @@ class Model(torch.nn.Module):
         persist: bool = False,
         **kwargs: Any,
     ) -> list[Results]:
-        """Conduct object tracking on the specified input source using the registered trackers.
+        """使用已注册的跟踪器对指定输入源进行目标跟踪。
 
-        This method performs object tracking using the model's predictors and optionally registered trackers. It handles
-        various input sources such as file paths or video streams, and supports customization through keyword arguments.
-        The method registers trackers if not already present and can persist them between calls.
+        此方法使用模型的预测器和可选的已注册跟踪器执行目标跟踪。它处理各种输入源，
+        如文件路径或视频流，并支持通过关键字参数进行自定义。该方法会在跟踪器未注册时
+        注册它们，并可在调用之间保持它们。
 
         Args:
-            source (str | Path | int | list | tuple | np.ndarray | torch.Tensor, optional): Input source for object
-                tracking. Can be a file path, URL, or video stream.
-            stream (bool): If True, treats the input source as a continuous video stream.
-            persist (bool): If True, persists trackers between different calls to this method.
-            **kwargs (Any): Additional keyword arguments for configuring the tracking process.
+            source (str | Path | int | list | tuple | np.ndarray | torch.Tensor, optional): 目标跟踪的
+                输入源。可以是文件路径、URL 或视频流。
+            stream (bool): 如果为 True，将输入源视为连续视频流。
+            persist (bool): 如果为 True，在不同调用之间保持跟踪器。
+            **kwargs (Any): 配置跟踪过程的额外关键字参数。
 
         Returns:
-            (list[ultralytics.engine.results.Results]): A list of tracking results, each a Results object.
+            (list[ultralytics.engine.results.Results]): 跟踪结果列表，每个都是 Results 对象。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
             >>> results = model.track(source="path/to/video.mp4", show=True)
             >>> for r in results:
-            ...     print(r.boxes.id)  # print tracking IDs
+            ...     print(r.boxes.id)  # 打印跟踪 ID
 
         Notes:
-            - This method sets a default confidence threshold of 0.1 for ByteTrack-based tracking.
-            - The tracking mode is explicitly set in the keyword arguments.
-            - Batch size is set to 1 for tracking in videos.
+            - 此方法为基于 ByteTrack 的跟踪设置默认置信度阈值 0.1。
+            - 跟踪模式在关键字参数中明确设置。
+            - 视频跟踪的批次大小设置为 1。
         """
         if not hasattr(self.predictor, "trackers"):
             from ultralytics.trackers import register_tracker
 
             register_tracker(self, persist)
-        kwargs["conf"] = kwargs.get("conf") or 0.1  # ByteTrack-based method needs low confidence predictions as input
-        kwargs["batch"] = kwargs.get("batch") or 1  # batch-size 1 for tracking in videos
+        kwargs["conf"] = kwargs.get("conf") or 0.1  # 基于 ByteTrack 的方法需要低置信度预测作为输入
+        kwargs["batch"] = kwargs.get("batch") or 1  # 视频跟踪的批次大小为 1
         kwargs["mode"] = "track"
         return self.predict(source=source, stream=stream, **kwargs)
 
@@ -584,32 +571,30 @@ class Model(torch.nn.Module):
         validator=None,
         **kwargs: Any,
     ):
-        """Validate the model using a specified dataset and validation configuration.
+        """使用指定数据集和验证配置验证模型。
 
-        This method facilitates the model validation process, allowing for customization through various settings. It
-        supports validation with a custom validator or the default validation approach. The method combines default
-        configurations, method-specific defaults, and user-provided arguments to configure the validation process.
+        此方法促进模型验证过程，允许通过各种设置进行自定义。它支持使用自定义验证器
+        或默认验证方法。该方法结合默认配置、方法特定默认值和用户提供的参数来配置验证过程。
 
         Args:
-            validator (ultralytics.engine.validator.BaseValidator, optional): An instance of a custom validator class
-                for validating the model.
-            **kwargs (Any): Arbitrary keyword arguments for customizing the validation process.
+            validator (ultralytics.engine.validator.BaseValidator, optional): 用于验证模型的
+                自定义验证器类实例。
+            **kwargs (Any): 自定义验证过程的任意关键字参数。
 
         Returns:
-            (ultralytics.utils.metrics.DetMetrics): Validation metrics obtained from the validation process. The
-                specific metrics type depends on the task (e.g., DetMetrics, SegmentMetrics,
-                PoseMetrics, ClassifyMetrics).
+            (ultralytics.utils.metrics.DetMetrics): 从验证过程中获得的验证指标。
+                具体指标类型取决于任务（例如，DetMetrics、SegmentMetrics、PoseMetrics、ClassifyMetrics）。
 
         Raises:
-            TypeError: If the model is not a PyTorch model.
+            TypeError: 如果模型不是 PyTorch 模型。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
             >>> results = model.val(data="coco8.yaml", imgsz=640)
-            >>> print(results.box.map)  # Print mAP50-95
+            >>> print(results.box.map)  # 打印 mAP50-95
         """
-        custom = {"rect": True}  # method defaults
-        args = {**self.overrides, **custom, **kwargs, "mode": "val"}  # highest priority args on the right
+        custom = {"rect": True}  # 方法默认值
+        args = {**self.overrides, **custom, **kwargs, "mode": "val"}  # 最高优先级的参数在右侧
 
         validator = (validator or self._smart_load("validator"))(args=args, _callbacks=self.callbacks)
         validator(model=self.model)
@@ -617,29 +602,27 @@ class Model(torch.nn.Module):
         return validator.metrics
 
     def benchmark(self, data=None, format="", verbose=False, **kwargs: Any):
-        """Benchmark the model across various export formats to evaluate performance.
+        """在各种导出格式上对模型进行基准测试以评估性能。
 
-        This method assesses the model's performance in different export formats, such as ONNX, TorchScript, etc. It
-        uses the 'benchmark' function from the ultralytics.utils.benchmarks module. The benchmarking is configured using
-        a combination of default configuration values, model-specific arguments, method-specific defaults, and any
-        additional user-provided keyword arguments.
+        此方法评估模型在不同导出格式（如 ONNX、TorchScript 等）中的性能。
+        它使用 ultralytics.utils.benchmarks 模块中的 'benchmark' 函数。基准测试配置使用默认配置值、
+        模型特定参数、方法特定默认值和任何额外的用户提供关键字参数的组合。
 
         Args:
-            data (str | None): Path to the dataset for benchmarking. If None, uses default dataset for the task.
-            format (str): Export format name for specific benchmarking.
-            verbose (bool): Whether to print detailed benchmark information.
-            **kwargs (Any): Arbitrary keyword arguments to customize the benchmarking process. Common options include:
-                - imgsz (int | list[int]): Image size for benchmarking.
-                - half (bool): Whether to use half-precision (FP16) mode.
-                - int8 (bool): Whether to use int8 precision mode.
-                - device (str): Device to run the benchmark on (e.g., 'cpu', 'cuda').
+            data (str | None): 基准测试的数据集路径。如果为 None，使用任务的默认数据集。
+            format (str): 用于特定基准测试的导出格式名称。
+            verbose (bool): 是否打印详细的基准测试信息。
+            **kwargs (Any): 自定义基准测试过程的任意关键字参数。常见选项包括：
+                - imgsz (int | list[int]): 基准测试的图像尺寸。
+                - half (bool): 是否使用半精度（FP16）模式。
+                - int8 (bool): 是否使用 int8 精度模式。
+                - device (str): 运行基准测试的设备（例如，'cpu'、'cuda'）。
 
         Returns:
-            (polars.DataFrame): A Polars DataFrame with benchmark results for each format, including file size, metric,
-                and inference time.
+            (polars.DataFrame): 包含每种格式基准测试结果的 Polars DataFrame，包括文件大小、指标和推理时间。
 
         Raises:
-            TypeError: If the model is not a PyTorch model.
+            TypeError: 如果模型不是 PyTorch 模型。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
@@ -651,14 +634,14 @@ class Model(torch.nn.Module):
 
         from .exporter import export_formats
 
-        custom = {"verbose": False}  # method defaults
+        custom = {"verbose": False}  # 方法默认值
         args = {**DEFAULT_CFG_DICT, **self.model.args, **custom, **kwargs, "mode": "benchmark"}
         fmts = export_formats()
         export_args = set(dict(zip(fmts["Argument"], fmts["Arguments"])).get(format, [])) - {"batch", "data"}
         export_kwargs = {k: v for k, v in args.items() if k in export_args}
         return benchmark(
             model=self,
-            data=data,  # if no 'data' argument passed set data=None for default datasets
+            data=data,  # 如果未传递 'data' 参数，设置 data=None 以使用默认数据集
             imgsz=args["imgsz"],
             device=args["device"],
             verbose=verbose,
@@ -670,29 +653,29 @@ class Model(torch.nn.Module):
         self,
         **kwargs: Any,
     ) -> str:
-        """Export the model to a different format suitable for deployment.
+        """将模型导出为适合部署的不同格式。
 
-        This method facilitates the export of the model to various formats (e.g., ONNX, TorchScript) for deployment
-        purposes. It uses the 'Exporter' class for the export process, combining model-specific overrides, method
-        defaults, and any additional arguments provided.
+        此方法促进将模型导出为各种格式（如 ONNX、TorchScript）以供部署使用。
+        它使用 'Exporter' 类进行导出过程，结合模型特定的覆盖项、方法默认值
+        和提供的任何额外参数。
 
         Args:
-            **kwargs (Any): Arbitrary keyword arguments for export configuration. Common options include:
-                - format (str): Export format (e.g., 'onnx', 'engine', 'coreml').
-                - half (bool): Export model in half-precision.
-                - int8 (bool): Export model in int8 precision.
-                - device (str): Device to run the export on.
-                - workspace (int): Maximum memory workspace size for TensorRT engines.
-                - nms (bool): Add Non-Maximum Suppression (NMS) module to model.
-                - simplify (bool): Simplify ONNX model.
+            **kwargs (Any): 导出配置的任意关键字参数。常见选项包括：
+                - format (str): 导出格式（例如，'onnx'、'engine'、'coreml'）。
+                - half (bool): 以半精度导出模型。
+                - int8 (bool): 以 int8 精度导出模型。
+                - device (str): 运行导出的设备。
+                - workspace (int): TensorRT 引擎的最大内存工作空间大小。
+                - nms (bool): 向模型添加非极大值抑制（NMS）模块。
+                - simplify (bool): 简化 ONNX 模型。
 
         Returns:
-            (str): The path to the exported model file.
+            (str): 导出模型文件的路径。
 
         Raises:
-            TypeError: If the model is not a PyTorch model.
-            ValueError: If an unsupported export format is specified.
-            RuntimeError: If the export process fails due to errors.
+            TypeError: 如果模型不是 PyTorch 模型。
+            ValueError: 如果指定了不支持的导出格式。
+            RuntimeError: 如果导出过程因错误而失败。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
@@ -706,10 +689,10 @@ class Model(torch.nn.Module):
             "imgsz": self.model.args["imgsz"],
             "batch": 1,
             "data": None,
-            "device": None,  # reset to avoid multi-GPU errors
+            "device": None,  # 重置以避免多 GPU 错误
             "verbose": False,
-        }  # method defaults
-        args = {**self.overrides, **custom, **kwargs, "mode": "export"}  # highest priority args on the right
+        }  # 方法默认值
+        args = {**self.overrides, **custom, **kwargs, "mode": "export"}  # 最高优先级的参数在右侧
         return Exporter(overrides=args, _callbacks=self.callbacks)(model=self.model)
 
     def train(
@@ -717,59 +700,58 @@ class Model(torch.nn.Module):
         trainer=None,
         **kwargs: Any,
     ):
-        """Train the model using the specified dataset and training configuration.
+        """使用指定数据集和训练配置训练模型。
 
-        This method facilitates model training with a range of customizable settings. It supports training with a custom
-        trainer or the default training approach. The method handles scenarios such as resuming training from a
-        checkpoint, integrating with Ultralytics HUB, and updating model and configuration after training.
+        此方法通过一系列可自定义的设置促进模型训练。它支持使用自定义训练器或默认训练方法。
+        该方法处理从检查点恢复训练、与 Ultralytics HUB 集成以及在训练后更新模型和配置等场景。
 
-        When using Ultralytics HUB, if the session has a loaded model, the method prioritizes HUB training arguments and
-        warns if local arguments are provided. It checks for pip updates and combines default configurations,
-        method-specific defaults, and user-provided arguments to configure the training process.
+        当使用 Ultralytics HUB 时，如果会话有已加载的模型，该方法会优先使用 HUB 训练参数，
+        并在提供本地参数时发出警告。它检查 pip 更新，并结合默认配置、方法特定默认值和
+        用户提供的参数来配置训练过程。
 
         Args:
-            trainer (BaseTrainer, optional): Custom trainer instance for model training. If None, uses default.
-            **kwargs (Any): Arbitrary keyword arguments for training configuration. Common options include:
-                - data (str): Path to dataset configuration file.
-                - epochs (int): Number of training epochs.
-                - batch (int): Batch size for training.
-                - imgsz (int): Input image size.
-                - device (str): Device to run training on (e.g., 'cuda', 'cpu').
-                - workers (int): Number of worker threads for data loading.
-                - optimizer (str): Optimizer to use for training.
-                - lr0 (float): Initial learning rate.
-                - patience (int): Epochs to wait for no observable improvement for early stopping of training.
-                - augmentations (list[Callable]): List of augmentation functions to apply during training.
+            trainer (BaseTrainer, optional): 用于模型训练的自定义训练器实例。如果为 None，使用默认值。
+            **kwargs (Any): 训练配置的任意关键字参数。常见选项包括：
+                - data (str): 数据集配置文件的路径。
+                - epochs (int): 训练轮数。
+                - batch (int): 训练的批次大小。
+                - imgsz (int): 输入图像尺寸。
+                - device (str): 运行训练的设备（例如，'cuda'、'cpu'）。
+                - workers (int): 数据加载的工作线程数。
+                - optimizer (str): 用于训练的优化器。
+                - lr0 (float): 初始学习率。
+                - patience (int): 等待无观测改善的轮数以进行早停训练。
+                - augmentations (list[Callable]): 训练期间应用的增强函数列表。
 
         Returns:
-            (ultralytics.utils.metrics.DetMetrics | None): Training metrics if available and training is successful;
-                otherwise, None. The specific metrics type depends on the task.
+            (ultralytics.utils.metrics.DetMetrics | None): 如果可用且训练成功，则为训练指标；
+                否则为 None。具体指标类型取决于任务。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
             >>> results = model.train(data="coco8.yaml", epochs=3)
         """
         self._check_is_pytorch_model()
-        if hasattr(self.session, "model") and self.session.model.id:  # Ultralytics HUB session with loaded model
+        if hasattr(self.session, "model") and self.session.model.id:  # Ultralytics HUB 会话有已加载的模型
             if any(kwargs):
                 LOGGER.warning("using HUB training arguments, ignoring local training arguments.")
-            kwargs = self.session.train_args  # overwrite kwargs
+            kwargs = self.session.train_args  # 覆盖 kwargs
 
         checks.check_pip_update_available()
 
         overrides = YAML.load(checks.check_yaml(kwargs["cfg"])) if kwargs.get("cfg") else self.overrides
         custom = {
-            # NOTE: handle the case when 'cfg' includes 'data'.
+            # 注意：处理 'cfg' 包含 'data' 的情况。
             "data": (overrides.get("data") if kwargs.get("cfg") else None)
             or DEFAULT_CFG_DICT["data"]
             or TASK2DATA[self.task],
             "model": self.overrides["model"],
             "task": self.task,
-        }  # method defaults
-        args = {**overrides, **custom, **kwargs, "mode": "train", "session": self.session}  # prioritizes rightmost args
+        }  # 方法默认值
+        args = {**overrides, **custom, **kwargs, "mode": "train", "session": self.session}  # 优先最右侧参数
         pretrained = kwargs.get("pretrained", overrides.get("pretrained", True) if kwargs.get("cfg") else True)
         if args.get("resume"):
-            if args["resume"] is True:  # resume=True (boolean) uses current model as checkpoint
+            if args["resume"] is True:  # resume=True (布尔值) 使用当前模型作为检查点
                 if self.ckpt and self.ckpt.get("epoch", -1) >= 0 and self.ckpt.get("optimizer") is not None:
                     args["resume"] = self.ckpt_path
                 else:
@@ -782,7 +764,7 @@ class Model(torch.nn.Module):
 
         self.trainer = (trainer or self._smart_load("trainer"))(overrides=args, _callbacks=self.callbacks)
         if not args.get("resume") and self.ckpt:
-            # Reuse the already-loaded checkpoint model to avoid re-resolving remote weight sources during trainer setup.
+            # 重用已加载的检查点模型，避免在训练器设置期间重新解析远程权重源。
             weights = None if pretrained is False else self.model
             if isinstance(pretrained, (str, Path)):
                 weights, _ = load_checkpoint(pretrained)
@@ -790,7 +772,7 @@ class Model(torch.nn.Module):
             self.model = self.trainer.model
 
         self.trainer.train()
-        # Update model and cfg after training
+        # 训练后更新模型和配置
         if RANK in {-1, 0}:
             ckpt = self.trainer.best if self.trainer.best.exists() else self.trainer.last
             if not ckpt.exists():
@@ -799,7 +781,7 @@ class Model(torch.nn.Module):
                 )
             self.model, self.ckpt = load_checkpoint(ckpt)
             self.overrides = self._reset_ckpt_args(self.model.args)
-            self.metrics = getattr(self.trainer.validator, "metrics", None)  # TODO: no metrics returned by DDP
+            self.metrics = getattr(self.trainer.validator, "metrics", None)  # TODO: DDP 不返回指标
         return self.metrics
 
     def tune(
@@ -809,33 +791,32 @@ class Model(torch.nn.Module):
         *args: Any,
         **kwargs: Any,
     ):
-        """Conduct hyperparameter tuning for the model, with an option to use Ray Tune.
+        """对模型进行超参数调优，可选择使用 Ray Tune。
 
-        This method supports two modes of hyperparameter tuning: using Ray Tune or a custom tuning method. When Ray Tune
-        is enabled, it leverages the 'run_ray_tune' function from the ultralytics.utils.tuner module. Otherwise, it uses
-        the internal 'Tuner' class for tuning. The method combines default, overridden, and custom arguments to
-        configure the tuning process.
+        此方法支持两种超参数调优模式：使用 Ray Tune 或自定义调优方法。当启用 Ray Tune 时，
+        它利用 ultralytics.utils.tuner 模块中的 'run_ray_tune' 函数。否则，使用内部的 'Tuner' 类
+        进行调优。该方法结合默认参数、覆盖参数和自定义参数来配置调优过程。
 
         Args:
-            use_ray (bool): Whether to use Ray Tune for hyperparameter tuning. If False, uses internal tuning method.
-            iterations (int): Number of tuning iterations to perform.
-            *args (Any): Additional positional arguments to pass to the tuner.
-            **kwargs (Any): Additional keyword arguments for tuning configuration. These are combined with model
-                overrides and defaults to configure the tuning process.
+            use_ray (bool): 是否使用 Ray Tune 进行超参数调优。如果为 False，使用内部调优方法。
+            iterations (int): 要执行的调优迭代次数。
+            *args (Any): 传递给调优器的额外位置参数。
+            **kwargs (Any): 调优配置的额外关键字参数。这些参数与模型覆盖项和默认值
+                结合以配置调优过程。
 
         Returns:
-            (ray.tune.ResultGrid | None): When use_ray=True, returns a ResultGrid with hyperparameter search results.
-                When use_ray=False, returns None and saves best hyperparameters to YAML.
+            (ray.tune.ResultGrid | None): 当 use_ray=True 时，返回包含超参数搜索结果的 ResultGrid。
+                当 use_ray=False 时，返回 None 并将最佳超参数保存到 YAML。
 
         Raises:
-            TypeError: If the model is not a PyTorch model.
+            TypeError: 如果模型不是 PyTorch 模型。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
             >>> results = model.tune(data="coco8.yaml", iterations=5)
             >>> print(results)
 
-            # Use Ray Tune for more advanced hyperparameter search
+            # 使用 Ray Tune 进行更高级的超参数搜索
             >>> results = model.tune(use_ray=True, iterations=20, data="coco8.yaml")
         """
         self._check_is_pytorch_model()
@@ -846,51 +827,48 @@ class Model(torch.nn.Module):
         else:
             from .tuner import Tuner
 
-            custom = {}  # method defaults
-            args = {**self.overrides, **custom, **kwargs, "mode": "train"}  # highest priority args on the right
+            custom = {}  # 方法默认值
+            args = {**self.overrides, **custom, **kwargs, "mode": "train"}  # 最高优先级的参数在右侧
             return Tuner(args=args, _callbacks=self.callbacks)(iterations=iterations)
 
     def _apply(self, fn) -> Model:
-        """Apply a function to model parameters, buffers, and tensors.
+        """将函数应用于模型参数、缓冲区和张量。
 
-        This method extends the functionality of the parent class's _apply method by additionally resetting the
-        predictor and updating the device in the model's overrides. It's typically used for operations like moving the
-        model to a different device or changing its precision.
+        此方法扩展了父类 _apply 方法的功能，通过额外重置预测器并更新模型覆盖项中的设备。
+        它通常用于将模型移动到不同设备或更改其精度等操作。
 
         Args:
-            fn (Callable): A function to be applied to the model's tensors. This is typically a method like to(), cpu(),
-                cuda(), half(), or float().
+            fn (Callable): 要应用于模型张量的函数。通常是像 to()、cpu()、cuda()、half() 或 float()
+                这样的方法。
 
         Returns:
-            (Model): The model instance with the function applied and updated attributes.
+            (Model): 已应用函数并更新属性的模型实例。
 
         Raises:
-            TypeError: If the model is not a PyTorch model.
+            TypeError: 如果模型不是 PyTorch 模型。
 
         Examples:
             >>> model = Model("yolo26n.pt")
-            >>> model = model._apply(lambda t: t.cuda())  # Move model to GPU
+            >>> model = model._apply(lambda t: t.cuda())  # 将模型移动到 GPU
         """
         self._check_is_pytorch_model()
         self = super()._apply(fn)
-        self.predictor = None  # reset predictor as device may have changed
-        self.overrides["device"] = self.device  # was str(self.device) i.e. device(type='cuda', index=0) -> 'cuda:0'
+        self.predictor = None  # 重置预测器，因为设备可能已更改
+        self.overrides["device"] = self.device  # 之前是 str(self.device) 即 device(type='cuda', index=0) -> 'cuda:0'
         return self
 
     @property
     def names(self) -> dict[int, str]:
-        """Retrieve the class names associated with the loaded model.
+        """检索与已加载模型关联的类别名称。
 
-        This property returns the class names if they are defined in the model. It checks the class names for validity
-        using the 'check_class_names' function from the ultralytics.nn.autobackend module. If the predictor is not
-        initialized, it sets it up before retrieving the names.
+        此属性返回模型中的类别名称（如果已定义）。它使用 ultralytics.nn.autobackend 模块中的
+        'check_class_names' 函数检查类别名称的有效性。如果预测器未初始化，则在检索名称之前设置它。
 
         Returns:
-            (dict[int, str]): A dictionary of class names associated with the model, where keys are class indices and
-                values are the corresponding class names.
+            (dict[int, str]): 与模型关联的类别名称字典，其中键是类别索引，值是对应的类别名称。
 
         Raises:
-            AttributeError: If the model or predictor does not have a 'names' attribute.
+            AttributeError: 如果模型或预测器没有 'names' 属性。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
@@ -901,27 +879,25 @@ class Model(torch.nn.Module):
 
         if hasattr(self.model, "names"):
             return check_class_names(self.model.names)
-        if not self.predictor:  # export formats will not have predictor defined until predict() is called
+        if not self.predictor:  # 导出格式在调用 predict() 之前不会有预测器定义
             predictor = self._smart_load("predictor")(overrides=self.overrides, _callbacks=self.callbacks)
-            predictor.setup_model(model=self.model, verbose=False)  # do not mess with self.predictor.model args
+            predictor.setup_model(model=self.model, verbose=False)  # 不要干扰 self.predictor.model 的参数
             return predictor.model.names
         return self.predictor.model.names
 
     @property
     def device(self) -> torch.device:
-        """Get the device on which the model's parameters are allocated.
+        """获取模型参数所在设备。
 
-        This property determines the device (CPU or GPU) where the model's parameters are currently stored. It is
-        applicable only to models that are instances of torch.nn.Module.
+        此属性确定模型参数当前存储的设备（CPU 或 GPU）。它仅适用于 torch.nn.Module 实例的模型。
 
         Returns:
-            (torch.device | None): The device (CPU/GPU) of the model, or None if the model is not a torch.nn.Module
-                instance.
+            (torch.device | None): 模型的设备（CPU/GPU），如果模型不是 torch.nn.Module 实例，则为 None。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
             >>> print(model.device)
-            device(type='cuda', index=0)  # if CUDA is available
+            device(type='cuda', index=0)  # 如果 CUDA 可用
             >>> model = model.to("cpu")
             >>> print(model.device)
             device(type='cpu')
@@ -930,14 +906,13 @@ class Model(torch.nn.Module):
 
     @property
     def transforms(self):
-        """Retrieve the transformations applied to the input data of the loaded model.
+        """检索应用于已加载模型输入数据的变换。
 
-        This property returns the transformations if they are defined in the model. The transforms typically include
-        preprocessing steps like resizing, normalization, and data augmentation that are applied to input data before it
-        is fed into the model.
+        此属性返回模型中定义的变换（如果有）。变换通常包括调整大小、归一化和数据增强
+        等预处理步骤，这些步骤在数据输入模型之前应用。
 
         Returns:
-            (object | None): The transform object of the model if available, otherwise None.
+            (object | None): 模型的变换对象（如果可用），否则为 None。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
@@ -950,17 +925,14 @@ class Model(torch.nn.Module):
         return self.model.transforms if hasattr(self.model, "transforms") else None
 
     def add_callback(self, event: str, func) -> None:
-        """Add a callback function for a specified event.
+        """为指定事件添加回调函数。
 
-        This method allows registering custom callback functions that are triggered on specific events during model
-        operations such as training or inference. Callbacks provide a way to extend and customize the behavior of the
-        model at various stages of its lifecycle.
+        此方法允许注册自定义回调函数，这些函数在模型操作（如训练或推理）期间的特定事件上触发。
+        回调提供了一种在模型生命周期的各个阶段扩展和自定义其行为的方式。
 
         Args:
-            event (str): The name of the event to attach the callback to. Must be a valid event name recognized by the
-                Ultralytics framework.
-            func (Callable): The callback function to be registered. This function will be called when the specified
-                event occurs.
+            event (str): 要附加回调的事件名称。必须是 Ultralytics 框架认可的有效事件名称。
+            func (Callable): 要注册的回调函数。当指定事件发生时将调用此函数。
 
         Examples:
             >>> def on_train_start(trainer):
@@ -972,67 +944,60 @@ class Model(torch.nn.Module):
         self.callbacks[event].append(func)
 
     def clear_callback(self, event: str) -> None:
-        """Clear all callback functions registered for a specified event.
+        """清除为指定事件注册的所有回调函数。
 
-        This method removes all custom and default callback functions associated with the given event. It resets the
-        callback list for the specified event to an empty list, effectively removing all registered callbacks for that
-        event.
+        此方法移除与给定事件关联的所有自定义和默认回调函数。它将指定事件的回调列表
+        重置为空列表，有效地移除该事件的所有已注册回调。
 
         Args:
-            event (str): The name of the event for which to clear the callbacks. This should be a valid event name
-                recognized by the Ultralytics callback system.
+            event (str): 要清除回调的事件名称。这应该是 Ultralytics 回调系统认可的有效事件名称。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
             >>> model.add_callback("on_train_start", lambda: print("Training started"))
             >>> model.clear_callback("on_train_start")
-            >>> # All callbacks for 'on_train_start' are now removed
+            >>> # 'on_train_start' 的所有回调现在已被移除
 
         Notes:
-            - This method affects both custom callbacks added by the user and default callbacks
-              provided by the Ultralytics framework.
-            - After calling this method, no callbacks will be executed for the specified event
-              until new ones are added.
-            - Use with caution as it removes all callbacks, including essential ones that might
-              be required for proper functioning of certain operations.
+            - 此方法影响用户添加的自定义回调和 Ultralytics 框架提供的默认回调。
+            - 调用此方法后，指定事件将不会执行任何回调，直到添加新的回调。
+            - 请谨慎使用，因为它会移除所有回调，包括某些操作正常功能可能必需的回调。
         """
         self.callbacks[event] = []
 
     def reset_callbacks(self) -> None:
-        """Reset all callbacks to their default functions.
+        """将所有回调重置为默认函数。
 
-        This method reinstates the default callback functions for all events, removing any custom callbacks that were
-        previously added. It iterates through all default callback events and replaces the current callbacks with the
-        default ones.
+        此方法恢复所有事件的默认回调函数，移除之前添加的任何自定义回调。
+        它遍历所有默认回调事件，并将当前回调替换为默认回调。
 
-        The default callbacks are defined in the 'callbacks.default_callbacks' dictionary, which contains predefined
-        functions for various events in the model's lifecycle, such as on_train_start, on_epoch_end, etc.
+        默认回调定义在 'callbacks.default_callbacks' 字典中，该字典包含模型生命周期中
+        各种事件的预定义函数，如 on_train_start、on_epoch_end 等。
 
-        This method is useful when you want to revert to the original set of callbacks after making custom
-        modifications, ensuring consistent behavior across different runs or experiments.
+        当您想在进行自定义修改后恢复到原始回调集时，此方法非常有用，
+        确保不同运行或实验之间的行为一致性。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
             >>> model.add_callback("on_train_start", custom_function)
             >>> model.reset_callbacks()
-            # All callbacks are now reset to their default functions
+            # 所有回调现在已重置为默认函数
         """
         for event in callbacks.default_callbacks.keys():
             self.callbacks[event] = [callbacks.default_callbacks[event][0]]
 
     @staticmethod
     def _reset_ckpt_args(args: dict[str, Any]) -> dict[str, Any]:
-        """Reset specific arguments when loading a PyTorch model checkpoint.
+        """加载 PyTorch 模型检查点时重置特定参数。
 
-        This method filters the input arguments dictionary to retain only a specific set of keys that are considered
-        important for model loading. It's used to ensure that only relevant arguments are preserved when loading a model
-        from a checkpoint, discarding any unnecessary or potentially conflicting settings.
+        此方法过滤输入参数字典，仅保留被认为对模型加载重要的一组特定键。
+        它用于确保从检查点加载模型时仅保留相关参数，丢弃任何不必要或可能冲突的设置。
 
         Args:
-            args (dict[str, Any]): A dictionary containing various model arguments and settings.
+            args (dict[str, Any]): 包含各种模型参数和设置的字典。
 
         Returns:
-            (dict[str, Any]): A new dictionary containing only the specified include keys from the input arguments.
+            (dict[str, Any]): 仅包含输入参数中指定保留键的新字典。
 
         Examples:
             >>> original_args = {"imgsz": 640, "data": "coco.yaml", "task": "detect", "batch": 16, "epochs": 100}
@@ -1040,7 +1005,7 @@ class Model(torch.nn.Module):
             >>> print(reset_args)
             {'imgsz': 640, 'data': 'coco.yaml', 'task': 'detect'}
         """
-        include = {"imgsz", "data", "task", "single_cls"}  # only remember these arguments when loading a PyTorch model
+        include = {"imgsz", "data", "task", "single_cls"}  # 加载 PyTorch 模型时仅记住这些参数
         return {k: v for k, v in args.items() if k in include}
 
     # def __getattr__(self, attr):
@@ -1049,20 +1014,19 @@ class Model(torch.nn.Module):
     #    raise AttributeError(f"'{name}' object has no attribute '{attr}'. See valid attributes below.\n{self.__doc__}")
 
     def _smart_load(self, key: str):
-        """Intelligently load the appropriate module based on the model task.
+        """基于模型任务智能加载适当的模块。
 
-        This method dynamically selects and returns the correct module (model, trainer, validator, or predictor) based
-        on the current task of the model and the provided key. It uses the task_map dictionary to determine the
-        appropriate module to load for the specific task.
+        此方法基于模型的当前任务和提供的键动态选择并返回正确的模块（模型、训练器、验证器或预测器）。
+        它使用 task_map 字典来确定要为特定任务加载的适当模块。
 
         Args:
-            key (str): The type of module to load. Must be one of 'model', 'trainer', 'validator', or 'predictor'.
+            key (str): 要加载的模块类型。必须是 'model'、'trainer'、'validator' 或 'predictor' 之一。
 
         Returns:
-            (object): The loaded module class corresponding to the specified key and current task.
+            (object): 对应指定键和当前任务的已加载模块类。
 
         Raises:
-            NotImplementedError: If the specified key is not supported for the current task.
+            NotImplementedError: 如果指定键不受当前任务支持。
 
         Examples:
             >>> model = Model(task="detect")
@@ -1073,25 +1037,23 @@ class Model(torch.nn.Module):
             return self.task_map[self.task][key]
         except Exception as e:
             name = self.__class__.__name__
-            mode = inspect.stack()[1][3]  # get the function name.
+            mode = inspect.stack()[1][3]  # 获取函数名。
             raise NotImplementedError(f"'{name}' model does not support '{mode}' mode for '{self.task}' task.") from e
 
     @property
     def task_map(self) -> dict:
-        """Provide a mapping from model tasks to corresponding classes for different modes.
+        """提供从模型任务到不同模式对应类的映射。
 
-        This property method returns a dictionary that maps each supported task (e.g., detect, segment, classify) to a
-        nested dictionary. The nested dictionary contains mappings for different operational modes (model, trainer,
-        validator, predictor) to their respective class implementations.
+        此属性方法返回一个字典，将每个支持的任务（如 detect、segment、classify）映射到
+        嵌套字典。嵌套字典包含不同操作模式（model、trainer、validator、predictor）
+        到其各自类实现的映射。
 
-        The mapping allows for dynamic loading of appropriate classes based on the model's task and the desired
-        operational mode. This facilitates a flexible and extensible architecture for handling various tasks and modes
-        within the Ultralytics framework.
+        该映射允许基于模型任务和所需操作模式动态加载适当的类。
+        这促进了在 Ultralytics 框架内处理各种任务和模式的灵活且可扩展的架构。
 
         Returns:
-            (dict[str, dict[str, Any]]): A dictionary mapping task names to nested dictionaries. Each nested dictionary
-                contains mappings for 'model', 'trainer', 'validator', and 'predictor' keys to their respective class
-                implementations for that task.
+            (dict[str, dict[str, Any]]): 将任务名称映射到嵌套字典的字典。每个嵌套字典
+                包含该任务的 'model'、'trainer'、'validator' 和 'predictor' 键到其各自类实现的映射。
 
         Examples:
             >>> model = Model("yolo26n.pt")
@@ -1102,42 +1064,42 @@ class Model(torch.nn.Module):
         raise NotImplementedError("Please provide task map for your model!")
 
     def eval(self):
-        """Sets the model to evaluation mode.
+        """将模型设置为评估模式。
 
-        This method changes the model's mode to evaluation, which affects layers like dropout and batch normalization
-        that behave differently during training and evaluation. In evaluation mode, these layers use running statistics
-        rather than computing batch statistics, and dropout layers are disabled.
+        此方法将模型的模式更改为评估模式，这会影响在训练和评估期间行为不同
+        的 dropout 和批量归一化层。在评估模式下，这些层使用运行统计量而非批量统计量，
+        并且 dropout 层被禁用。
 
         Returns:
-            (Model): The model instance with evaluation mode set.
+            (Model): 已设置评估模式的模型实例。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
             >>> model.eval()
-            >>> # Model is now in evaluation mode for inference
+            >>> # 模型现在处于推理评估模式
         """
         self.model.eval()
         return self
 
     def __getattr__(self, name):
-        """Enable accessing model attributes directly through the Model class.
+        """允许通过 Model 类直接访问模型属性。
 
-        This method provides a way to access attributes of the underlying model directly through the Model class
-        instance. It first checks if the requested attribute is 'model', in which case it returns the model from
-        the module dictionary. Otherwise, it delegates the attribute lookup to the underlying model.
+        此方法提供了一种通过 Model 类实例直接访问底层模型属性的方式。
+        它首先检查请求的属性是否为 'model'，在这种情况下返回模块字典中的模型。
+        否则，将属性查找委托给底层模型。
 
         Args:
-            name (str): The name of the attribute to retrieve.
+            name (str): 要检索的属性名称。
 
         Returns:
-            (Any): The requested attribute value.
+            (Any): 请求的属性值。
 
         Raises:
-            AttributeError: If the requested attribute does not exist in the model.
+            AttributeError: 如果请求的属性在模型中不存在。
 
         Examples:
             >>> model = YOLO("yolo26n.pt")
-            >>> print(model.stride)  # Access model.stride attribute
-            >>> print(model.names)  # Access model.names attribute
+            >>> print(model.stride)  # 访问 model.stride 属性
+            >>> print(model.names)  # 访问 model.names 属性
         """
         return self._modules["model"] if name == "model" else getattr(self.model, name)

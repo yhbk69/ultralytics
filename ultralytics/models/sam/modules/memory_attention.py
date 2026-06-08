@@ -11,34 +11,33 @@ from .blocks import RoPEAttention
 
 
 class MemoryAttentionLayer(nn.Module):
-    """Implements a memory attention layer with self-attention and cross-attention mechanisms for neural networks.
+    """实现具有自注意力和交叉注意力机制的内存注意力层，用于神经网络。
 
-    This class combines self-attention, cross-attention, and feedforward components to process input tensors and
-    generate memory-based attention outputs.
+    此类结合了自注意力、交叉注意力和前馈组件来处理输入张量并生成基于内存的注意力输出。
 
     Attributes:
-        d_model (int): Dimensionality of the model.
-        dim_feedforward (int): Dimensionality of the feedforward network.
-        dropout_value (float): Dropout rate for regularization.
-        self_attn (RoPEAttention): Self-attention mechanism using RoPE (Rotary Position Embedding).
-        cross_attn_image (RoPEAttention): Cross-attention mechanism for image processing.
-        linear1 (nn.Linear): First linear layer of the feedforward network.
-        linear2 (nn.Linear): Second linear layer of the feedforward network.
-        norm1 (nn.LayerNorm): Layer normalization for self-attention output.
-        norm2 (nn.LayerNorm): Layer normalization for cross-attention output.
-        norm3 (nn.LayerNorm): Layer normalization for feedforward network output.
-        dropout1 (nn.Dropout): Dropout layer after self-attention.
-        dropout2 (nn.Dropout): Dropout layer after cross-attention.
-        dropout3 (nn.Dropout): Dropout layer after feedforward network.
-        activation (nn.ReLU): Activation function for the feedforward network.
-        pos_enc_at_attn (bool): Flag to add positional encoding at attention.
-        pos_enc_at_cross_attn_queries (bool): Flag to add positional encoding to cross-attention queries.
-        pos_enc_at_cross_attn_keys (bool): Flag to add positional encoding to cross-attention keys.
+        d_model (int): 模型的维度。
+        dim_feedforward (int): 前馈网络的维度。
+        dropout_value (float): 正则化的dropout率。
+        self_attn (RoPEAttention): 使用RoPE（旋转位置嵌入）的自注意力机制。
+        cross_attn_image (RoPEAttention): 用于图像处理的交叉注意力机制。
+        linear1 (nn.Linear): 前馈网络的第一全连接层。
+        linear2 (nn.Linear): 前馈网络的第二全连接层。
+        norm1 (nn.LayerNorm): 自注意力输出的层归一化。
+        norm2 (nn.LayerNorm): 交叉注意力输出的层归一化。
+        norm3 (nn.LayerNorm): 前馈网络输出的层归一化。
+        dropout1 (nn.Dropout): 自注意力后的dropout层。
+        dropout2 (nn.Dropout): 交叉注意力后的dropout层。
+        dropout3 (nn.Dropout): 前馈网络后的dropout层。
+        activation (nn.ReLU): 前馈网络的激活函数。
+        pos_enc_at_attn (bool): 是否在注意力处添加位置编码的标志。
+        pos_enc_at_cross_attn_queries (bool): 是否在交叉注意力查询处添加位置编码的标志。
+        pos_enc_at_cross_attn_keys (bool): 是否在交叉注意力键处添加位置编码的标志。
 
     Methods:
-        forward: Performs the full memory attention operation on input tensors.
-        _forward_sa: Performs self-attention on input tensor.
-        _forward_ca: Performs cross-attention between target and memory tensors.
+        forward: 对输入张量执行完整的内存注意力操作。
+        _forward_sa: 对输入张量执行自注意力。
+        _forward_ca: 在目标张量和内存张量之间执行交叉注意力。
 
     Examples:
         >>> layer = MemoryAttentionLayer(d_model=256, dim_feedforward=2048, dropout=0.1)
@@ -62,17 +61,17 @@ class MemoryAttentionLayer(nn.Module):
         self_attn: nn.Module | None = None,
         cross_attn: nn.Module | None = None,
     ):
-        """Initialize a memory attention layer with self-attention, cross-attention, and feedforward components.
+        """初始化具有自注意力、交叉注意力和前馈组件的内存注意力层。
 
         Args:
-            d_model (int): Dimensionality of the model.
-            dim_feedforward (int): Dimensionality of the feedforward network.
-            dropout (float): Dropout rate for regularization.
-            pos_enc_at_attn (bool): Whether to add positional encoding at attention.
-            pos_enc_at_cross_attn_keys (bool): Whether to add positional encoding to cross-attention keys.
-            pos_enc_at_cross_attn_queries (bool): Whether to add positional encoding to cross-attention queries.
-            self_attn (nn.Module | None): Custom self-attention module. If None, a default RoPEAttention is used.
-            cross_attn (nn.Module | None): Custom cross-attention module. If None, a default RoPEAttention is used.
+            d_model (int): 模型的维度。
+            dim_feedforward (int): 前馈网络的维度。
+            dropout (float): 正则化的dropout率。
+            pos_enc_at_attn (bool): 是否在注意力处添加位置编码。
+            pos_enc_at_cross_attn_keys (bool): 是否在交叉注意力键处添加位置编码。
+            pos_enc_at_cross_attn_queries (bool): 是否在交叉注意力查询处添加位置编码。
+            self_attn (nn.Module | None): 自定义自注意力模块。如果为None，则使用默认的RoPEAttention。
+            cross_attn (nn.Module | None): 自定义交叉注意力模块。如果为None，则使用默认的RoPEAttention。
         """
         super().__init__()
         self.d_model = d_model
@@ -107,7 +106,7 @@ class MemoryAttentionLayer(nn.Module):
         self.pos_enc_at_cross_attn_keys = pos_enc_at_cross_attn_keys
 
     def _forward_sa(self, tgt: torch.Tensor, query_pos: torch.Tensor | None) -> torch.Tensor:
-        """Perform self-attention on input tensor using positional encoding and RoPE attention mechanism."""
+        """使用位置编码和RoPE注意力机制对输入张量执行自注意力。"""
         tgt2 = self.norm1(tgt)
         q = k = tgt2 + query_pos if self.pos_enc_at_attn else tgt2
         tgt2 = self.self_attn(q, k, v=tgt2)
@@ -122,7 +121,7 @@ class MemoryAttentionLayer(nn.Module):
         pos: torch.Tensor | None,
         num_k_exclude_rope: int = 0,
     ) -> torch.Tensor:
-        """Perform cross-attention between target and memory tensors using RoPEAttention mechanism."""
+        """使用RoPEAttention机制在目标张量和内存张量之间执行交叉注意力。"""
         kwds = {}
         if num_k_exclude_rope > 0:
             assert isinstance(self.cross_attn_image, RoPEAttention)
@@ -147,17 +146,17 @@ class MemoryAttentionLayer(nn.Module):
         query_pos: torch.Tensor | None = None,
         num_k_exclude_rope: int = 0,
     ) -> torch.Tensor:
-        """Process input tensors through self-attention, cross-attention, and feedforward network layers.
+        """通过自注意力、交叉注意力和前馈网络层处理输入张量。
 
         Args:
-            tgt (torch.Tensor): Target tensor for self-attention with shape (N, L, D).
-            memory (torch.Tensor): Memory tensor for cross-attention with shape (N, S, D).
-            pos (torch.Tensor | None): Positional encoding for memory tensor.
-            query_pos (torch.Tensor | None): Positional encoding for target tensor.
-            num_k_exclude_rope (int): Number of keys to exclude from rotary position embedding.
+            tgt (torch.Tensor): 自注意力的目标张量，形状为(N, L, D)。
+            memory (torch.Tensor): 交叉注意力的内存张量，形状为(N, S, D)。
+            pos (torch.Tensor | None): 内存张量的位置编码。
+            query_pos (torch.Tensor | None): 目标张量的位置编码。
+            num_k_exclude_rope (int): 从旋转位置嵌入中排除的键数量。
 
         Returns:
-            (torch.Tensor): Processed tensor after attention and feedforward layers with shape (N, L, D).
+            (torch.Tensor): 经过注意力和前馈层处理后形状为(N, L, D)的张量。
         """
         tgt = self._forward_sa(tgt, query_pos)
         tgt = self._forward_ca(tgt, memory, query_pos, pos, num_k_exclude_rope)
@@ -169,21 +168,21 @@ class MemoryAttentionLayer(nn.Module):
 
 
 class MemoryAttention(nn.Module):
-    """Memory attention module for processing sequential data with self and cross-attention mechanisms.
+    """用于处理具有自注意力和交叉注意力机制的序列数据的内存注意力模块。
 
-    This class implements a multi-layer attention mechanism that combines self-attention and cross-attention for
-    processing sequential data, particularly useful in transformer-like architectures.
+    此类实现了结合自注意力和交叉注意力的多层注意力机制，用于处理序列数据，
+    在transformer类架构中特别有用。
 
     Attributes:
-        d_model (int): The dimension of the model's hidden state.
-        layers (nn.ModuleList): A list of MemoryAttentionLayer modules.
-        num_layers (int): The number of attention layers.
-        norm (nn.LayerNorm): Layer normalization applied to the output.
-        pos_enc_at_input (bool): Whether to apply positional encoding at the input.
-        batch_first (bool): Whether the input tensors are in batch-first format.
+        d_model (int): 模型隐藏状态的维度。
+        layers (nn.ModuleList): MemoryAttentionLayer模块的列表。
+        num_layers (int): 注意力层的数量。
+        norm (nn.LayerNorm): 应用于输出的层归一化。
+        pos_enc_at_input (bool): 是否在输入处应用位置编码。
+        batch_first (bool): 输入张量是否为batch first格式。
 
     Methods:
-        forward: Processes input tensors through the attention layers.
+        forward: 通过注意力层处理输入张量。
 
     Examples:
         >>> d_model = 256
@@ -206,17 +205,17 @@ class MemoryAttention(nn.Module):
         num_layers: int,
         batch_first: bool = True,  # Do layers expect batch first input?
     ):
-        """Initialize MemoryAttention with specified layers and normalization for sequential data processing.
+        """初始化MemoryAttention，使用指定的层和归一化处理序列数据。
 
-        This class implements a multi-layer attention mechanism that combines self-attention and cross-attention for
-        processing sequential data, particularly useful in transformer-like architectures.
+        此类实现了结合自注意力和交叉注意力的多层注意力机制，用于处理序列数据，
+        在transformer类架构中特别有用。
 
         Args:
-            d_model (int): The dimension of the model's hidden state.
-            pos_enc_at_input (bool): Whether to apply positional encoding at the input.
-            layer (nn.Module): The attention layer to be used in the module.
-            num_layers (int): The number of attention layers.
-            batch_first (bool): Whether the input tensors are in batch-first format.
+            d_model (int): 模型隐藏状态的维度。
+            pos_enc_at_input (bool): 是否在输入处应用位置编码。
+            layer (nn.Module): 模块中使用的注意力层。
+            num_layers (int): 注意力层的数量。
+            batch_first (bool): 输入张量是否为batch first格式。
         """
         super().__init__()
         self.d_model = d_model
@@ -234,17 +233,17 @@ class MemoryAttention(nn.Module):
         memory_pos: torch.Tensor | None = None,  # pos_enc for cross-attention inputs
         num_obj_ptr_tokens: int = 0,  # number of object pointer *tokens*
     ) -> torch.Tensor:
-        """Process inputs through attention layers, applying self and cross-attention with positional encoding.
+        """通过注意力层处理输入，应用自注意力和交叉注意力以及位置编码。
 
         Args:
-            curr (torch.Tensor): Self-attention input tensor, representing the current state.
-            memory (torch.Tensor): Cross-attention input tensor, representing memory information.
-            curr_pos (torch.Tensor | None): Positional encoding for self-attention inputs.
-            memory_pos (torch.Tensor | None): Positional encoding for cross-attention inputs.
-            num_obj_ptr_tokens (int): Number of object pointer tokens to exclude from rotary position embedding.
+            curr (torch.Tensor): 自注意力输入张量，表示当前状态。
+            memory (torch.Tensor): 交叉注意力输入张量，表示内存信息。
+            curr_pos (torch.Tensor | None): 自注意力输入的位置编码。
+            memory_pos (torch.Tensor | None): 交叉注意力输入的位置编码。
+            num_obj_ptr_tokens (int): 从旋转位置嵌入中排除的对象指针令牌数量。
 
         Returns:
-            (torch.Tensor): Processed output tensor after applying attention layers and normalization.
+            (torch.Tensor): 经过注意力层和归一化处理后的输出张量。
 
         Examples:
             >>> d_model = 256

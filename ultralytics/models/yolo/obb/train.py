@@ -11,18 +11,18 @@ from ultralytics.utils import DEFAULT_CFG, RANK
 
 
 class OBBTrainer(yolo.detect.DetectionTrainer):
-    """A class extending the DetectionTrainer class for training based on an Oriented Bounding Box (OBB) model.
+    """用于基于旋转边界框 (OBB) 模型进行训练的类，继承自 DetectionTrainer。
 
-    This trainer specializes in training YOLO models that detect oriented bounding boxes, which are useful for detecting
-    objects at arbitrary angles rather than just axis-aligned rectangles.
+    该训练器专注于训练检测旋转边界框的 YOLO 模型，适用于检测
+    任意角度的目标，而非仅限轴对齐矩形。
 
     Attributes:
-        loss_names (tuple): Names of the loss components used during training including box_loss, cls_loss, dfl_loss,
-            and angle_loss.
+        loss_names (tuple): 训练期间使用的损失分量名称，包括 box_loss、cls_loss、dfl_loss
+            和 angle_loss。
 
     Methods:
-        get_model: Return OBBModel initialized with specified config and weights.
-        get_validator: Return an instance of OBBValidator for validation of YOLO model.
+        get_model: 返回使用指定配置和权重初始化的 OBBModel。
+        get_validator: 返回用于 YOLO 模型验证的 OBBValidator 实例。
 
     Examples:
         >>> from ultralytics.models.yolo.obb import OBBTrainer
@@ -32,14 +32,13 @@ class OBBTrainer(yolo.detect.DetectionTrainer):
     """
 
     def __init__(self, cfg=DEFAULT_CFG, overrides: dict | None = None, _callbacks: dict | None = None):
-        """Initialize an OBBTrainer object for training Oriented Bounding Box (OBB) models.
+        """初始化用于训练旋转边界框 (OBB) 模型的 OBBTrainer 对象。
 
         Args:
-            cfg (dict, optional): Configuration dictionary for the trainer. Contains training parameters and model
-                configuration.
-            overrides (dict, optional): Dictionary of parameter overrides for the configuration. Any values here will
-                take precedence over those in cfg.
-            _callbacks (dict, optional): Dictionary of callback functions to be invoked during training.
+            cfg (dict, optional): 训练器的配置字典。包含训练参数和模型配置。
+            overrides (dict, optional): 配置的参数字典覆盖项。此处的任何值将
+                覆盖 cfg 中的值。
+            _callbacks (dict, optional): 训练期间调用的回调函数字典。
         """
         if overrides is None:
             overrides = {}
@@ -49,16 +48,16 @@ class OBBTrainer(yolo.detect.DetectionTrainer):
     def get_model(
         self, cfg: str | dict | None = None, weights: str | Path | None = None, verbose: bool = True
     ) -> OBBModel:
-        """Return OBBModel initialized with specified config and weights.
+        """返回使用指定配置和权重初始化的 OBBModel。
 
         Args:
-            cfg (str | dict, optional): Model configuration. Can be a path to a YAML config file, a dictionary
-                containing configuration parameters, or None to use default configuration.
-            weights (str | Path, optional): Path to pretrained weights file. If None, random initialization is used.
-            verbose (bool): Whether to display model information during initialization.
+            cfg (str | dict, optional): 模型配置。可以是 YAML 配置文件的路径、包含配置参数的字典，
+                或为 None 使用默认配置。
+            weights (str | Path, optional): 预训练权重文件的路径。如果为 None，则使用随机初始化。
+            verbose (bool): 是否在初始化期间显示模型信息。
 
         Returns:
-            (OBBModel): Initialized OBBModel with the specified configuration and weights.
+            (OBBModel): 使用指定配置和权重初始化的 OBBModel。
 
         Examples:
             >>> trainer = OBBTrainer()
@@ -71,7 +70,7 @@ class OBBTrainer(yolo.detect.DetectionTrainer):
         return model
 
     def get_validator(self):
-        """Return an instance of OBBValidator for validation of YOLO model."""
+        """返回用于 YOLO 模型验证的 OBBValidator 实例。"""
         self.loss_names = "box_loss", "cls_loss", "dfl_loss", "angle_loss"
         return yolo.obb.OBBValidator(
             self.test_loader, save_dir=self.save_dir, args=copy(self.args), _callbacks=self.callbacks

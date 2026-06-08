@@ -11,37 +11,35 @@ from ultralytics.utils.plotting import colors
 
 
 class RegionCounter(BaseSolution):
-    """A class for real-time counting of objects within user-defined regions in a video stream.
+    """在视频流中用户自定义区域内进行实时目标计数的类。
 
-    This class inherits from `BaseSolution` and provides functionality to define polygonal regions in a video frame,
-    track objects, and count those objects that pass through each defined region. Useful for applications requiring
-    counting in specified areas, such as monitoring zones or segmented sections.
+    此类继承自 `BaseSolution`，提供在视频帧中定义多边形区域、跟踪目标并统计通过每个定义区域的目标数量功能。
+    适用于需要在指定区域（如监控区域或分段区域）进行计数的应用场景。
 
-    Attributes:
-        region_template (dict): Template for creating new counting regions with default attributes including name,
-            polygon coordinates, and display colors.
-        counting_regions (list): List storing all defined regions, where each entry is based on `region_template` and
-            includes specific region settings like name, coordinates, and color.
-        region_counts (dict): Dictionary storing the count of objects for each named region.
+    属性:
+        region_template (dict): 用于创建新计数区域的模板，包含默认属性如名称、多边形坐标和显示颜色。
+        counting_regions (list): 存储所有已定义区域的列表，每个条目基于 `region_template`，
+            包含具体的区域设置如名称、坐标和颜色。
+        region_counts (dict): 存储每个命名区域目标计数的字典。
 
-    Methods:
-        add_region: Add a new counting region with specified attributes.
-        process: Process video frames to count objects in each region.
-        initialize_regions: Initialize zones to count the objects in each one. Zones could be multiple as well.
+    方法:
+        add_region: 添加具有指定属性的新计数区域。
+        process: 处理视频帧以统计每个区域中的目标数量。
+        initialize_regions: 初始化用于统计每个区域中目标数量的区域。区域可以有多个。
 
-    Examples:
-        Initialize a RegionCounter and add a counting region
+    示例:
+        初始化 RegionCounter 并添加计数区域
         >>> counter = RegionCounter()
         >>> counter.add_region("Zone1", [(100, 100), (200, 100), (200, 200), (100, 200)], (255, 0, 0), (255, 255, 255))
         >>> results = counter.process(frame)
-        >>> print(f"Total tracks: {results.total_tracks}")
+        >>> print(f"跟踪目标总数: {results.total_tracks}")
     """
 
     def __init__(self, **kwargs: Any) -> None:
-        """Initialize the RegionCounter for real-time object counting in user-defined regions."""
+        """初始化 RegionCounter，用于在用户自定义区域内进行实时目标计数。"""
         super().__init__(**kwargs)
         self.region_template = {
-            "name": "Default Region",
+            "name": "默认区域",
             "polygon": None,
             "counts": 0,
             "region_color": (255, 255, 255),
@@ -58,16 +56,16 @@ class RegionCounter(BaseSolution):
         region_color: tuple[int, int, int],
         text_color: tuple[int, int, int],
     ) -> dict[str, Any]:
-        """Add a new region to the counting list based on the provided template with specific attributes.
+        """基于提供的模板向计数列表添加具有特定属性的新区域。
 
-        Args:
-            name (str): Name assigned to the new region.
-            polygon_points (list[tuple]): List of (x, y) coordinates defining the region's polygon.
-            region_color (tuple[int, int, int]): BGR color for region visualization.
-            text_color (tuple[int, int, int]): BGR color for the text within the region.
+        参数:
+            name (str): 分配给新区域的名称。
+            polygon_points (list[tuple]): 定义区域多边形的 (x, y) 坐标列表。
+            region_color (tuple[int, int, int]): 区域可视化的 BGR 颜色。
+            text_color (tuple[int, int, int]): 区域内文本的 BGR 颜色。
 
-        Returns:
-            (dict[str, Any]): Region information including name, polygon, and display colors.
+        返回:
+            (dict[str, Any]): 区域信息，包括名称、多边形和显示颜色。
         """
         region = self.region_template.copy()
         region.update(
@@ -82,24 +80,24 @@ class RegionCounter(BaseSolution):
         return region
 
     def initialize_regions(self):
-        """Initialize regions from `self.region` only once."""
+        """从 `self.region` 初始化区域，仅执行一次。"""
         if self.region is None:
             self.initialize_region()
-        if not isinstance(self.region, dict):  # Ensure self.region is initialized and structured as a dictionary
-            self.region = {"Region#01": self.region}
+        if not isinstance(self.region, dict):  # 确保 self.region 已初始化并结构化为字典
+            self.region = {"区域#01": self.region}
         for i, (name, pts) in enumerate(self.region.items()):
             region = self.add_region(name, pts, colors(i, True), (255, 255, 255))
             region["prepared_polygon"] = self.prep(region["polygon"])
 
     def process(self, im0: np.ndarray) -> SolutionResults:
-        """Process the input frame to detect and count objects within each defined region.
+        """处理输入帧以检测并统计每个定义区域内的目标数量。
 
-        Args:
-            im0 (np.ndarray): Input image frame where objects and regions are annotated.
+        参数:
+            im0 (np.ndarray): 输入图像帧，目标和区域将在此帧上进行标注。
 
-        Returns:
-            (SolutionResults): Contains processed image `plot_im`, 'total_tracks' (int, total number of tracked
-                objects), and 'region_counts' (dict, counts of objects per region).
+        返回:
+            (SolutionResults): 包含处理后图像 `plot_im`、'total_tracks'（跟踪目标总数，int）
+                和 'region_counts'（每个区域的目标计数，dict）。
         """
         self.extract_tracks(im0)
         annotator = SolutionAnnotator(im0, line_width=self.line_width)
@@ -112,7 +110,7 @@ class RegionCounter(BaseSolution):
                     region["counts"] += 1
                     self.region_counts[region["name"]] = region["counts"]
 
-        # Display region counts
+        # 显示区域计数
         for region in self.counting_regions:
             poly = region["polygon"]
             pts = list(map(tuple, np.array(poly.exterior.coords, dtype=np.int32)))
@@ -126,7 +124,7 @@ class RegionCounter(BaseSolution):
                 margin=self.line_width * 4,
                 shape="rect",
             )
-            region["counts"] = 0  # Reset for next frame
+            region["counts"] = 0  # 为下一帧重置计数
         plot_im = annotator.result()
         self.display_output(plot_im)
 

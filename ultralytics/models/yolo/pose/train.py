@@ -13,23 +13,23 @@ from ultralytics.utils.torch_utils import unwrap_model
 
 
 class PoseTrainer(yolo.detect.DetectionTrainer):
-    """A class extending the DetectionTrainer class for training YOLO pose estimation models.
+    """用于训练 YOLO 姿态估计模型的类，继承自 DetectionTrainer。
 
-    This trainer specializes in handling pose estimation tasks, managing model training, validation, and visualization
-    of pose keypoints alongside bounding boxes.
+    该训练器专门处理姿态估计任务，管理模型训练、验证以及
+    边界框和姿态关键点的可视化。
 
     Attributes:
-        args (dict): Configuration arguments for training.
-        model (PoseModel): The pose estimation model being trained.
-        data (dict): Dataset configuration including keypoint shape information.
-        loss_names (tuple): Names of the loss components used in training.
+        args (dict): 训练的配置参数。
+        model (PoseModel): 正在训练的姿态估计模型。
+        data (dict): 包含关键点形状信息的数据集配置。
+        loss_names (tuple): 训练中使用的损失分量名称。
 
     Methods:
-        get_model: Retrieve a pose estimation model with specified configuration.
-        set_model_attributes: Set keypoints shape attribute on the model.
-        get_validator: Create a validator instance for model evaluation.
-        plot_training_samples: Visualize training samples with keypoints.
-        get_dataset: Retrieve the dataset and ensure it contains required kpt_shape key.
+        get_model: 获取使用指定配置的姿态估计模型。
+        set_model_attributes: 在模型上设置关键点形状属性。
+        get_validator: 创建用于模型评估的验证器实例。
+        plot_training_samples: 可视化包含关键点的训练样本。
+        get_dataset: 获取数据集并确保包含必需的 kpt_shape 键。
 
     Examples:
         >>> from ultralytics.models.yolo.pose import PoseTrainer
@@ -39,16 +39,16 @@ class PoseTrainer(yolo.detect.DetectionTrainer):
     """
 
     def __init__(self, cfg=DEFAULT_CFG, overrides: dict[str, Any] | None = None, _callbacks: dict | None = None):
-        """Initialize a PoseTrainer object for training YOLO pose estimation models.
+        """初始化用于训练 YOLO 姿态估计模型的 PoseTrainer 对象。
 
         Args:
-            cfg (dict, optional): Default configuration dictionary containing training parameters.
-            overrides (dict, optional): Dictionary of parameter overrides for the default configuration.
-            _callbacks (dict, optional): Dictionary of callback functions to be executed during training.
+            cfg (dict, optional): 包含训练参数的默认配置字典。
+            overrides (dict, optional): 覆盖默认配置的参数字典。
+            _callbacks (dict, optional): 训练期间执行的回调函数字典。
 
         Notes:
-            This trainer will automatically set the task to 'pose' regardless of what is provided in overrides.
-            A warning is issued when using Apple MPS device due to known bugs with pose models.
+            无论 overrides 中提供什么值，该训练器都会自动将任务设置为 'pose'。
+            使用 Apple MPS 设备时会发出警告，因为已知姿态模型存在 bug。
         """
         if overrides is None:
             overrides = {}
@@ -61,15 +61,15 @@ class PoseTrainer(yolo.detect.DetectionTrainer):
         weights: str | Path | None = None,
         verbose: bool = True,
     ) -> PoseModel:
-        """Get pose estimation model with specified configuration and weights.
+        """获取使用指定配置和权重的姿态估计模型。
 
         Args:
-            cfg (str | Path | dict, optional): Model configuration file path or dictionary.
-            weights (str | Path, optional): Path to the model weights file.
-            verbose (bool): Whether to display model information.
+            cfg (str | Path | dict, optional): 模型配置文件的路径或字典。
+            weights (str | Path, optional): 模型权重文件的路径。
+            verbose (bool): 是否显示模型信息。
 
         Returns:
-            (PoseModel): Initialized pose estimation model.
+            (PoseModel): 初始化后的姿态估计模型。
         """
         model = PoseModel(
             cfg,
@@ -84,7 +84,7 @@ class PoseTrainer(yolo.detect.DetectionTrainer):
         return model
 
     def set_model_attributes(self):
-        """Set keypoints shape attribute of PoseModel."""
+        """设置 PoseModel 的关键点形状属性。"""
         super().set_model_attributes()
         self.model.kpt_shape = self.data["kpt_shape"]
         kpt_names = self.data.get("kpt_names")
@@ -94,7 +94,7 @@ class PoseTrainer(yolo.detect.DetectionTrainer):
         self.model.kpt_names = kpt_names
 
     def get_validator(self):
-        """Return an instance of the PoseValidator class for validation."""
+        """返回用于验证的 PoseValidator 类实例。"""
         self.loss_names = "box_loss", "pose_loss", "kobj_loss", "cls_loss", "dfl_loss"
         if getattr(unwrap_model(self.model).model[-1], "flow_model", None) is not None:
             self.loss_names += ("rle_loss",)
@@ -103,13 +103,13 @@ class PoseTrainer(yolo.detect.DetectionTrainer):
         )
 
     def get_dataset(self) -> dict[str, Any]:
-        """Retrieve the dataset and ensure it contains the required `kpt_shape` key.
+        """获取数据集并确保包含必需的 `kpt_shape` 键。
 
         Returns:
-            (dict): A dictionary containing the training/validation/test dataset and category names.
+            (dict): 包含训练/验证/测试数据集和类别名称的字典。
 
         Raises:
-            KeyError: If the `kpt_shape` key is not present in the dataset.
+            KeyError: 如果数据集中不存在 `kpt_shape` 键。
         """
         data = super().get_dataset()
         if "kpt_shape" not in data:

@@ -19,25 +19,24 @@ def auto_annotate(
     classes: list[int] | None = None,
     output_dir: str | Path | None = None,
 ) -> None:
-    """Automatically annotate images using a YOLO object detection model and a SAM segmentation model.
+    """使用 YOLO 目标检测模型和 SAM 分割模型自动标注图片。
 
-    This function processes images in a specified directory, detects objects using a YOLO model, and then generates
-    segmentation masks using a SAM model. The resulting annotations are saved as text files in YOLO format.
+    此函数处理指定目录中的图片：先用 YOLO 模型检测目标，再用 SAM 模型生成分割掩码。
+    生成的标注以 YOLO 格式保存为文本文件。
 
-    Args:
-        data (str | Path): Path to a folder containing images to be annotated.
-        det_model (str): Path or name of the pre-trained YOLO detection model.
-        sam_model (str): Path or name of the pre-trained SAM segmentation model.
-        device (str): Device to run the models on (e.g., 'cpu', 'cuda', '0'). Empty string for auto-selection.
-        conf (float): Confidence threshold for detection model.
-        iou (float): IoU threshold for filtering overlapping boxes in detection results.
-        imgsz (int): Input image resize dimension.
-        max_det (int): Maximum number of detections per image.
-        classes (list[int], optional): Filter predictions to specified class IDs, returning only relevant detections.
-        output_dir (str | Path, optional): Directory to save the annotated results. If None, creates a default directory
-            based on the input data path.
+    参数：
+        data (str | Path)：包含待标注图片的文件夹路径。
+        det_model (str)：预训练 YOLO 检测模型的路径或名称。
+        sam_model (str)：预训练 SAM 分割模型的路径或名称。
+        device (str)：运行模型的设备（如 'cpu'、'cuda'、'0'）。空字符串表示自动选择。
+        conf (float)：检测模型的置信度阈值。
+        iou (float)：过滤检测结果中重叠框的 IoU 阈值。
+        imgsz (int)：输入图片的缩放尺寸。
+        max_det (int)：每张图片的最大检测数量。
+        classes (list[int], 可选)：只返回指定类别 ID 的预测结果，过滤其他类别。
+        output_dir (str | Path, 可选)：保存标注结果的目录。为 None 时基于输入路径自动创建默认目录。
 
-    Examples:
+    示例：
         >>> from ultralytics.data.annotator import auto_annotate
         >>> auto_annotate(data="ultralytics/assets", det_model="yolo26n.pt", sam_model="mobile_sam.pt")
     """
@@ -54,8 +53,8 @@ def auto_annotate(
     )
 
     for result in det_results:
-        if class_ids := result.boxes.cls.int().tolist():  # Extract class IDs from detection results
-            boxes = result.boxes.xyxy  # Boxes object for bbox outputs
+        if class_ids := result.boxes.cls.int().tolist():  # 从检测结果中提取类别 ID
+            boxes = result.boxes.xyxy  # 获取边界框输出的 Boxes 对象
             sam_results = sam_model(result.orig_img, bboxes=boxes, verbose=False, save=False, device=device)
             segments = sam_results[0].masks.xyn
 

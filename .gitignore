@@ -208,3 +208,6 @@ results.csv
 .opencode/
 .understand-anything/
 .omo/
+.claude
+
+ preds.txt

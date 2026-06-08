@@ -1,4 +1,5 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics 🚀 AGPL-3.0 许可证 - https://ultralytics.com/license
+# Ultralytics 视觉 AI 解决方案包，提供开箱即用的计算机视觉应用模块
 
 from .ai_gym import AIGym
 from .analytics import Analytics

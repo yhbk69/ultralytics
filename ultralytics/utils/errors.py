@@ -4,32 +4,32 @@ from ultralytics.utils import emojis
 
 
 class HUBModelError(Exception):
-    """Exception raised when a model cannot be found or retrieved from Ultralytics HUB.
+    """当无法从 Ultralytics HUB 找到或获取模型时抛出的异常。
 
-    This custom exception is used specifically for handling errors related to model fetching in Ultralytics YOLO. The
-    error message is processed to include emojis for better user experience.
+    该自定义异常专门用于处理 Ultralytics YOLO 中模型获取相关的错误。
+    错误消息会经过 emoji 处理，以提供更好的用户体验。
 
-    Attributes:
-        message (str): The error message displayed when the exception is raised.
+    属性:
+        message (str): 异常抛出时显示的错误消息。
 
-    Methods:
-        __init__: Initialize the HUBModelError with a custom message.
+    方法:
+        __init__: 使用自定义消息初始化 HUBModelError。
 
-    Examples:
+    示例:
         >>> try:
-        ...     # Code that might fail to find a model
+        ...     # 可能无法找到模型的代码
         ...     raise HUBModelError("Custom model not found message")
         ... except HUBModelError as e:
-        ...     print(e)  # Displays the emoji-enhanced error message
+        ...     print(e)  # 显示带有 emoji 的错误消息
     """
 
     def __init__(self, message: str = "Model not found. Please check model URL and try again."):
-        """Initialize a HUBModelError exception.
+        """初始化 HUBModelError 异常。
 
-        This exception is raised when a requested model is not found or cannot be retrieved from Ultralytics HUB. The
-        message is processed to include emojis for better user experience.
+        当请求的模型未找到或无法从 Ultralytics HUB 获取时抛出此异常。
+        消息会经过 emoji 处理，以提供更好的用户体验。
 
-        Args:
-            message (str, optional): The error message to display when the exception is raised.
+        参数:
+            message (str, 可选): 异常抛出时显示的错误消息。
         """
         super().__init__(emojis(message))

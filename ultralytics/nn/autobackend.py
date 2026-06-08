@@ -33,21 +33,21 @@ from .backends import (
 
 
 def check_class_names(names: list | dict) -> dict[int, str]:
-    """Check class names and convert to dict format if needed.
+    """检查类名并在需要时转换为字典格式。
 
     Args:
-        names (list | dict): Class names as list or dict format.
+        names (list | dict): 列表或字典格式的类名。
 
     Returns:
-        (dict): Class names in dict format with integer keys and string values.
+        (dict): 以整数为键、字符串为值的字典格式类名。
 
     Raises:
-        KeyError: If class indices are invalid for the dataset size.
+        KeyError: 如果类索引对数据集大小无效则抛出。
     """
-    if isinstance(names, list):  # names is a list
-        names = dict(enumerate(names))  # convert to dict
+    if isinstance(names, list):  # names 是列表
+        names = dict(enumerate(names))  # 转换为字典
     if isinstance(names, dict):
-        # Convert 1) string keys to int, i.e. '0' to 0, and non-string values to strings, i.e. True to 'True'
+        # 转换 1) 字符串键为整数，如 '0' -> 0，以及非字符串值为字符串，如 True -> 'True'
         names = {int(k): str(v) for k, v in names.items()}
         n = len(names)
         if max(names.keys()) >= n:
@@ -55,22 +55,22 @@ def check_class_names(names: list | dict) -> dict[int, str]:
                 f"{n}-class dataset requires class indices 0-{n - 1}, but you have invalid class indices "
                 f"{min(names.keys())}-{max(names.keys())} defined in your dataset YAML."
             )
-        if isinstance(names[0], str) and names[0].startswith("n0"):  # imagenet class codes, i.e. 'n01440764'
+        if isinstance(names[0], str) and names[0].startswith("n0"):  # imagenet 类编码，如 'n01440764'
             from ultralytics.utils import ROOT, YAML
 
-            names_map = YAML.load(ROOT / "cfg/datasets/ImageNet.yaml")["map"]  # human-readable names
+            names_map = YAML.load(ROOT / "cfg/datasets/ImageNet.yaml")["map"]  # 人类可读的名称
             names = {k: names_map[v] for k, v in names.items()}
     return names
 
 
 def default_class_names(data: str | Path | None = None) -> dict[int, str]:
-    """Load class names from a YAML file or return numerical class names.
+    """从 YAML 文件加载类名或返回数字形式的类名。
 
     Args:
-        data (str | Path, optional): Path to YAML file containing class names.
+        data (str | Path, optional): 包含类名的 YAML 文件路径。
 
     Returns:
-        (dict): Dictionary mapping class indices to class names.
+        (dict): 将类索引映射为类名的字典。
     """
     if data:
         try:
@@ -80,17 +80,16 @@ def default_class_names(data: str | Path | None = None) -> dict[int, str]:
             return YAML.load(check_yaml(data))["names"]
         except Exception:
             pass
-    return {i: f"class{i}" for i in range(999)}  # return default if above errors
+    return {i: f"class{i}" for i in range(999)}  # 如果上述出错则返回默认值
 
 
 class AutoBackend(nn.Module):
-    """Handle dynamic backend selection for running inference using Ultralytics YOLO models.
+    """处理使用 Ultralytics YOLO 模型进行推理时后端动态选择的抽象层。
 
-    The AutoBackend class is designed to provide an abstraction layer for various inference engines. It supports a wide
-    range of formats, each with specific naming conventions as outlined below:
+    AutoBackend 类旨在为各种推理引擎提供抽象层。它支持多种格式，每种格式都有如下特定的命名约定：
 
-        Supported Formats and Naming Conventions:
-            | Format                | File Suffix       |
+        支持的格式与命名约定：
+            | 格式                  | 文件后缀            |
             | --------------------- | ----------------- |
             | PyTorch               | *.pt              |
             | TorchScript           | *.torchscript     |
@@ -114,21 +113,21 @@ class AutoBackend(nn.Module):
             | DeepX                 | *_deepx_model/    |
 
     Attributes:
-        backend (BaseBackend): The loaded inference backend instance.
-        format (str): The model format (e.g., 'pt', 'onnx', 'engine').
-        model: The underlying model (nn.Module for PyTorch backends, backend instance otherwise).
-        device (torch.device): The device (CPU or GPU) on which the model is loaded.
-        task (str): The type of task the model performs (detect, segment, classify, pose).
-        names (dict): A dictionary of class names that the model can detect.
-        stride (int): The model stride, typically 32 for YOLO models.
-        fp16 (bool): Whether the model uses half-precision (FP16) inference.
-        nhwc (bool): Whether the model expects NHWC input format instead of NCHW.
+        backend (BaseBackend): 加载的推理后端实例。
+        format (str): 模型格式（如 'pt', 'onnx', 'engine'）。
+        model: 底层模型（对 PyTorch 后端为 nn.Module，否则为后端实例）。
+        device (torch.device): 模型加载所在的设备（CPU 或 GPU）。
+        task (str): 模型执行的任务类型（detect, segment, classify, pose）。
+        names (dict): 模型可检测的类名字典。
+        stride (int): 模型步幅，YOLO 模型通常为 32。
+        fp16 (bool): 模型是否使用半精度（FP16）推理。
+        nhwc (bool): 模型是否期望 NHWC 输入格式而非 NCHW。
 
     Methods:
-        forward: Run inference on an input image.
-        from_numpy: Convert NumPy arrays to tensors on the model device.
-        warmup: Warm up the model with a dummy input.
-        _model_type: Determine the model type from file path.
+        forward: 对输入图像执行推理。
+        from_numpy: 将 NumPy 数组转换为模型设备上的张量。
+        warmup: 使用虚拟输入预热模型。
+        _model_type: 通过文件路径确定模型类型。
 
     Examples:
         >>> model = AutoBackend(model="yolo26n.pt", device="cuda")
@@ -139,7 +138,7 @@ class AutoBackend(nn.Module):
         "pt": PyTorchBackend,
         "torchscript": TorchScriptBackend,
         "onnx": ONNXBackend,
-        "dnn": ONNXBackend,  # Special case: ONNX with DNN
+        "dnn": ONNXBackend,  # 特殊情况：使用 DNN 的 ONNX
         "openvino": OpenVINOBackend,
         "engine": TensorRTBackend,
         "coreml": CoreMLBackend,
@@ -169,25 +168,25 @@ class AutoBackend(nn.Module):
         fuse: bool = True,
         verbose: bool = True,
     ):
-        """Initialize the AutoBackend for inference.
+        """初始化 AutoBackend 用于推理。
 
         Args:
-            model (str | torch.nn.Module): Path to the model weights file or a module instance.
-            device (torch.device): Device to run the model on.
-            dnn (bool): Use OpenCV DNN module for ONNX inference.
-            data (str | Path, optional): Path to the additional data.yaml file containing class names.
-            fp16 (bool): Enable half-precision inference. Supported only on specific backends.
-            fuse (bool): Fuse Conv2D + BatchNorm layers for optimization.
-            verbose (bool): Enable verbose logging.
+            model (str | torch.nn.Module): 模型权重文件路径或模块实例。
+            device (torch.device): 运行模型的设备。
+            dnn (bool): 使用 OpenCV DNN 模块进行 ONNX 推理。
+            data (str | Path, optional): 包含类名的附加 data.yaml 文件路径。
+            fp16 (bool): 启用半精度推理。仅特定后端支持。
+            fuse (bool): 融合 Conv2D + BatchNorm 层以进行优化。
+            verbose (bool): 启用详细日志。
         """
         super().__init__()
-        # Determine model format from path/URL
+        # 通过路径/URL 确定模型格式
         format = "pt" if isinstance(model, nn.Module) else self._model_type(model, dnn)
 
-        # Check if format supports FP16
+        # 检查格式是否支持 FP16
         fp16 &= format in {"pt", "torchscript", "onnx", "openvino", "engine", "triton"}
 
-        # Set device
+        # 设置设备
         if (
             isinstance(device, torch.device)
             and torch.cuda.is_available()
@@ -196,7 +195,7 @@ class AutoBackend(nn.Module):
         ):
             device = torch.device("cpu")
 
-        # Select and initialize the appropriate backend
+        # 选择并初始化合适的后端
         backend_kwargs = {"device": device, "fp16": fp16}
 
         if format == "tfjs":
@@ -219,25 +218,24 @@ class AutoBackend(nn.Module):
         self.nhwc = format in {"coreml", "saved_model", "pb", "tflite", "edgetpu", "rknn"}
         self.format = format
 
-        # Ensure backend has names (fallback to default if not set by metadata)
+        # 确保后端有类名（如果元数据未设置，则回退为默认值）
         if not self.backend.names:
             self.backend.names = default_class_names(data)
         self.backend.names = check_class_names(self.backend.names)
 
     def __getattr__(self, name: str) -> Any:
-        """Delegate attribute access to the backend.
+        """将属性访问委托给后端。
 
-        This allows AutoBackend to transparently expose backend attributes
-        without explicit copying.
+        这允许 AutoBackend 无需显式复制属性即可透明地暴露后端属性。
 
         Args:
-            name: Attribute name to look up.
+            name: 要查找的属性名称。
 
         Returns:
-            The attribute value from the backend.
+            后端中的属性值。
 
         Raises:
-            AttributeError: If the attribute is not found in backend.
+            AttributeError: 如果在后端中找不到该属性则抛出。
         """
         if "backend" in self.__dict__ and hasattr(self.backend, name):
             return getattr(self.backend, name)
@@ -251,24 +249,24 @@ class AutoBackend(nn.Module):
         embed: list | None = None,
         **kwargs: Any,
     ) -> torch.Tensor | list[torch.Tensor]:
-        """Run inference on an AutoBackend model.
+        """在 AutoBackend 模型上运行推理。
 
         Args:
-            im (torch.Tensor): The image tensor to perform inference on.
-            augment (bool): Whether to perform data augmentation during inference.
-            visualize (bool): Whether to visualize the output predictions.
-            embed (list, optional): A list of layer indices to return embeddings from.
-            **kwargs (Any): Additional keyword arguments for model configuration.
+            im (torch.Tensor): 要进行推理的图像张量。
+            augment (bool): 是否在推理期间执行数据增强。
+            visualize (bool): 是否可视化输出预测结果。
+            embed (list, optional): 要返回嵌入的层索引列表。
+            **kwargs (Any): 模型配置的附加关键字参数。
 
         Returns:
-            (torch.Tensor | list[torch.Tensor]): The raw output tensor(s) from the model.
+            (torch.Tensor | list[torch.Tensor]): 模型的原始输出张量。
         """
         if self.nhwc:
-            im = im.permute(0, 2, 3, 1)  # torch BCHW to numpy BHWC shape(1,320,192,3)
+            im = im.permute(0, 2, 3, 1)  # torch BCHW 转为 numpy BHWC 形状 (1,320,192,3)
         if self.backend.fp16 and im.dtype != torch.float16:
             im = im.half()
 
-        # Build forward kwargs based on backend type
+        # 根据后端类型构建 forward 关键字参数
         forward_kwargs = {}
         if self.format == "pt":
             forward_kwargs = {"augment": augment, "visualize": visualize, "embed": embed, **kwargs}
@@ -276,7 +274,7 @@ class AutoBackend(nn.Module):
         y = self.backend.forward(im, **forward_kwargs)
 
         if isinstance(y, (list, tuple)):
-            if len(self.names) == 999 and (self.task == "segment" or len(y) == 2):  # segments and names not defined
+            if len(self.names) == 999 and (self.task == "segment" or len(y) == 2):  # 分割掩码和类别名未定义
                 nc = y[0].shape[1] - y[1].shape[1] - 4  # y = (1, 116, 8400), (1, 32, 160, 160)
                 self.names = {i: f"class{i}" for i in range(nc)}
             return self.from_numpy(y[0]) if len(y) == 1 else [self.from_numpy(x) for x in y]
@@ -284,44 +282,44 @@ class AutoBackend(nn.Module):
             return self.from_numpy(y)
 
     def from_numpy(self, x: np.ndarray | torch.Tensor) -> torch.Tensor:
-        """Convert a NumPy array to a torch tensor on the model device.
+        """将 NumPy 数组转换为模型设备上的 torch 张量。
 
         Args:
-            x (np.ndarray | torch.Tensor): Input array or tensor.
+            x (np.ndarray | torch.Tensor): 输入数组或张量。
 
         Returns:
-            (torch.Tensor): Tensor on `self.device`.
+            (torch.Tensor): 位于 `self.device` 上的张量。
         """
         return torch.tensor(x).to(self.device) if isinstance(x, np.ndarray) else x
 
     def warmup(self, imgsz: tuple[int, int, int, int] = (1, 3, 640, 640)) -> None:
-        """Warm up the model by running forward pass(es) with a dummy input.
+        """通过使用虚拟输入运行前向传播来预热模型。
 
         Args:
-            imgsz (tuple[int, int, int, int]): Dummy input shape in (batch, channels, height, width) format.
+            imgsz (tuple[int, int, int, int]): 虚拟输入形状，格式为 (batch, channels, height, width)。
         """
         from ultralytics.utils.nms import non_max_suppression
 
         if self.format in {"pt", "torchscript", "onnx", "engine", "saved_model", "pb", "triton"} and (
             self.device.type != "cpu" or self.format == "triton"
         ):
-            im = torch.empty(*imgsz, dtype=torch.half if self.fp16 else torch.float, device=self.device)  # input
+            im = torch.empty(*imgsz, dtype=torch.half if self.fp16 else torch.float, device=self.device)  # 输入
             for _ in range(2 if self.format == "torchscript" else 1):
-                self.forward(im)  # warmup model
-                warmup_boxes = torch.rand(1, 84, 16, device=self.device)  # 16 boxes works best empirically
+                self.forward(im)  # 预热模型
+                warmup_boxes = torch.rand(1, 84, 16, device=self.device)  # 经验表明 16 个框效果最佳
                 warmup_boxes[:, :4] *= imgsz[-1]
-                non_max_suppression(warmup_boxes)  # warmup NMS
+                non_max_suppression(warmup_boxes)  # 预热 NMS
 
     @staticmethod
     def _model_type(p: str = "path/to/model.pt", dnn: bool = False) -> str:
-        """Take a path to a model file and return the model format string.
+        """接收模型文件路径并返回模型格式字符串。
 
         Args:
-            p (str): Path to the model file.
-            dnn (bool): Whether to use OpenCV DNN module for ONNX inference.
+            p (str): 模型文件路径。
+            dnn (bool): 是否使用 OpenCV DNN 模块进行 ONNX 推理。
 
         Returns:
-            (str): Model format string (e.g., 'pt', 'onnx', 'engine', 'triton').
+            (str): 模型格式字符串（如 'pt', 'onnx', 'engine', 'triton'）。
 
         Examples:
             >>> fmt = AutoBackend._model_type("path/to/model.onnx")
@@ -350,27 +348,25 @@ class AutoBackend(nn.Module):
         return format
 
     def eval(self) -> AutoBackend:
-        """Set the backend model to evaluation mode if supported."""
+        """如果支持，将后端模型设置为评估模式。"""
         if hasattr(self.backend, "model") and hasattr(self.backend.model, "eval"):
             self.backend.model.eval()
         return super().eval()
 
     def _apply(self, fn) -> AutoBackend:
-        """Apply a function to backend.model parameters, buffers, and tensors.
+        """将函数应用到 backend.model 的参数、缓冲区和张量。
 
-        This method extends the functionality of the parent class's _apply method by additionally resetting the
-        predictor and updating the device in the model's overrides. It's typically used for operations like moving the
-        model to a different device or changing its precision.
+        此方法扩展了父类 _apply 方法的功能，额外重置预测器并更新模型配置中的设备信息。
+        通常用于将模型移动到不同的设备或更改其精度。
 
         Args:
-            fn (Callable): A function to be applied to the model's tensors. This is typically a method like to(), cpu(),
-                cuda(), half(), or float().
+            fn (Callable): 要应用到模型张量的函数。通常是 to()、cpu()、cuda()、half() 或 float() 等方法。
 
         Returns:
-            (AutoBackend): The model instance with the function applied and updated attributes.
+            (AutoBackend): 应用了函数并更新了属性的模型实例。
         """
         self = super()._apply(fn)
         if hasattr(self.backend, "model") and isinstance(self.backend.model, nn.Module):
             self.backend.model._apply(fn)
-            self.backend.device = next(self.backend.model.parameters()).device  # update device after move
+            self.backend.device = next(self.backend.model.parameters()).device  # 移动后更新设备
         return self

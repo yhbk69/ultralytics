@@ -1,9 +1,9 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
-"""Ultralytics YOLO inference backends.
+"""Ultralytics YOLO 推理后端包。
 
-This package provides modular inference backends for various deep learning frameworks and hardware accelerators.
-Each backend implements the `BaseBackend` interface and can be used independently or through the unified
-`AutoBackend` dispatcher for automatic format detection and inference routing.
+本包提供面向多种深度学习框架和硬件加速器的模块化推理后端。
+每个后端均实现 `BaseBackend` 接口，可单独使用，也可通过统一的
+`AutoBackend` 分发器进行格式自动检测与推理路由。
 """
 
 from .axelera import AxeleraBackend

@@ -11,22 +11,22 @@ from ultralytics.nn.modules import MLPBlock
 
 
 class TwoWayTransformer(nn.Module):
-    """A Two-Way Transformer module for simultaneous attention to image and query points.
+    """一个同时对图像和查询点进行注意力的双向Transformer模块。
 
-    This class implements a specialized transformer decoder that attends to an input image using queries with supplied
-    positional embeddings. It's useful for tasks like object detection, image segmentation, and point cloud processing.
+    此类实现了一个专用的transformer解码器，使用带有位置嵌入的查询来关注输入图像。它适用于目标检测、
+    图像分割和点云处理等任务。
 
     Attributes:
-        depth (int): Number of layers in the transformer.
-        embedding_dim (int): Channel dimension for input embeddings.
-        num_heads (int): Number of heads for multihead attention.
-        mlp_dim (int): Internal channel dimension for the MLP block.
-        layers (nn.ModuleList): List of TwoWayAttentionBlock layers composing the transformer.
-        final_attn_token_to_image (Attention): Final attention layer from queries to image.
-        norm_final_attn (nn.LayerNorm): Layer normalization applied to final queries.
+        depth (int): transformer中的层数。
+        embedding_dim (int): 输入嵌入的通道维度。
+        num_heads (int): 多头注意力的头数。
+        mlp_dim (int): MLP块的内部通道维度。
+        layers (nn.ModuleList): 组成transformer的TwoWayAttentionBlock层列表。
+        final_attn_token_to_image (Attention): 从查询到图像的最终注意力层。
+        norm_final_attn (nn.LayerNorm): 应用于最终查询的层归一化。
 
     Methods:
-        forward: Process image and point embeddings through the transformer.
+        forward: 通过transformer处理图像和点嵌入。
 
     Examples:
         >>> transformer = TwoWayTransformer(depth=6, embedding_dim=256, num_heads=8, mlp_dim=2048)
@@ -46,15 +46,15 @@ class TwoWayTransformer(nn.Module):
         activation: type[nn.Module] = nn.ReLU,
         attention_downsample_rate: int = 2,
     ) -> None:
-        """Initialize a Two-Way Transformer for simultaneous attention to image and query points.
+        """初始化一个同时对图像和查询点进行注意力的双向Transformer。
 
         Args:
-            depth (int): Number of layers in the transformer.
-            embedding_dim (int): Channel dimension for input embeddings.
-            num_heads (int): Number of heads for multihead attention. Must divide embedding_dim.
-            mlp_dim (int): Internal channel dimension for the MLP block.
-            activation (type[nn.Module], optional): Activation function to use in the MLP block.
-            attention_downsample_rate (int, optional): Downsampling rate for attention mechanism.
+            depth (int): transformer中的层数。
+            embedding_dim (int): 输入嵌入的通道维度。
+            num_heads (int): 多头注意力的头数。必须能整除embedding_dim。
+            mlp_dim (int): MLP块的内部通道维度。
+            activation (type[nn.Module], optional): MLP块中使用的激活函数。
+            attention_downsample_rate (int, optional): 注意力机制的下采样率。
         """
         super().__init__()
         self.depth = depth
@@ -84,26 +84,26 @@ class TwoWayTransformer(nn.Module):
         image_pe: torch.Tensor,
         point_embedding: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Process image and point embeddings through the Two-Way Transformer.
+        """通过双向Transformer处理图像和点嵌入。
 
         Args:
-            image_embedding (torch.Tensor): Image to attend to, with shape (B, embedding_dim, H, W).
-            image_pe (torch.Tensor): Positional encoding to add to the image, with same shape as image_embedding.
-            point_embedding (torch.Tensor): Embedding to add to query points, with shape (B, N_points, embedding_dim).
+            image_embedding (torch.Tensor): 要关注的图像，形状为(B, embedding_dim, H, W)。
+            image_pe (torch.Tensor): 添加到图像的位置编码，形状与image_embedding相同。
+            point_embedding (torch.Tensor): 添加到查询点的嵌入，形状为(B, N_points, embedding_dim)。
 
         Returns:
-            queries (torch.Tensor): Processed point embeddings with shape (B, N_points, embedding_dim).
-            keys (torch.Tensor): Processed image embeddings with shape (B, H*W, embedding_dim).
+            queries (torch.Tensor): 处理后的点嵌入，形状为(B, N_points, embedding_dim)。
+            keys (torch.Tensor): 处理后的图像嵌入，形状为(B, H*W, embedding_dim)。
         """
         # BxCxHxW -> BxHWxC == B x N_image_tokens x C
         image_embedding = image_embedding.flatten(2).permute(0, 2, 1)
         image_pe = image_pe.flatten(2).permute(0, 2, 1)
 
-        # Prepare queries
+        # 准备查询
         queries = point_embedding
         keys = image_embedding
 
-        # Apply transformer blocks and final layernorm
+        # 应用transformer块和最终层归一化
         for layer in self.layers:
             queries, keys = layer(
                 queries=queries,
@@ -112,7 +112,7 @@ class TwoWayTransformer(nn.Module):
                 key_pe=image_pe,
             )
 
-        # Apply the final attention layer from the points to the image
+        # 应用从点到图像的最终注意力层
         q = queries + point_embedding
         k = keys + image_pe
         attn_out = self.final_attn_token_to_image(q=q, k=k, v=keys)
@@ -123,25 +123,25 @@ class TwoWayTransformer(nn.Module):
 
 
 class TwoWayAttentionBlock(nn.Module):
-    """A two-way attention block for simultaneous attention to image and query points.
+    """一个同时对图像和查询点进行注意力的双向注意力块。
 
-    This class implements a specialized transformer block with four main layers: self-attention on sparse inputs,
-    cross-attention of sparse inputs to dense inputs, MLP block on sparse inputs, and cross-attention of dense inputs to
-    sparse inputs.
+    此类实现了一个专用的transformer块，包含四个主要层：稀疏输入上的自注意力、
+    从稀疏输入到密集输入的交叉注意力、稀疏输入上的MLP块，以及从密集输入到
+    稀疏输入的交叉注意力。
 
     Attributes:
-        self_attn (Attention): Self-attention layer for queries.
-        norm1 (nn.LayerNorm): Layer normalization after self-attention.
-        cross_attn_token_to_image (Attention): Cross-attention layer from queries to keys.
-        norm2 (nn.LayerNorm): Layer normalization after token-to-image attention.
-        mlp (MLPBlock): MLP block for transforming query embeddings.
-        norm3 (nn.LayerNorm): Layer normalization after MLP block.
-        norm4 (nn.LayerNorm): Layer normalization after image-to-token attention.
-        cross_attn_image_to_token (Attention): Cross-attention layer from keys to queries.
-        skip_first_layer_pe (bool): Whether to skip positional encoding in the first layer.
+        self_attn (Attention): 查询的自注意力层。
+        norm1 (nn.LayerNorm): 自注意力后的层归一化。
+        cross_attn_token_to_image (Attention): 从查询到键的交叉注意力层。
+        norm2 (nn.LayerNorm): 第二次注意力块后的层归一化。
+        mlp (MLPBlock): 用于转换查询嵌入的MLP块。
+        norm3 (nn.LayerNorm): MLP块后的层归一化。
+        norm4 (nn.LayerNorm): 第三次注意力块后的层归一化。
+        cross_attn_image_to_token (Attention): 从键到查询的交叉注意力层。
+        skip_first_layer_pe (bool): 在第一层中跳过位置编码的标志。
 
     Methods:
-        forward: Apply self-attention and cross-attention to queries and keys.
+        forward: 将自注意力和交叉注意力应用于查询和键。
 
     Examples:
         >>> embedding_dim, num_heads = 256, 8
@@ -162,20 +162,20 @@ class TwoWayAttentionBlock(nn.Module):
         attention_downsample_rate: int = 2,
         skip_first_layer_pe: bool = False,
     ) -> None:
-        """Initialize a TwoWayAttentionBlock for simultaneous attention to image and query points.
+        """初始化TwoWayAttentionBlock，用于同时对图像和查询点进行注意力计算。
 
-        This block implements a specialized transformer layer with four main components: self-attention on sparse
-        inputs, cross-attention of sparse inputs to dense inputs, MLP block on sparse inputs, and cross-attention of
-        dense inputs to sparse inputs.
+            此块实现了四个主要组件：稀疏输入上的自注意力、
+            从稀疏输入到密集输入的交叉注意力、稀疏输入上的MLP块，以及
+            从密集输入到稀疏输入的交叉注意力。
 
-        Args:
-            embedding_dim (int): Channel dimension of the embeddings.
-            num_heads (int): Number of attention heads in the attention layers.
-            mlp_dim (int, optional): Hidden dimension of the MLP block.
-            activation (type[nn.Module], optional): Activation function for the MLP block.
-            attention_downsample_rate (int, optional): Downsampling rate for the attention mechanism.
-            skip_first_layer_pe (bool, optional): Whether to skip positional encoding in the first layer.
-        """
+            Args:
+                embedding_dim (int): 嵌入的通道维度。
+                num_heads (int): 注意力层中的注意力头数量。
+                mlp_dim (int, optional): MLP块的内部通道维度。
+                activation (type[nn.Module], optional): MLP块中使用的激活函数。
+                attention_downsample_rate (int, optional): 注意力机制的下采样率。
+                skip_first_layer_pe (bool, optional): 是否在第一层中跳过位置编码。
+            """
         super().__init__()
         self.self_attn = Attention(embedding_dim, num_heads)
         self.norm1 = nn.LayerNorm(embedding_dim)
@@ -194,18 +194,18 @@ class TwoWayAttentionBlock(nn.Module):
     def forward(
         self, queries: torch.Tensor, keys: torch.Tensor, query_pe: torch.Tensor, key_pe: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Apply two-way attention to process query and key embeddings in a transformer block.
+        """应用双向注意力来处理查询和键嵌入。
 
-        Args:
-            queries (torch.Tensor): Query embeddings with shape (B, N_queries, embedding_dim).
-            keys (torch.Tensor): Key embeddings with shape (B, N_keys, embedding_dim).
-            query_pe (torch.Tensor): Positional encodings for queries with same shape as queries.
-            key_pe (torch.Tensor): Positional encodings for keys with same shape as keys.
+            Args:
+                queries (torch.Tensor): 查询嵌入，形状为(B, N_queries, embedding_dim)。
+                keys (torch.Tensor): 键嵌入，形状为(B, N_keys, embedding_dim)。
+                query_pe (torch.Tensor): 查询的位置编码，形状与查询相同。
+                key_pe (torch.Tensor): 键的位置编码，形状与键相同。
 
-        Returns:
-            queries (torch.Tensor): Processed query embeddings with shape (B, N_queries, embedding_dim).
-            keys (torch.Tensor): Processed key embeddings with shape (B, N_keys, embedding_dim).
-        """
+            Returns:
+                queries (torch.Tensor): 处理后的查询嵌入，形状为(B, N_queries, embedding_dim)。
+                keys (torch.Tensor): 处理后的键嵌入，形状为(B, N_keys, embedding_dim)。
+            """
         # Self attention block
         if self.skip_first_layer_pe:
             queries = self.self_attn(q=queries, k=queries, v=queries)
@@ -238,7 +238,7 @@ class TwoWayAttentionBlock(nn.Module):
 
 
 class Attention(nn.Module):
-    """An attention layer with downscaling capability for embedding size after projection.
+    """一个具有下采样能力的注意力层，用于投影后的嵌入大小。
 
     This class implements a multi-head attention mechanism with the option to downsample the internal dimension of
     queries, keys, and values.

@@ -10,18 +10,17 @@ from pathlib import Path
 
 
 class CPUInfo:
-    """Provide cross-platform CPU brand and model information.
+    """提供跨平台的 CPU 品牌和型号信息。
 
-    Query platform-specific sources to retrieve a human-readable CPU descriptor and normalize it for consistent
-    presentation across macOS, Linux, and Windows. If platform-specific probing fails, generic platform identifiers are
-    used to ensure a stable string is always returned.
+    查询特定平台的源以获取人类可读的 CPU 描述，并将其规范化为在 macOS、Linux 和 Windows 上
+    一致的呈现形式。如果特定平台的探测失败，则使用通用的平台标识符，以确保始终返回稳定的字符串。
 
-    Methods:
-        name: Return the normalized CPU name using platform-specific sources with robust fallbacks.
-        _clean: Normalize and prettify common vendor brand strings and frequency patterns.
-        __str__: Return the normalized CPU name for string contexts.
+    方法:
+        name: 使用特定平台的源返回规范化的 CPU 名称，具有健壮的回退机制。
+        _clean: 规范化并美化常见的厂商品牌字符串和频率模式。
+        __str__: 在字符串上下文中返回规范化的 CPU 名称。
 
-    Examples:
+    示例:
         >>> CPUInfo.name()
         'Apple M4 Pro'
         >>> str(CPUInfo())
@@ -30,17 +29,17 @@ class CPUInfo:
 
     @staticmethod
     def name() -> str:
-        """Return a normalized CPU model string from platform-specific sources."""
+        """从特定平台的源返回规范化的 CPU 型号字符串。"""
         try:
             if sys.platform == "darwin":
-                # Query macOS sysctl for the CPU brand string
+                # 查询 macOS sysctl 获取 CPU 品牌字符串
                 s = subprocess.run(
                     ["sysctl", "-n", "machdep.cpu.brand_string"], capture_output=True, text=True
                 ).stdout.strip()
                 if s:
                     return CPUInfo._clean(s)
             elif sys.platform.startswith("linux"):
-                # Parse /proc/cpuinfo for the first "model name" entry
+                # 解析 /proc/cpuinfo 获取第一个 "model name" 条目
                 p = Path("/proc/cpuinfo")
                 if p.exists():
                     for line in p.read_text(errors="ignore").splitlines():
@@ -55,19 +54,19 @@ class CPUInfo:
                         if val:
                             return CPUInfo._clean(val)
                 except Exception:
-                    # Fall through to generic platform fallbacks on Windows registry access failure
+                    # Windows 注册表访问失败时回退到通用平台回退机制
                     pass
-            # Generic platform fallbacks
+            # 通用平台回退机制
             s = platform.processor() or getattr(platform.uname(), "processor", "") or platform.machine()
             return CPUInfo._clean(s or "Unknown CPU")
         except Exception:
-            # Ensure a string is always returned even on unexpected failures
+            # 确保即使发生意外故障也始终返回字符串
             s = platform.processor() or platform.machine() or ""
             return CPUInfo._clean(s or "Unknown CPU")
 
     @staticmethod
     def _clean(s: str) -> str:
-        """Normalize and prettify a raw CPU descriptor string."""
+        """规范化并美化原始 CPU 描述字符串。"""
         s = re.sub(r"\s+", " ", s.strip())
         s = s.replace("(TM)", "").replace("(tm)", "").replace("(R)", "").replace("(r)", "").strip()
         if m := re.search(r"(Intel.*?i\d[\w-]*) CPU @ ([\d.]+GHz)", s, re.I):
@@ -77,7 +76,7 @@ class CPUInfo:
         return s
 
     def __str__(self) -> str:
-        """Return the normalized CPU name."""
+        """返回规范化的 CPU 名称。"""
         return self.name()
 
 

@@ -16,17 +16,17 @@ from ultralytics.utils.metrics import SegmentMetrics, mask_iou
 
 
 class SegmentationValidator(DetectionValidator):
-    """A class extending the DetectionValidator class for validation based on a segmentation model.
+    """用于基于分割模型进行验证的类，继承自 DetectionValidator。
 
-    This validator handles the evaluation of segmentation models, processing both bounding box and mask predictions to
-    compute metrics such as mAP for both detection and segmentation tasks.
+    该验证器处理分割模型的评估，同时处理边界框和掩码预测以
+    计算检测和分割任务的 mAP 等指标。
 
     Attributes:
-        plot_masks (list): List to store masks for plotting.
-        process (callable): Function to process masks based on save_json and save_txt flags.
-        args (SimpleNamespace): Arguments for the validator.
-        metrics (SegmentMetrics): Metrics calculator for segmentation tasks.
-        stats (dict): Dictionary to store statistics during validation.
+        plot_masks (list): 存储用于绘图的掩码列表。
+        process (callable): 基于 save_json 和 save_txt 标记处理掩码的函数。
+        args (SimpleNamespace): 验证器的参数。
+        metrics (SegmentMetrics): 分割任务的指标计算器。
+        stats (dict): 存储验证期间统计信息的字典。
 
     Examples:
         >>> from ultralytics.models.yolo.segment import SegmentationValidator
@@ -36,13 +36,13 @@ class SegmentationValidator(DetectionValidator):
     """
 
     def __init__(self, dataloader=None, save_dir=None, args=None, _callbacks: dict | None = None) -> None:
-        """Initialize SegmentationValidator and set task to 'segment', metrics to SegmentMetrics.
+        """初始化 SegmentationValidator，设置任务为 'segment'，指标为 SegmentMetrics。
 
         Args:
-            dataloader (torch.utils.data.DataLoader, optional): DataLoader to use for validation.
-            save_dir (Path, optional): Directory to save results.
-            args (dict, optional): Arguments for the validator.
-            _callbacks (dict, optional): Dictionary of callback functions.
+            dataloader (torch.utils.data.DataLoader, optional): 用于验证的数据加载器。
+            save_dir (Path, optional): 保存结果的目录。
+            args (dict, optional): 验证器的参数。
+            _callbacks (dict, optional): 回调函数字典。
         """
         super().__init__(dataloader, save_dir, args, _callbacks)
         self.process = None
@@ -50,32 +50,32 @@ class SegmentationValidator(DetectionValidator):
         self.metrics = SegmentMetrics()
 
     def preprocess(self, batch: dict[str, Any]) -> dict[str, Any]:
-        """Preprocess batch of images for YOLO segmentation validation.
+        """为 YOLO 分割验证预处理图像批次。
 
         Args:
-            batch (dict[str, Any]): Batch containing images and annotations.
+            batch (dict[str, Any]): 包含图像和标注的批次。
 
         Returns:
-            (dict[str, Any]): Preprocessed batch.
+            (dict[str, Any]): 预处理后的批次。
         """
         batch = super().preprocess(batch)
         batch["masks"] = batch["masks"].float()
         return batch
 
     def init_metrics(self, model: torch.nn.Module) -> None:
-        """Initialize metrics and select mask processing function based on save_json flag.
+        """初始化指标并根据 save_json 标志选择掩码处理函数。
 
         Args:
-            model (torch.nn.Module): Model to validate.
+            model (torch.nn.Module): 需要验证的模型。
         """
         super().init_metrics(model)
         if self.args.save_json:
             check_requirements("faster-coco-eval>=1.6.7")
-        # More accurate vs faster
+        # 更精确 vs 更快
         self.process = ops.process_mask_native if self.args.save_json or self.args.save_txt else ops.process_mask
 
     def get_desc(self) -> str:
-        """Return a formatted description of evaluation metrics."""
+        """返回评估指标的格式化描述。"""
         return ("%22s" + "%11s" * 10) % (
             "Class",
             "Images",
@@ -91,17 +91,17 @@ class SegmentationValidator(DetectionValidator):
         )
 
     def postprocess(self, preds: list[torch.Tensor]) -> list[dict[str, torch.Tensor]]:
-        """Post-process YOLO predictions and return output detections with proto.
+        """对 YOLO 预测结果进行后处理，返回包含 proto 的输出检测结果。
 
         Args:
-            preds (list[torch.Tensor]): Raw predictions from the model.
+            preds (list[torch.Tensor]): 模型的原始预测结果。
 
         Returns:
-            (list[dict[str, torch.Tensor]]): Processed detection predictions with masks.
+            (list[dict[str, torch.Tensor]]): 包含掩码的已处理检测预测。
         """
         proto = preds[0][1] if isinstance(preds[0], tuple) else preds[1]
         preds = super().postprocess(preds[0])
-        imgsz = [4 * x for x in proto.shape[2:]]  # get image size from proto
+        imgsz = [4 * x for x in proto.shape[2:]]  # 从 proto 获取图像尺寸
         for i, pred in enumerate(preds):
             coefficient = pred.pop("extra")
             pred["masks"] = (
@@ -116,14 +116,14 @@ class SegmentationValidator(DetectionValidator):
         return preds
 
     def _prepare_batch(self, si: int, batch: dict[str, Any]) -> dict[str, Any]:
-        """Prepare a batch for validation by processing images and targets.
+        """通过处理图像和目标来准备用于验证的批次。
 
         Args:
-            si (int): Sample index within the batch.
-            batch (dict[str, Any]): Batch data containing images and annotations.
+            si (int): 批次中的样本索引。
+            batch (dict[str, Any]): 包含图像和标注的批次数据。
 
         Returns:
-            (dict[str, Any]): Prepared batch with processed annotations.
+            (dict[str, Any]): 包含处理后标注的准备好的批次。
         """
         prepared_batch = super()._prepare_batch(si, batch)
         nl = prepared_batch["cls"].shape[0]
@@ -142,19 +142,19 @@ class SegmentationValidator(DetectionValidator):
         return prepared_batch
 
     def gather_stats(self) -> None:
-        """Gather stats from all GPUs."""
-        super().gather_stats()  # gather stats from DetectionValidator
+        """从所有 GPU 收集统计信息。"""
+        super().gather_stats()  # 从 DetectionValidator 收集统计信息
         self._gather_image_metrics(self.metrics.seg)
 
     def _process_batch(self, preds: dict[str, torch.Tensor], batch: dict[str, Any]) -> dict[str, np.ndarray]:
-        """Compute correct prediction matrix for a batch based on bounding boxes and optional masks.
+        """基于边界框和可选掩码计算批次的正确预测矩阵。
 
         Args:
-            preds (dict[str, torch.Tensor]): Dictionary containing predictions with keys like 'cls' and 'masks'.
-            batch (dict[str, Any]): Dictionary containing batch data with keys like 'cls' and 'masks'.
+            preds (dict[str, torch.Tensor]): 包含预测的字典，键包括 'cls' 和 'masks'。
+            batch (dict[str, Any]): 包含批次数据的字典，键包括 'cls' 和 'masks'。
 
         Returns:
-            (dict[str, np.ndarray]): A dictionary containing correct prediction matrices including 'tp_m' for mask IoU.
+            (dict[str, np.ndarray]): 包含正确预测矩阵的字典，包括掩码 IoU 的 'tp_m'。
 
         Examples:
             >>> preds = {"cls": torch.tensor([1, 0]), "masks": torch.rand(2, 640, 640), "bboxes": torch.rand(2, 4)}
@@ -162,8 +162,8 @@ class SegmentationValidator(DetectionValidator):
             >>> correct_preds = validator._process_batch(preds, batch)
 
         Notes:
-            - This method computes IoU between predicted and ground truth masks.
-            - Overlapping masks are handled based on the overlap_mask argument setting.
+            - 该方法计算预测掩码与真实掩码之间的 IoU。
+            - 重叠掩码根据 overlap_mask 参数设置进行处理。
         """
         tp = super()._process_batch(preds, batch)
         gt_cls = batch["cls"]
@@ -172,32 +172,32 @@ class SegmentationValidator(DetectionValidator):
         else:
             iou = mask_iou(batch["masks"].flatten(1), preds["masks"].flatten(1).float())  # float, uint8
             tp_m = self.match_predictions(preds["cls"], gt_cls, iou).cpu().numpy()
-        tp.update({"tp_m": tp_m})  # update tp with mask IoU
+        tp.update({"tp_m": tp_m})  # 使用掩码 IoU 更新 tp
         return tp
 
     def plot_predictions(self, batch: dict[str, Any], preds: list[dict[str, torch.Tensor]], ni: int) -> None:
-        """Plot batch predictions with masks and bounding boxes.
+        """绘制包含掩码和边界框的批次预测。
 
         Args:
-            batch (dict[str, Any]): Batch containing images and annotations.
-            preds (list[dict[str, torch.Tensor]]): List of predictions from the model.
-            ni (int): Batch index.
+            batch (dict[str, Any]): 包含图像和标注的批次。
+            preds (list[dict[str, torch.Tensor]]): 模型的预测列表。
+            ni (int): 批次索引。
         """
         for p in preds:
             masks = p["masks"]
             if masks.shape[0] > self.args.max_det:
                 LOGGER.warning(f"Limiting validation plots to 'max_det={self.args.max_det}' items.")
             p["masks"] = torch.as_tensor(masks[: self.args.max_det], dtype=torch.uint8).cpu()
-        super().plot_predictions(batch, preds, ni, max_det=self.args.max_det)  # plot bboxes
+        super().plot_predictions(batch, preds, ni, max_det=self.args.max_det)  # 绘制边界框
 
     def save_one_txt(self, predn: dict[str, torch.Tensor], save_conf: bool, shape: tuple[int, int], file: Path) -> None:
-        """Save YOLO detections to a txt file in normalized coordinates in a specific format.
+        """将 YOLO 检测结果以归一化坐标按特定格式保存到 txt 文件。
 
         Args:
-            predn (dict[str, torch.Tensor]): Prediction dictionary containing 'bboxes', 'conf', 'cls', and 'masks' keys.
-            save_conf (bool): Whether to save confidence scores.
-            shape (tuple[int, int]): Shape of the original image.
-            file (Path): File path to save the detections.
+            predn (dict[str, torch.Tensor]): 包含 'bboxes'、'conf'、'cls' 和 'masks' 键的预测字典。
+            save_conf (bool): 是否保存置信度分数。
+            shape (tuple[int, int]): 原始图像的形状。
+            file (Path): 保存检测结果的文件路径。
         """
         from ultralytics.engine.results import Results
 
@@ -210,40 +210,40 @@ class SegmentationValidator(DetectionValidator):
         ).save_txt(file, save_conf=save_conf)
 
     def pred_to_json(self, predn: dict[str, torch.Tensor], pbatch: dict[str, Any]) -> None:
-        """Save one JSON result for COCO evaluation.
+        """将 YOLO 预测序列化为 COCO JSON 格式用于评估。
 
         Args:
-            predn (dict[str, torch.Tensor]): Predictions containing bboxes, masks, confidence scores, and classes.
-            pbatch (dict[str, Any]): Batch dictionary containing 'imgsz', 'ori_shape', 'ratio_pad', and 'im_file'.
+            predn (dict[str, torch.Tensor]): 包含 bboxes、masks、置信度分数和类别的预测结果。
+            pbatch (dict[str, Any]): 包含 'imgsz'、'ori_shape'、'ratio_pad' 和 'im_file' 的批次字典。
         """
 
         def to_string(counts: list[int]) -> str:
-            """Converts the RLE object into a compact string representation. Each count is delta-encoded and
-            variable-length encoded as a string.
+            """将 RLE 对象转换为紧凑的字符串表示。每个计数值经过差分编码和变长编码
+            转换为字符串。
 
             Args:
-                counts (list[int]): List of RLE counts.
+                counts (list[int]): RLE 计数值列表。
             """
             result = []
 
             for i in range(len(counts)):
                 x = int(counts[i])
 
-                # Apply delta encoding for all counts after the second entry
+                # 对第二个条目之后的所有计数值应用差分编码
                 if i > 2:
                     x -= int(counts[i - 2])
 
-                # Variable-length encode the value
+                # 对值进行变长编码
                 while True:
                     c = x & 0x1F  # Take 5 bits
                     x >>= 5
 
-                    # If the sign bit (0x10) is set, continue if x != -1;
-                    # otherwise, continue if x != 0
+                    # 如果设置了符号位 (0x10)，若 x != -1 则继续；
+                    # 否则，若 x != 0 则继续
                     more = (x != -1) if (c & 0x10) else (x != 0)
                     if more:
-                        c |= 0x20  # Set continuation bit
-                    c += 48  # Shift to ASCII
+                        c |= 0x20  # 设置继续位
+                    c += 48  # 转换为 ASCII
                     result.append(chr(c))
                     if not more:
                         break
@@ -251,20 +251,19 @@ class SegmentationValidator(DetectionValidator):
             return "".join(result)
 
         def multi_encode(pixels: torch.Tensor) -> list[int]:
-            """Convert multiple binary masks using Run-Length Encoding (RLE).
+            """使用游程编码 (RLE) 转换多个二值掩码。
 
             Args:
-                pixels (torch.Tensor): A 2D tensor where each row represents a flattened binary mask with shape [N,
-                    H*W].
+                pixels (torch.Tensor): 一个 2D 张量，每行表示一个展平的二值掩码，形状为 [N, H*W]。
 
             Returns:
-                (list[list[int]]): A list of RLE counts for each mask.
+                (list[list[int]]): 每个掩码的 RLE 计数值列表。
             """
             transitions = pixels[:, 1:] != pixels[:, :-1]
             row_idx, col_idx = torch.where(transitions)
             col_idx = col_idx + 1
 
-            # Compute run lengths
+            # 计算游程长度
             counts = []
             for i in range(pixels.shape[0]):
                 positions = col_idx[row_idx == i]
@@ -275,7 +274,7 @@ class SegmentationValidator(DetectionValidator):
                 else:
                     count = [len(pixels[i])]
 
-                # Ensure starting with background (0) count
+                # 确保以背景 (0) 计数开始
                 if pixels[i][0].item() == 1:
                     count = [0, *count]
                 counts.append(count)
@@ -290,10 +289,10 @@ class SegmentationValidator(DetectionValidator):
             rles.append({"size": [h, w], "counts": to_string(c)})
         super().pred_to_json(predn, pbatch)
         for i, r in enumerate(rles):
-            self.jdict[-len(rles) + i]["segmentation"] = r  # segmentation
+            self.jdict[-len(rles) + i]["segmentation"] = r  # 分割
 
     def scale_preds(self, predn: dict[str, torch.Tensor], pbatch: dict[str, Any]) -> dict[str, torch.Tensor]:
-        """Scales predictions to the original image size."""
+        """将预测缩放到原始图像尺寸。"""
         return {
             **super().scale_preds(predn, pbatch),
             "masks": ops.scale_masks(predn["masks"][None], pbatch["ori_shape"], ratio_pad=pbatch["ratio_pad"])[
@@ -302,11 +301,11 @@ class SegmentationValidator(DetectionValidator):
         }
 
     def eval_json(self, stats: dict[str, Any]) -> dict[str, Any]:
-        """Return COCO-style instance segmentation evaluation metrics."""
-        pred_json = self.save_dir / "predictions.json"  # predictions
+        """返回 COCO 风格的实例分割评估指标。"""
+        pred_json = self.save_dir / "predictions.json"  # 预测结果
         anno_json = (
             self.data["path"]
             / "annotations"
             / ("instances_val2017.json" if self.is_coco else f"lvis_v1_{self.args.split}.json")
-        )  # annotations
+        )  # 标注文件
         return super().coco_evaluate(stats, pred_json, anno_json, ["bbox", "segm"], suffix=["Box", "Mask"])

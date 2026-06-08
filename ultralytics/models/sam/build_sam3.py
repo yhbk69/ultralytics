@@ -24,8 +24,8 @@ from .sam3.vl_combiner import SAM3VLBackbone
 
 
 def _create_vision_backbone(compile_mode=None, enable_inst_interactivity=True) -> Sam3DualViTDetNeck:
-    """Create SAM3 visual backbone with ViT and neck."""
-    # Position encoding
+    """创建带ViT和neck的SAM3视觉骨干网。"""
+    # 位置编码
     position_encoding = PositionEmbeddingSine(
         num_pos_feats=256,
         normalize=True,
@@ -33,7 +33,7 @@ def _create_vision_backbone(compile_mode=None, enable_inst_interactivity=True) -
         temperature=10000,
     )
 
-    # ViT backbone
+    # ViT骨干网
     vit_backbone = ViT(
         img_size=1008,
         pretrain_img_size=336,
@@ -70,7 +70,7 @@ def _create_vision_backbone(compile_mode=None, enable_inst_interactivity=True) -
 
 
 def _create_sam3_transformer() -> TransformerWrapper:
-    """Create SAM3 detector encoder and decoder."""
+    """创建SAM3检测器编码器和解码器。"""
     encoder: TransformerEncoderFusion = TransformerEncoderFusion(
         layer=TransformerEncoderLayer(
             d_model=256,
@@ -133,15 +133,15 @@ def _create_sam3_transformer() -> TransformerWrapper:
 
 
 def build_sam3_image_model(checkpoint_path: str, enable_segmentation: bool = True, compile: bool = False):
-    """Build SAM3 image model.
+    """构建SAM3图像模型。
 
     Args:
-        checkpoint_path: Optional path to model checkpoint
-        enable_segmentation: Whether to enable segmentation head
-        compile: Whether to enable compilation of the model
+        checkpoint_path: 模型检查点的可选路径
+        enable_segmentation: 是否启用分割头
+        compile: 是否启用模型编译
 
     Returns:
-        A SAM3 image model
+        SAM3图像模型
     """
     try:
         import clip
@@ -150,11 +150,11 @@ def build_sam3_image_model(checkpoint_path: str, enable_segmentation: bool = Tru
 
         check_requirements("git+https://github.com/ultralytics/CLIP.git")
         import clip
-    # Create visual components
+    # 创建视觉组件
     compile_mode = "default" if compile else None
     vision_encoder = _create_vision_backbone(compile_mode=compile_mode, enable_inst_interactivity=True)
 
-    # Create text components
+    # 创建文本组件
     text_encoder = VETextEncoder(
         tokenizer=clip.simple_tokenizer.SimpleTokenizer(),
         d_model=256,
@@ -163,13 +163,13 @@ def build_sam3_image_model(checkpoint_path: str, enable_segmentation: bool = Tru
         layers=24,
     )
 
-    # Create visual-language backbone
+    # 创建视觉-语言骨干网
     backbone = SAM3VLBackbone(visual=vision_encoder, text=text_encoder, scalp=1)
 
-    # Create transformer components
+    # 创建transformer组件
     transformer = _create_sam3_transformer()
 
-    # Create dot product scoring
+    # 创建点积评分
     dot_prod_scoring = DotProductScoring(
         d_model=256,
         d_proj=256,
@@ -183,7 +183,7 @@ def build_sam3_image_model(checkpoint_path: str, enable_segmentation: bool = Tru
         ),
     )
 
-    # Create segmentation head if enabled
+    # 如果启用则创建分割头
     segmentation_head = (
         UniversalSegmentationHead(
             hidden_dim=256,
@@ -208,7 +208,7 @@ def build_sam3_image_model(checkpoint_path: str, enable_segmentation: bool = Tru
         else None
     )
 
-    # Create geometry encoder
+    # 创建几何编码器
     input_geometry_encoder = SequenceGeometryEncoder(
         pos_enc=PositionEmbeddingSine(
             num_pos_feats=256,
@@ -236,7 +236,7 @@ def build_sam3_image_model(checkpoint_path: str, enable_segmentation: bool = Tru
         add_post_encode_proj=True,
     )
 
-    # Create the SAM3SemanticModel model
+    # 创建SAM3SemanticModel模型
     model = SAM3SemanticModel(
         backbone=backbone,
         transformer=transformer,
@@ -249,24 +249,24 @@ def build_sam3_image_model(checkpoint_path: str, enable_segmentation: bool = Tru
         multimask_output=True,
     )
 
-    # Load checkpoint
+    # 加载检查点
     model = _load_checkpoint(model, checkpoint_path)
     model.eval()
     return model
 
 
 def build_interactive_sam3(checkpoint_path: str, compile=None, with_backbone=True) -> SAM3Model:
-    """Build the SAM3 Tracker module for video tracking.
+    """构建用于视频跟踪的SAM3 Tracker模块。
 
     Args:
-        checkpoint_path (str): Path to model checkpoint.
-        compile (str | None): Compilation mode for the vision backbone.
-        with_backbone (bool): Whether to include the vision backbone in the model.
+        checkpoint_path (str): 模型检查点路径。
+        compile (str | None): 视觉骨干网的编译模式。
+        with_backbone (bool): 是否在模型中包含视觉骨干网。
 
     Returns:
-        (SAM3Model): A configured and initialized SAM3 model.
+        (SAM3Model): 已配置并初始化的SAM3模型。
     """
-    # Create model components
+    # 创建模型组件
     memory_encoder = MemoryEncoder(out_dim=64, interpol_size=[1152, 1152])
     memory_attention = MemoryAttention(
         batch_first=True,
@@ -340,16 +340,16 @@ def build_interactive_sam3(checkpoint_path: str, compile=None, with_backbone=Tru
         ),
     )
 
-    # Load checkpoint if provided
+    # 如果提供了检查点则加载
     model = _load_checkpoint(model, checkpoint_path, interactive=True)
 
-    # Setup device and mode
+    # 设置设备和模式
     model.eval()
     return model
 
 
 def _load_checkpoint(model, checkpoint, interactive=False):
-    """Load SAM3 model checkpoint from file."""
+    """从文件加载SAM3模型检查点。"""
     with open(checkpoint, "rb") as f:
         ckpt = torch_load(f)
     if "model" in ckpt and isinstance(ckpt["model"], dict):

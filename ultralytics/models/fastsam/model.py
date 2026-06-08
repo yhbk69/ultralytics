@@ -12,31 +12,30 @@ from .val import FastSAMValidator
 
 
 class FastSAM(Model):
-    """FastSAM model interface for Segment Anything tasks.
+    """用于分割一切任务的 FastSAM 模型接口。
 
-    This class extends the base Model class to provide specific functionality for the FastSAM (Fast Segment Anything
-    Model) implementation, allowing for efficient and accurate image segmentation with optional prompting support.
+    该类继承自基础 Model 类，为 FastSAM（快速分割一切模型）实现提供特定功能，支持高效准确的分割以及可选的提示输入。
 
     Attributes:
-        model (str): Path to the pre-trained FastSAM model file.
-        task (str): The task type, set to "segment" for FastSAM models.
+        model (str): 预训练 FastSAM 模型文件的路径。
+        task (str): 任务类型，对于 FastSAM 模型固定为 "segment"。
 
     Methods:
-        predict: Perform segmentation prediction on image or video source with optional prompts.
-        task_map: Returns mapping of segment task to predictor and validator classes.
+        predict: 对图像或视频源执行分割预测，支持可选的提示输入。
+        task_map: 返回将分割任务映射到预测器和验证器类的字典。
 
     Examples:
-        Initialize FastSAM model and run prediction
+        初始化 FastSAM 模型并运行预测
         >>> from ultralytics import FastSAM
         >>> model = FastSAM("FastSAM-x.pt")
         >>> results = model.predict("ultralytics/assets/bus.jpg")
 
-        Run prediction with bounding box prompts
+        使用边界框提示运行预测
         >>> results = model.predict("image.jpg", bboxes=[[100, 100, 200, 200]])
     """
 
     def __init__(self, model: str | Path = "FastSAM-x.pt"):
-        """Initialize the FastSAM model with the specified pre-trained weights."""
+        """使用指定的预训练权重初始化 FastSAM 模型。"""
         if str(model) == "FastSAM.pt":
             model = "FastSAM-x.pt"
         assert Path(model).suffix not in {".yaml", ".yml"}, "FastSAM only supports pre-trained weights."
@@ -52,28 +51,26 @@ class FastSAM(Model):
         texts: list | None = None,
         **kwargs: Any,
     ):
-        """Perform segmentation prediction on image or video source.
+        """对图像或视频源执行分割预测。
 
-        Supports prompted segmentation with bounding boxes, points, labels, and texts. The method packages these prompts
-        and passes them to the parent class predict method for processing.
+        支持使用边界框、点、标签和文本进行提示式分割。该方法将这些提示打包后传递给父类的 predict 方法进行处理。
 
         Args:
-            source (str | PIL.Image | np.ndarray): Input source for prediction, can be a file path, URL, PIL image, or
-                numpy array.
-            stream (bool): Whether to enable real-time streaming mode for video inputs.
-            bboxes (list, optional): Bounding box coordinates for prompted segmentation in format [[x1, y1, x2, y2]].
-            points (list, optional): Point coordinates for prompted segmentation in format [[x, y]].
-            labels (list, optional): Class labels for prompted segmentation.
-            texts (list, optional): Text prompts for segmentation guidance.
-            **kwargs (Any): Additional keyword arguments passed to the predictor.
+            source (str | PIL.Image | np.ndarray): 预测的输入源，可以是文件路径、URL、PIL 图像或 numpy 数组。
+            stream (bool): 是否对视频输入启用实时流模式。
+            bboxes (list, optional): 提示式分割的边界框坐标，格式为 [[x1, y1, x2, y2]]。
+            points (list, optional): 提示式分割的点坐标，格式为 [[x, y]]。
+            labels (list, optional): 提示式分割的类别标签。
+            texts (list, optional): 用于分割引导的文本提示。
+            **kwargs (Any): 传递给预测器的额外关键字参数。
 
         Returns:
-            (list): List of Results objects containing the prediction results.
+            (list): 包含预测结果的 Results 对象列表。
         """
         prompts = dict(bboxes=bboxes, points=points, labels=labels, texts=texts)
         return super().predict(source, stream, prompts=prompts, **kwargs)
 
     @property
     def task_map(self) -> dict[str, dict[str, Any]]:
-        """Returns a dictionary mapping segment task to corresponding predictor and validator classes."""
+        """返回一个字典，将分割任务映射到相应的预测器和验证器类。"""
         return {"segment": {"predictor": FastSAMPredictor, "validator": FastSAMValidator}}

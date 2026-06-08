@@ -1,8 +1,8 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics 🚀 AGPL-3.0 许可证 - https://ultralytics.com/license
 
-# Copyright (c) Meta Platforms, Inc. and affiliates. All Rights Reserved
+# 版权所有 (c) Meta Platforms, Inc. 及其附属公司。保留所有权利。
 
-"""Provides utility to combine a vision backbone with a language backbone."""
+"""提供将视觉骨干与语言骨干组合的工具。"""
 
 from __future__ import annotations
 
@@ -16,10 +16,10 @@ from .necks import Sam3DualViTDetNeck
 
 
 class SAM3VLBackbone(nn.Module):
-    """This backbone combines a vision backbone and a language backbone without fusion. As such it is more of a
-    convenience wrapper to handle the two backbones together.
+    """此骨干将视觉骨干和语言骨干组合在一起，不进行融合。因此它更像是一个
+    便利的包装器来同时处理两个骨干。
 
-    It adds support for activation checkpointing and compilation.
+    它添加了对激活检查点和编译的支持。
     """
 
     def __init__(
@@ -31,16 +31,16 @@ class SAM3VLBackbone(nn.Module):
         act_ckpt_whole_language_backbone: bool = False,
         scalp=0,
     ):
-        """Initialize the backbone combiner.
+        """初始化骨干组合器。
 
-        :param visual: The vision backbone to use
-        :param text: The text encoder to use
+        :param visual: 要使用的视觉骨干
+        :param text: 要使用的文本编码器
         """
         super().__init__()
         self.vision_backbone: Sam3DualViTDetNeck = torch.compile(visual) if compile_visual else visual
         self.language_backbone = text
         self.scalp = scalp
-        # allow running activation checkpointing on the entire vision and language backbones
+        # 允许在整个视觉和语言骨干上运行激活检查点
         self.act_ckpt_whole_vision_backbone = act_ckpt_whole_vision_backbone
         self.act_ckpt_whole_language_backbone = act_ckpt_whole_language_backbone
 
@@ -51,34 +51,30 @@ class SAM3VLBackbone(nn.Module):
         input_boxes: torch.Tensor = None,
         additional_text: list[str] | None = None,
     ):
-        """Forward pass of the backbone combiner.
+        """骨干组合器的前向传播。
 
-        :param samples: The input images
-        :param captions: The input captions
-        :param input_boxes: If the text contains place-holders for boxes, this
-            parameter contains the tensor containing their spatial features
-        :param additional_text: This can be used to encode some additional text
-            (different from the captions) in the same forward of the backbone
-        :return: Output dictionary with the following keys:
-            - vision_features: The output of the vision backbone
-            - language_features: The output of the language backbone
-            - language_mask: The attention mask of the language backbone
-            - vision_pos_enc: The positional encoding of the vision backbone
-            - (optional) additional_text_features: The output of the language
-                backbone for the additional text
-            - (optional) additional_text_mask: The attention mask of the
-                language backbone for the additional text
+        :param samples: 输入图像
+        :param captions: 输入标题
+        :param input_boxes: 如果文本中包含框的占位符，此参数包含其空间特征张量
+        :param additional_text: 可用于在同一次前向传播中编码额外的文本（不同于标题）
+        :return: 包含以下键的输出字典：
+            - vision_features: 视觉骨干的输出
+            - language_features: 语言骨干的输出
+            - language_mask: 语言骨干的注意力掩码
+            - vision_pos_enc: 视觉骨干的位置编码
+            - (可选) additional_text_features: 语言骨干对额外文本的输出
+            - (可选) additional_text_mask: 语言骨干对额外文本的注意力掩码
         """
         output = self.forward_image(samples)
         output.update(self.forward_text(captions, input_boxes, additional_text))
         return output
 
     def forward_image(self, samples: torch.Tensor):
-        """Forward pass of the vision backbone and get both SAM3 and SAM2 features."""
-        # Forward through backbone
+        """视觉骨干的前向传播，同时获取 SAM3 和 SAM2 特征。"""
+        # 通过骨干网络前向传播
         sam3_features, sam3_pos, sam2_features, sam2_pos = self.vision_backbone.forward(samples)
         if self.scalp > 0:
-            # Discard the lowest resolution features
+            # 丢弃最低分辨率特征
             sam3_features, sam3_pos = (
                 sam3_features[: -self.scalp],
                 sam3_pos[: -self.scalp],
@@ -108,7 +104,7 @@ class SAM3VLBackbone(nn.Module):
         }
 
     def forward_image_sam2(self, samples: torch.Tensor):
-        """Forward pass of the vision backbone to get SAM2 features only."""
+        """视觉骨干的前向传播，仅获取 SAM2 特征。"""
         xs = self.vision_backbone.trunk(samples)
         x = xs[-1]  # simpleFPN
 
@@ -116,7 +112,7 @@ class SAM3VLBackbone(nn.Module):
         sam2_features, sam2_pos = self.vision_backbone.sam_forward_feature_levels(x, self.vision_backbone.sam2_convs)
 
         if self.scalp > 0:
-            # Discard the lowest resolution features
+            # 丢弃最低分辨率特征
             sam2_features, sam2_pos = (
                 sam2_features[: -self.scalp],
                 sam2_pos[: -self.scalp],
@@ -129,14 +125,14 @@ class SAM3VLBackbone(nn.Module):
         }
 
     def forward_text(self, captions, input_boxes=None, additional_text=None):
-        """Forward pass of the text encoder."""
+        """文本编码器的前向传播。"""
         output = {}
 
-        # Forward through text_encoder
+        # 通过 text_encoder 前向传播
         text_to_encode = copy(captions)
         if additional_text is not None:
-            # if there are additional_text, we piggy-back them into this forward.
-            # They'll be used later for output alignment
+            # 如果有 additional_text，我们将它们搭载到此次前向传播中。
+            # 它们稍后将用于输出对齐
             text_to_encode += additional_text
 
         with sdpa_kernel([SDPBackend.MATH, SDPBackend.EFFICIENT_ATTENTION, SDPBackend.FLASH_ATTENTION]):
@@ -151,10 +147,10 @@ class SAM3VLBackbone(nn.Module):
         text_embeds = text_embeds[:, : len(captions)]
         output["language_features"] = text_memory
         output["language_mask"] = text_attention_mask
-        output["language_embeds"] = text_embeds  # Text embeddings before forward to the encoder
+        output["language_embeds"] = text_embeds  # 前向传播到编码器之前的文本嵌入
 
         return output
 
     def set_imgsz(self, imgsz: list[int] = [1008, 1008]):
-        """Set the image size for the vision backbone."""
+        """设置视觉骨干的图像尺寸。"""
         self.vision_backbone.set_imgsz(imgsz)

@@ -10,42 +10,40 @@ from ultralytics.utils.checks import check_requirements
 
 
 class GPUInfo:
-    """Manages NVIDIA GPU information via pynvml with robust error handling.
+    """通过 pynvml 管理 NVIDIA GPU 信息，具有健壮的错误处理。
 
-    Provides methods to query detailed GPU statistics (utilization, memory, temp, power) and select the most idle GPUs
-    based on configurable criteria. It safely handles the absence or initialization failure of the pynvml library by
-    logging warnings and disabling related features, preventing application crashes.
+    提供查询详细 GPU 统计信息（利用率、内存、温度、功耗）和基于可配置标准选择最空闲 GPU 的方法。
+    它通过记录警告并禁用相关功能，安全地处理 pynvml 库的缺失或初始化失败，防止应用程序崩溃。
 
-    Includes fallback logic using `torch.cuda` for basic device counting if NVML is unavailable during GPU
-    selection. Manages NVML initialization and shutdown internally.
+    包含在 NVML 不可用时使用 `torch.cuda` 进行基本设备计数的回退逻辑。
+    内部管理 NVML 的初始化和关闭。
 
-    Attributes:
-        pynvml (module | None): The `pynvml` module if successfully imported and initialized, otherwise `None`.
-        nvml_available (bool): Indicates if `pynvml` is ready for use. True if import and `nvmlInit()` succeeded, False
-            otherwise.
-        gpu_stats (list[dict[str, Any]]): A list of dictionaries, each holding stats for one GPU, populated on
-        initialization and by `refresh_stats()`. Keys include: 'index', 'name', 'utilization' (%), 'memory_used' (MiB),
-            'memory_total' (MiB), 'memory_free' (MiB), 'temperature' (C), 'power_draw' (W), 'power_limit' (W or 'N/A').
-            Empty if NVML is unavailable or queries fail.
+    属性:
+        pynvml (module | None): 如果成功导入和初始化则为 `pynvml` 模块，否则为 `None`。
+        nvml_available (bool): 指示 `pynvml` 是否准备就绪。导入和 `nvmlInit()` 成功则为 True，否则为 False。
+        gpu_stats (list[dict[str, Any]]): 字典列表，每个字典包含一个 GPU 的统计信息，在初始化时和 `refresh_stats()` 时填充。
+            键包括：'index'、'name'、'utilization' (%)、'memory_used' (MiB)、'memory_total' (MiB)、
+            'memory_free' (MiB)、'temperature' (C)、'power_draw' (W)、'power_limit' (W 或 'N/A')。
+            如果 NVML 不可用或查询失败则为空。
 
-    Methods:
-        refresh_stats: Refresh the internal gpu_stats list by querying NVML.
-        print_status: Print GPU status in a compact table format using current stats.
-        select_idle_gpu: Select the most idle GPUs based on utilization and free memory.
-        shutdown: Shut down NVML if it was initialized.
+    方法:
+        refresh_stats: 通过查询 NVML 刷新内部 gpu_stats 列表。
+        print_status: 使用当前统计信息以紧凑表格格式打印 GPU 状态。
+        select_idle_gpu: 基于利用率和空闲内存选择最空闲的 GPU。
+        shutdown: 如果 NVML 已初始化则关闭它。
 
-    Examples:
-        Initialize GPUInfo and print status
+    示例:
+        初始化 GPUInfo 并打印状态
         >>> gpu_info = GPUInfo()
         >>> gpu_info.print_status()
 
-        Select idle GPUs with minimum memory requirements
+        选择满足最低内存要求的空闲 GPU
         >>> selected = gpu_info.select_idle_gpu(count=2, min_memory_fraction=0.2)
-        >>> print(f"Selected GPU indices: {selected}")
+        >>> print(f"已选择的 GPU 索引: {selected}")
     """
 
     def __init__(self):
-        """Initialize GPUInfo, attempting to import and initialize pynvml."""
+        """初始化 GPUInfo，尝试导入并初始化 pynvml。"""
         self.pynvml: Any | None = None
         self.nvml_available: bool = False
         self.gpu_stats: list[dict[str, Any]] = []
@@ -60,11 +58,11 @@ class GPUInfo:
             LOGGER.warning(f"Failed to initialize pynvml, GPU stats disabled: {e}")
 
     def __del__(self):
-        """Ensure NVML is shut down when the object is garbage collected."""
+        """确保在对象被垃圾回收时关闭 NVML。"""
         self.shutdown()
 
     def shutdown(self):
-        """Shut down NVML if it was initialized."""
+        """如果 NVML 已初始化则关闭它。"""
         if self.nvml_available and self.pynvml:
             try:
                 self.pynvml.nvmlShutdown()
@@ -73,7 +71,7 @@ class GPUInfo:
             self.nvml_available = False
 
     def refresh_stats(self):
-        """Refresh the internal gpu_stats list by querying NVML."""
+        """通过查询 NVML 刷新内部 gpu_stats 列表。"""
         self.gpu_stats = []
         if not self.nvml_available or not self.pynvml:
             return
@@ -86,7 +84,7 @@ class GPUInfo:
             self.gpu_stats = []
 
     def _get_device_stats(self, index: int) -> dict[str, Any]:
-        """Get stats for a single GPU device."""
+        """获取单个 GPU 设备的统计信息。"""
         handle = self.pynvml.nvmlDeviceGetHandleByIndex(index)
         memory = self.pynvml.nvmlDeviceGetMemoryInfo(handle)
         util = self.pynvml.nvmlDeviceGetUtilizationRates(handle)
@@ -104,16 +102,16 @@ class GPUInfo:
             "index": index,
             "name": self.pynvml.nvmlDeviceGetName(handle),
             "utilization": util.gpu if util else -1,
-            "memory_used": memory.used >> 20 if memory else -1,  # Convert bytes to MiB
+            "memory_used": memory.used >> 20 if memory else -1,  # 将字节转换为 MiB
             "memory_total": memory.total >> 20 if memory else -1,
             "memory_free": memory.free >> 20 if memory else -1,
             "temperature": safe_get(self.pynvml.nvmlDeviceGetTemperature, handle, temp_type),
-            "power_draw": safe_get(self.pynvml.nvmlDeviceGetPowerUsage, handle, divisor=1000),  # Convert mW to W
+            "power_draw": safe_get(self.pynvml.nvmlDeviceGetPowerUsage, handle, divisor=1000),  # 将 mW 转换为 W
             "power_limit": safe_get(self.pynvml.nvmlDeviceGetEnforcedPowerLimit, handle, divisor=1000),
         }
 
     def print_status(self):
-        """Print GPU status in a compact table format using current stats."""
+        """使用当前统计信息以紧凑表格格式打印 GPU 状态。"""
         self.refresh_stats()
         if not self.gpu_stats:
             LOGGER.warning("No GPU stats available.")
@@ -137,19 +135,19 @@ class GPUInfo:
     def select_idle_gpu(
         self, count: int = 1, min_memory_fraction: float = 0, min_util_fraction: float = 0
     ) -> list[int]:
-        """Select the most idle GPUs based on utilization and free memory.
+        """基于利用率和空闲内存选择最空闲的 GPU。
 
-        Args:
-            count (int): The number of idle GPUs to select.
-            min_memory_fraction (float): Minimum free memory required as a fraction of total memory.
-            min_util_fraction (float): Minimum free utilization rate required from 0.0 - 1.0.
+        参数:
+            count (int): 要选择的空闲 GPU 数量。
+            min_memory_fraction (float): 所需的最低空闲内存占总内存的比例。
+            min_util_fraction (float): 所需的最低空闲利用率，范围 0.0 - 1.0。
 
-        Returns:
-            (list[int]): Indices of the selected GPUs, sorted by idleness (lowest utilization first).
+        返回:
+            (list[int]): 选择的 GPU 索引，按空闲程度排序（利用率最低优先）。
 
-        Notes:
-             Returns fewer than 'count' if not enough qualify or exist.
-             Returns empty list if NVML stats are unavailable or no GPUs meet the criteria.
+        注意:
+            如果符合条件的不够，返回的数量可能少于 'count'。
+            如果 NVML 统计信息不可用或没有 GPU 满足标准，返回空列表。
         """
         assert min_memory_fraction <= 1.0, f"min_memory_fraction must be <= 1.0, got {min_memory_fraction}"
         assert min_util_fraction <= 1.0, f"min_util_fraction must be <= 1.0, got {min_util_fraction}"
@@ -166,18 +164,18 @@ class GPUInfo:
             LOGGER.warning("NVML stats unavailable.")
             return []
 
-        # Filter and sort eligible GPUs
+        # 过滤和排序符合条件的 GPU
         eligible_gpus = [
             gpu
             for gpu in self.gpu_stats
             if gpu.get("memory_free", 0) / gpu.get("memory_total", 1) >= min_memory_fraction
             and (100 - gpu.get("utilization", 100)) >= min_util_fraction * 100
         ]
-        # Random tiebreaker prevents race conditions when multiple processes start simultaneously
-        # and all GPUs appear equally idle (same utilization and free memory)
+        # 随机打破平局，防止多个进程同时启动时出现竞态条件
+        # 当所有 GPU 看起来同样空闲时（相同的利用率和空闲内存）
         eligible_gpus.sort(key=lambda x: (x.get("utilization", 101), -x.get("memory_free", 0), random.random()))
 
-        # Select top 'count' indices
+        # 选择前 'count' 个索引
         selected = [gpu["index"] for gpu in eligible_gpus[:count]]
 
         if selected:
@@ -191,8 +189,8 @@ class GPUInfo:
 
 
 if __name__ == "__main__":
-    required_free_mem_fraction = 0.2  # Require 20% free VRAM
-    required_free_util_fraction = 0.2  # Require 20% free utilization
+    required_free_mem_fraction = 0.2  # 需要 20% 空闲显存
+    required_free_util_fraction = 0.2  # 需要 20% 空闲利用率
     num_gpus_to_select = 1
 
     gpu_info = GPUInfo()

@@ -1,3 +1,3 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics 🚀 AGPL-3.0 许可证 - https://ultralytics.com/license
 
-# Copyright (c) Meta Platforms, Inc. and affiliates. All Rights Reserved
+# 版权所有 (c) Meta Platforms, Inc. 及其附属公司。保留所有权利。

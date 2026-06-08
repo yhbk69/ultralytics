@@ -9,32 +9,31 @@ from ultralytics.nn.modules import MLP, LayerNorm2d
 
 
 class MaskDecoder(nn.Module):
-    """Decoder module for generating masks and their associated quality scores using a transformer architecture.
+    """使用transformer架构生成掩码及其相关质量评分的解码器模块。
 
-    This class predicts masks given image and prompt embeddings, utilizing a transformer to process the inputs and
-    generate mask predictions along with their quality scores.
+    此类预测给定图像和提示嵌入的掩码，利用transformer处理输入并生成掩码预测及其质量评分。
 
     Attributes:
-        transformer_dim (int): Channel dimension for the transformer module.
-        transformer (nn.Module): Transformer module used for mask prediction.
-        num_multimask_outputs (int): Number of masks to predict for disambiguating masks.
-        iou_token (nn.Embedding): Embedding for the IoU token.
-        num_mask_tokens (int): Number of mask tokens.
-        mask_tokens (nn.Embedding): Embedding for the mask tokens.
-        output_upscaling (nn.Sequential): Neural network sequence for upscaling the output.
-        output_hypernetworks_mlps (nn.ModuleList): Hypernetwork MLPs for generating masks.
-        iou_prediction_head (nn.Module): MLP for predicting mask quality.
+        transformer_dim (int): transformer模块的通道维度。
+        transformer (nn.Module): 用于掩码预测的transformer模块。
+        num_multimask_outputs (int): 用于消歧的掩码预测数量。
+        iou_token (nn.Embedding): IoU令牌的嵌入。
+        num_mask_tokens (int): 掩码令牌数量。
+        mask_tokens (nn.Embedding): 掩码令牌的嵌入。
+        output_upscaling (nn.Sequential): 用于上采样输出的神经网络序列。
+        output_hypernetworks_mlps (nn.ModuleList): 用于生成掩码的超网络MLP。
+        iou_prediction_head (nn.Module): 用于预测掩码质量的MLP。
 
     Methods:
-        forward: Predict masks given image and prompt embeddings.
-        predict_masks: Internal method for mask prediction.
+        forward: 预测给定图像和提示嵌入的掩码。
+        predict_masks: 掩码预测的内部方法。
 
     Examples:
         >>> decoder = MaskDecoder(transformer_dim=256, transformer=transformer_module)
         >>> masks, iou_pred = decoder(
         ...     image_embeddings, image_pe, sparse_prompt_embeddings, dense_prompt_embeddings, multimask_output=True
         ... )
-        >>> print(f"Predicted masks shape: {masks.shape}, IoU predictions shape: {iou_pred.shape}")
+        >>> print(f"预测的掩码形状: {masks.shape}, IoU预测形状: {iou_pred.shape}")
     """
 
     def __init__(
@@ -46,15 +45,15 @@ class MaskDecoder(nn.Module):
         iou_head_depth: int = 3,
         iou_head_hidden_dim: int = 256,
     ) -> None:
-        """Initialize the MaskDecoder module for generating masks and their associated quality scores.
+        """初始化MaskDecoder模块，用于生成掩码及其相关质量评分。
 
         Args:
-            transformer_dim (int): Channel dimension for the transformer module.
-            transformer (nn.Module): Transformer module used for mask prediction.
-            num_multimask_outputs (int): Number of masks to predict for disambiguating masks.
-            activation (type[nn.Module]): Type of activation to use when upscaling masks.
-            iou_head_depth (int): Depth of the MLP used to predict mask quality.
-            iou_head_hidden_dim (int): Hidden dimension of the MLP used to predict mask quality.
+            transformer_dim (int): transformer模块的通道维度。
+            transformer (nn.Module): 用于掩码预测的transformer模块。
+            num_multimask_outputs (int): 用于消歧的预测掩码数量。
+            activation (type[nn.Module]): 上采样掩码时使用的激活函数类型。
+            iou_head_depth (int): 用于预测掩码质量的MLP深度。
+            iou_head_hidden_dim (int): 用于预测掩码质量的MLP隐藏维度。
         """
         super().__init__()
         self.transformer_dim = transformer_dim
@@ -87,18 +86,18 @@ class MaskDecoder(nn.Module):
         dense_prompt_embeddings: torch.Tensor,
         multimask_output: bool,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Predict masks given image and prompt embeddings.
+        """根据图像和提示嵌入预测掩码。
 
         Args:
-            image_embeddings (torch.Tensor): Embeddings from the image encoder.
-            image_pe (torch.Tensor): Positional encoding with the shape of image_embeddings.
-            sparse_prompt_embeddings (torch.Tensor): Embeddings of the points and boxes.
-            dense_prompt_embeddings (torch.Tensor): Embeddings of the mask inputs.
-            multimask_output (bool): Whether to return multiple masks or a single mask.
+            image_embeddings (torch.Tensor): 来自图像编码器的嵌入。
+            image_pe (torch.Tensor): 与image_embeddings形状相同的位置编码。
+            sparse_prompt_embeddings (torch.Tensor): 点和框的嵌入。
+            dense_prompt_embeddings (torch.Tensor): 掩码输入的嵌入。
+            multimask_output (bool): 是否返回多个掩码还是单个掩码。
 
         Returns:
-            masks (torch.Tensor): Batched predicted masks.
-            iou_pred (torch.Tensor): Batched predictions of mask quality.
+            masks (torch.Tensor): 批次预测的掩码。
+            iou_pred (torch.Tensor): 批次的掩码质量预测。
 
         Examples:
             >>> decoder = MaskDecoder(transformer_dim=256, transformer=transformer_module)
@@ -107,7 +106,7 @@ class MaskDecoder(nn.Module):
             >>> sparse_emb = torch.rand(1, 2, 256)
             >>> dense_emb = torch.rand(1, 256, 64, 64)
             >>> masks, iou_pred = decoder(image_emb, image_pe, sparse_emb, dense_emb, multimask_output=True)
-            >>> print(f"Masks shape: {masks.shape}, IoU predictions shape: {iou_pred.shape}")
+            >>> print(f"掩码形状: {masks.shape}, IoU预测形状: {iou_pred.shape}")
         """
         masks, iou_pred = self.predict_masks(
             image_embeddings=image_embeddings,
@@ -130,7 +129,7 @@ class MaskDecoder(nn.Module):
         sparse_prompt_embeddings: torch.Tensor,
         dense_prompt_embeddings: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Predict masks and quality scores using image and prompt embeddings via transformer architecture."""
+        """使用transformer架构通过图像和提示嵌入预测掩码和质量评分。"""
         # Concatenate output tokens
         output_tokens = torch.cat([self.iou_token.weight, self.mask_tokens.weight], dim=0)
         output_tokens = output_tokens.unsqueeze(0).expand(sparse_prompt_embeddings.shape[0], -1, -1)
@@ -164,37 +163,37 @@ class MaskDecoder(nn.Module):
 
 
 class SAM2MaskDecoder(nn.Module):
-    """Transformer-based decoder for predicting instance segmentation masks from image and prompt embeddings.
+    """基于Transformer的解码器，用于从图像和提示嵌入中预测实例分割掩码。
 
-    This class extends the functionality of the MaskDecoder, incorporating additional features such as high-resolution
-    feature processing, dynamic multimask output, and object score prediction.
+    此类扩展了MaskDecoder的功能，加入了高分辨率特征处理、动态多掩码输出
+    和目标分数预测等额外特性。
 
     Attributes:
-        transformer_dim (int): Channel dimension of the transformer.
-        transformer (nn.Module): Transformer used to predict masks.
-        num_multimask_outputs (int): Number of masks to predict when disambiguating masks.
-        iou_token (nn.Embedding): Embedding for IOU token.
-        num_mask_tokens (int): Total number of mask tokens.
-        mask_tokens (nn.Embedding): Embedding for mask tokens.
-        pred_obj_scores (bool): Whether to predict object scores.
-        obj_score_token (nn.Embedding): Embedding for object score token.
-        use_multimask_token_for_obj_ptr (bool): Whether to use multimask token for object pointer.
-        output_upscaling (nn.Sequential): Upscaling layers for output.
-        use_high_res_features (bool): Whether to use high-resolution features.
-        conv_s0 (nn.Conv2d): Convolutional layer for high-resolution features (s0).
-        conv_s1 (nn.Conv2d): Convolutional layer for high-resolution features (s1).
-        output_hypernetworks_mlps (nn.ModuleList): List of MLPs for output hypernetworks.
-        iou_prediction_head (MLP): MLP for IOU prediction.
-        pred_obj_score_head (nn.Linear | MLP): Linear layer or MLP for object score prediction.
-        dynamic_multimask_via_stability (bool): Whether to use dynamic multimask via stability.
-        dynamic_multimask_stability_delta (float): Delta value for dynamic multimask stability.
-        dynamic_multimask_stability_thresh (float): Threshold for dynamic multimask stability.
+        transformer_dim (int): transformer的通道维度。
+        transformer (nn.Module): 用于预测掩码的transformer。
+        num_multimask_outputs (int): 消歧时预测的掩码数量。
+        iou_token (nn.Embedding): IoU令牌的嵌入。
+        num_mask_tokens (int): 掩码令牌的总数。
+        mask_tokens (nn.Embedding): 掩码令牌的嵌入。
+        pred_obj_scores (bool): 是否预测目标分数。
+        obj_score_token (nn.Embedding): 目标分数令牌的嵌入。
+        use_multimask_token_for_obj_ptr (bool): 是否使用多掩码令牌作为目标指针。
+        output_upscaling (nn.Sequential): 输出的上采样层。
+        use_high_res_features (bool): 是否使用高分辨率特征。
+        conv_s0 (nn.Conv2d): 高分辨率特征(s0)的卷积层。
+        conv_s1 (nn.Conv2d): 高分辨率特征(s1)的卷积层。
+        output_hypernetworks_mlps (nn.ModuleList): 输出超网络的MLP列表。
+        iou_prediction_head (MLP): IoU预测的MLP。
+        pred_obj_score_head (nn.Linear | MLP): 目标分数预测的线性层或MLP。
+        dynamic_multimask_via_stability (bool): 是否通过稳定性使用动态多掩码。
+        dynamic_multimask_stability_delta (float): 动态多掩码稳定性的delta值。
+        dynamic_multimask_stability_thresh (float): 动态多掩码稳定性的阈值。
 
     Methods:
-        forward: Predict masks given image and prompt embeddings.
-        predict_masks: Predict instance segmentation masks from image and prompt embeddings.
-        _get_stability_scores: Compute mask stability scores based on IoU between thresholds.
-        _dynamic_multimask_via_stability: Dynamically select the most stable mask output.
+        forward: 根据图像和提示嵌入预测掩码。
+        predict_masks: 从图像和提示嵌入预测实例分割掩码。
+        _get_stability_scores: 基于阈值之间的IoU计算掩码稳定性评分。
+        _dynamic_multimask_via_stability: 动态选择最稳定的掩码输出。
 
     Examples:
         >>> image_embeddings = torch.rand(1, 256, 64, 64)

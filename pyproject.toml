@@ -1,28 +1,28 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
-# Overview:
-# This pyproject.toml file manages the build, packaging, and distribution of the Ultralytics library.
-# It defines essential project metadata, dependencies, and settings used to develop and deploy the library.
+# 概述：
+# 本 pyproject.toml 文件管理 Ultralytics 库的构建、打包和分发。
+# 定义了项目元数据、依赖项以及用于开发和部署库的设置。
 
-# Key Sections:
-# - [build-system]: Specifies the build requirements and backend (e.g., setuptools, wheel).
-# - [project]: Includes details like name, version, description, authors, dependencies and more.
-# - [project.optional-dependencies]: Provides additional, optional packages for extended features.
-# - [tool.*]: Configures settings for various tools (pytest, yapf, etc.) used in the project.
+# 主要节区：
+# - [build-system]：指定构建要求和构建后端（如 setuptools、wheel）。
+# - [project]：包含名称、版本、描述、作者、依赖项等详细信息。
+# - [project.optional-dependencies]：提供扩展功能的额外可选包。
+# - [tool.*]：配置项目中使用的各种工具（pytest、yapf 等）的设置。
 
-# Installation:
-# The Ultralytics library can be installed using the command: 'pip install ultralytics'
-# For development purposes, you can install the package in editable mode with: 'pip install -e .'
-# This approach allows for real-time code modifications without the need for re-installation.
+# 安装方式：
+# 使用命令安装：'pip install ultralytics'
+# 开发时可通过可编辑模式安装：'pip install -e .'
+# 此方式支持实时修改代码，无需重新安装。
 
-# Documentation:
-# For comprehensive documentation and usage instructions, visit: https://docs.ultralytics.com
+# 文档：
+# 完整使用说明请访问：https://docs.ultralytics.com
 
 [build-system]
 requires = ["setuptools>=70.0.0,<=82.0.1", "wheel"]
 build-backend = "setuptools.build_meta"
 
-# Project settings -----------------------------------------------------------------------------------------------------
+# 项目设置 -----------------------------------------------------------------------------------------------------
 [project]
 name = "ultralytics"
 dynamic = ["version"]
@@ -59,7 +59,7 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
 ]
 
-# Required dependencies ------------------------------------------------------------------------------------------------
+# 必需依赖项 ------------------------------------------------------------------------------------------------
 dependencies = [
     "numpy>=1.23.0",
     "matplotlib>=3.3.0",
@@ -69,14 +69,14 @@ dependencies = [
     "requests>=2.23.0",
     "scipy>=1.4.1",
     "torch>=1.8.0",
-    "torch>=1.8.0,!=2.4.0; sys_platform == 'win32'", # Windows CPU errors w/ 2.4.0 https://github.com/ultralytics/ultralytics/issues/15049
+    "torch>=1.8.0,!=2.4.0; sys_platform == 'win32'", # Windows 上 2.4.0 版本 CPU 报错 https://github.com/ultralytics/ultralytics/issues/15049
     "torchvision>=0.9.0",
-    "psutil>=5.8.0", # system utilization
+    "psutil>=5.8.0", # 系统资源监控
     "polars>=0.20.0",
-    "ultralytics-thop>=2.0.18", # FLOPs computation https://github.com/ultralytics/thop
+    "ultralytics-thop>=2.0.18", # FLOPs 计算 https://github.com/ultralytics/thop
 ]
 
-# Optional dependencies ------------------------------------------------------------------------------------------------
+# 可选依赖项 ------------------------------------------------------------------------------------------------
 [project.optional-dependencies]
 dev = [
     "ipython",
@@ -84,30 +84,30 @@ dev = [
     "pytest-cov",
     "coverage[toml]",
     "zensical>=0.0.15; python_version >= '3.10'",
-    "mkdocs-ultralytics-plugin>=0.2.4", # for meta descriptions and images, dates and authors
-    "minijinja>=2.0.0", # render docs macros without mkdocs-macros-plugin
+    "mkdocs-ultralytics-plugin>=0.2.4", # 用于元描述、图片、日期和作者信息
+    "minijinja>=2.0.0", # 渲染文档宏，无需 mkdocs-macros-plugin
 ]
 export = [
-    "numpy<2.0.0", # TF 2.20 compatibility
-    "onnx>=1.12.0; platform_system != 'Darwin'", # ONNX export
-    "onnx>=1.12.0,<1.18.0; platform_system == 'Darwin'",  # TF inference hanging on MacOS (tested up to onnx==1.20.0)
+    "numpy<2.0.0", # TF 2.20 兼容性
+    "onnx>=1.12.0; platform_system != 'Darwin'", # ONNX 导出
+    "onnx>=1.12.0,<1.18.0; platform_system == 'Darwin'",  # MacOS 上 TF 推理卡死（测试至 onnx==1.20.0）
     "onnxslim>=0.1.82",
-    "coremltools>=9.0; platform_system != 'Windows' and python_version <= '3.13'", # CoreML supported on macOS and Linux
-    "scikit-learn>=1.3.2; platform_system != 'Windows' and python_version <= '3.13'", # CoreML k-means quantization
-    "openvino>=2024.0.0",  # OpenVINO export
-    "tensorflow>=2.0.0,<=2.19.0", # TF bug https://github.com/ultralytics/ultralytics/issues/5161
-    "tensorflowjs>=2.0.0", # TF.js export, automatically installs tensorflow
-    "ydf<0.13.0; platform_machine != 'aarch64'", # ydf>=0.13 has protobuf gencode 6.x but tensorflow<=2.19 requires protobuf<6
-    "tensorstore>=0.1.63; platform_machine == 'aarch64' and python_version >= '3.9'", # for TF Raspberry Pi exports
-    "h5py!=3.11.0; platform_machine == 'aarch64'", # fix h5py build issues due to missing aarch64 wheels in 3.11 release
-    "setuptools<=81.0.0",  # pin due to >=82.0.0 breaking tensorflow.js package
-    "packaging>=26.0; platform_machine == 'aarch64' and platform_system == 'Linux' and python_version >= '3.9'", # IMX export bug
+    "coremltools>=9.0; platform_system != 'Windows' and python_version <= '3.13'", # CoreML 支持 macOS 和 Linux
+    "scikit-learn>=1.3.2; platform_system != 'Windows' and python_version <= '3.13'", # CoreML K-Means 量化
+    "openvino>=2024.0.0",  # OpenVINO 导出
+    "tensorflow>=2.0.0,<=2.19.0", # TF 已知问题 https://github.com/ultralytics/ultralytics/issues/5161
+    "tensorflowjs>=2.0.0", # TF.js 导出，会自动安装 tensorflow
+    "ydf<0.13.0; platform_machine != 'aarch64'", # ydf>=0.13 使用 protobuf gen 6.x，但 tensorflow<=2.19 要求 protobuf<6
+    "tensorstore>=0.1.63; platform_machine == 'aarch64' and python_version >= '3.9'", # 用于树莓派 TF 导出
+    "h5py!=3.11.0; platform_machine == 'aarch64'", # 修复 h5py 因 3.11 版本缺少 aarch64 wheel 导致的构建问题
+    "setuptools<=81.0.0",  # 固定版本，因为 >=82.0.0 会导致 tensorflow.js 包损坏
+    "packaging>=26.0; platform_machine == 'aarch64' and platform_system == 'Linux' and python_version >= '3.9'", # IMX 导出相关 bug
 ]
 solutions = [
-    "shapely>=2.0.0",    # shapely for point and polygon data matching
-    "streamlit>=1.51.0; python_version >= '3.10'",    # for live inference on web browser, i.e `yolo streamlit-predict`
+    "shapely>=2.0.0",    # 用于点和多边形数据匹配
+    "streamlit>=1.51.0; python_version >= '3.10'",    # 用于浏览器中实时推理，如 `yolo streamlit-predict`
     "streamlit>=1.29.0,<1.51.0; python_version < '3.10' and (python_version < '3.9' or platform_machine != 'aarch64' or platform_system != 'Linux')",
-    "flask>=3.0.1",  # for similarity search solution
+    "flask>=3.0.1",  # 用于相似度搜索方案
 ]
 logging = [
     "wandb", # https://docs.ultralytics.com/integrations/weights-biases/
@@ -115,9 +115,9 @@ logging = [
     "mlflow",  # https://docs.ultralytics.com/integrations/mlflow/
 ]
 extra = [
-    "ipython", # interactive notebook
-    "albumentations>=1.4.6", # training augmentations
-    "faster-coco-eval>=1.6.7", # COCO mAP
+    "ipython", # 交互式笔记本
+    "albumentations>=1.4.6", # 训练数据增强
+    "faster-coco-eval>=1.6.7", # COCO 评估指标
 ]
 typing = [
     "scipy-stubs>=1.14.1.4; python_version >= '3.10'",
@@ -139,10 +139,10 @@ typing = [
 yolo = "ultralytics.cfg:entrypoint"
 ultralytics = "ultralytics.cfg:entrypoint"
 
-# Tools settings -------------------------------------------------------------------------------------------------------
-[tool.setuptools]  # configuration specific to the `setuptools` build backend.
+# 工具设置 -------------------------------------------------------------------------------------------------------
+[tool.setuptools]  # setuptools 构建后端的专属配置。
 packages = { find = { where = ["."], include = ["ultralytics", "ultralytics.*"] } }
-# Tests included below for checking Conda builds in https://github.com/conda-forge/ultralytics-feedstock
+# 下方包含测试文件，用于在 https://github.com/conda-forge/ultralytics-feedstock 中验证 Conda 构建
 package-data = { "ultralytics" = ["**/*.yaml", "**/*.sh", "../tests/*.py"], "ultralytics.assets" = ["*.jpg"], "ultralytics.solutions.templates" = ["*.html"]}
 
 [tool.setuptools.dynamic]
@@ -151,7 +151,7 @@ version = { attr = "ultralytics.__version__" }
 [tool.pytest.ini_options]
 addopts = "--doctest-modules --durations=30 --color=yes"
 markers = [
-    "slow: skip slow tests unless --slow is set",
+    "slow: 跳过慢速测试，除非设置 --slow 选项",
 ]
 norecursedirs = [".git", "dist", "build"]
 

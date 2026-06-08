@@ -58,7 +58,7 @@ FORMATS_HELP_MSG = f"Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID
 
 
 def img2label_paths(img_paths: list[str]) -> list[str]:
-    """Convert image paths to label paths by replacing 'images' with 'labels' and extension with '.txt'."""
+    """通过将 'images' 替换为 'labels' 并将扩展名替换为 '.txt' 来将图像路径转换为标签路径。"""
     sa, sb = f"{os.sep}images{os.sep}", f"{os.sep}labels{os.sep}"  # /images/, /labels/ substrings
     return [sb.join(x.rsplit(sa, 1)).rsplit(".", 1)[0] + ".txt" for x in img_paths]
 
@@ -66,19 +66,19 @@ def img2label_paths(img_paths: list[str]) -> list[str]:
 def check_file_speeds(
     files: list[str], threshold_ms: float = 10, threshold_mb: float = 50, max_files: int = 5, prefix: str = ""
 ):
-    """Check dataset file access speed and provide performance feedback.
+    """检查数据集文件访问速度并提供性能反馈。
 
     This function tests the access speed of dataset files by measuring ping (stat call) time and read speed. It samples
     up to `max_files` files from the provided list and warns if access times exceed the threshold.
 
-    Args:
+    参数：
         files (list[str]): List of file paths to check for access speed.
         threshold_ms (float, optional): Threshold in milliseconds for ping time warnings.
         threshold_mb (float, optional): Threshold in megabytes per second for read speed warnings.
         max_files (int, optional): The maximum number of files to check.
         prefix (str, optional): Prefix string to add to log messages.
 
-    Examples:
+    示例：
         >>> from pathlib import Path
         >>> image_files = list(Path("dataset/images").glob("*.jpg"))
         >>> check_file_speeds(image_files, threshold_ms=15)
@@ -87,28 +87,28 @@ def check_file_speeds(
         LOGGER.warning(f"{prefix}Image speed checks: No files to check")
         return
 
-    # Sample files (max 5)
+    # 采样文件（最多 5 个）
     files = random.sample(files, min(max_files, len(files)))
 
-    # Test ping (stat time)
+    # 测试 ping（stat 时间）
     ping_times = []
     file_sizes = []
     read_speeds = []
 
     for f in files:
         try:
-            # Measure ping (stat call)
+            # 测量 ping（stat 调用）
             start = time.perf_counter()
             file_size = os.stat(f).st_size
             ping_times.append((time.perf_counter() - start) * 1000)  # ms
             file_sizes.append(file_size)
 
-            # Measure read speed
+            # 测量读取速度
             start = time.perf_counter()
             with open(f, "rb") as file_obj:
                 _ = file_obj.read()
             read_time = time.perf_counter() - start
-            if read_time > 0:  # Avoid division by zero
+            if read_time > 0:  # 避免除零错误
                 read_speeds.append(file_size / (1 << 20) / read_time)  # MB/s
         except Exception:
             pass
@@ -117,7 +117,7 @@ def check_file_speeds(
         LOGGER.warning(f"{prefix}Image speed checks: failed to access files")
         return
 
-    # Calculate stats with uncertainties
+    # 计算带不确定性的统计数据
     avg_ping = np.mean(ping_times)
     std_ping = np.std(ping_times, ddof=1) if len(ping_times) > 1 else 0
     size_msg = f", size: {np.mean(file_sizes) / (1 << 10):.1f} KB"
@@ -142,7 +142,7 @@ def check_file_speeds(
 
 
 def get_hash(paths: list[str]) -> str:
-    """Return a single hash value of a list of paths (files or dirs)."""
+    """返回路径列表（文件或目录）的单个哈希值。"""
     size = 0
     for p in paths:
         try:
@@ -155,7 +155,7 @@ def get_hash(paths: list[str]) -> str:
 
 
 def exif_size(img: Image.Image) -> tuple[int, int]:
-    """Return exif-corrected PIL size."""
+    """返回经 EXIF 校正的 PIL 尺寸。"""
     s = img.size  # (width, height)
     if img.format == "JPEG":  # only support JPEG images
         try:
@@ -169,13 +169,13 @@ def exif_size(img: Image.Image) -> tuple[int, int]:
 
 
 def verify_image(args: tuple) -> tuple:
-    """Verify one image."""
+    """验证单张图像。"""
     (im_file, cls), prefix = args
-    # Number (found, corrupt), message
+    # 数量（找到、损坏）、消息
     nf, nc, msg = 0, 0, ""
     try:
         im = Image.open(im_file)
-        im.verify()  # PIL verify
+        im.verify()  # PIL 验证
         shape = exif_size(im)  # image size
         shape = (shape[1], shape[0])  # hw
         assert (shape[0] > 9) & (shape[1] > 9), f"image size {shape} <10 pixels"
@@ -194,14 +194,14 @@ def verify_image(args: tuple) -> tuple:
 
 
 def verify_image_label(args: tuple) -> list:
-    """Verify one image-label pair."""
+    """验证一对图像-标签。"""
     im_file, lb_file, prefix, keypoint, num_cls, nkpt, ndim, single_cls = args
-    # Number (missing, found, empty, corrupt), message, segments, keypoints
+    # 数量（缺失、找到、空、损坏）、消息、分割、关键点
     nm, nf, ne, nc, msg, segments, keypoints = 0, 0, 0, 0, "", [], None
     try:
-        # Verify images
+        # 验证图像
         im = Image.open(im_file)
-        im.verify()  # PIL verify
+        im.verify()  # PIL 验证
         shape = exif_size(im)  # image size
         shape = (shape[1], shape[0])  # hw
         assert (shape[0] > 9) & (shape[1] > 9), f"image size {shape} <10 pixels"
@@ -213,7 +213,7 @@ def verify_image_label(args: tuple) -> list:
                     ImageOps.exif_transpose(Image.open(im_file)).save(im_file, "JPEG", subsampling=0, quality=100)
                     msg = f"{prefix}{im_file}: corrupt JPEG restored and saved"
 
-        # Verify labels
+        # 验证标签
         if os.path.isfile(lb_file):
             nf = 1  # label found
             with open(lb_file, encoding="utf-8") as f:
@@ -230,11 +230,11 @@ def verify_image_label(args: tuple) -> list:
                 else:
                     assert lb.shape[1] == 5, f"labels require 5 columns, {lb.shape[1]} columns detected"
                     points = lb[:, 1:]
-                # Coordinate points check with 1% tolerance
+                # 坐标点检查，容差 1%
                 assert points.max() <= 1.01, f"non-normalized or out of bounds coordinates {points[points > 1.01]}"
                 assert lb.min() >= -0.01, f"negative class labels or coordinate {lb[lb < -0.01]}"
 
-                # All labels
+                # 所有标签
                 max_cls = 0 if single_cls else lb[:, 0].max()  # max label count
                 assert max_cls < num_cls, (
                     f"Label class {int(max_cls)} exceeds dataset class count {num_cls}. "
@@ -266,20 +266,20 @@ def verify_image_label(args: tuple) -> list:
 
 
 def visualize_image_annotations(image_path: str, txt_path: str, label_map: dict[int, str]):
-    """Visualize YOLO annotations (bounding boxes and class labels) on an image.
+    """在图像上可视化 YOLO 标注（边界框和类别标签）。
 
     This function reads an image and its corresponding annotation file in YOLO format, then draws bounding boxes around
     detected objects and labels them with their respective class names. The bounding box colors are assigned based on
     the class ID, and the text color is dynamically adjusted for readability, depending on the background color's
     luminance.
 
-    Args:
+    参数：
         image_path (str): Path to the image file to annotate. The file must be readable by PIL.
         txt_path (str): Path to the annotation file in YOLO format, which should contain one line per object.
         label_map (dict[int, str]): A dictionary that maps class IDs (integers) to class labels (strings).
 
-    Examples:
-        >>> label_map = {0: "cat", 1: "dog", 2: "bird"}  # Should include all annotated classes
+    示例：
+        >>> label_map = {0: "cat", 1: "dog", 2: "bird"}  # 应包含所有标注类别
         >>> visualize_image_annotations("path/to/image.jpg", "path/to/annotations.txt", label_map)
     """
     import matplotlib.pyplot as plt
@@ -297,12 +297,12 @@ def visualize_image_annotations(image_path: str, txt_path: str, label_map: dict[
             w = width * img_width
             h = height * img_height
             annotations.append((x, y, w, h, int(class_id)))
-    _, ax = plt.subplots(1)  # Plot the image and annotations
+    _, ax = plt.subplots(1)  # 绘制图像和标注
     for x, y, w, h, label in annotations:
-        color = tuple(c / 255 for c in colors(label, False))  # Get and normalize an RGB color for Matplotlib
-        rect = plt.Rectangle((x, y), w, h, linewidth=2, edgecolor=color, facecolor="none")  # Create a rectangle
+        color = tuple(c / 255 for c in colors(label, False))  # 获取并归一化 Matplotlib 的 RGB 颜色
+        rect = plt.Rectangle((x, y), w, h, linewidth=2, edgecolor=color, facecolor="none")  # 创建矩形
         ax.add_patch(rect)
-        luminance = 0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2]  # Formula for luminance
+        luminance = 0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2]  # 亮度计算公式
         ax.text(x, y - 5, label_map[label], color="white" if luminance < 0.5 else "black", backgroundcolor=color)
     ax.imshow(img)
     plt.show()
@@ -311,16 +311,16 @@ def visualize_image_annotations(image_path: str, txt_path: str, label_map: dict[
 def polygon2mask(
     imgsz: tuple[int, int], polygons: list[np.ndarray], color: int = 1, downsample_ratio: int = 1
 ) -> np.ndarray:
-    """Convert a list of polygons to a binary mask of the specified image size.
+    """将多边形列表转换为指定图像尺寸的二值掩码。
 
-    Args:
+    参数：
         imgsz (tuple[int, int]): The size of the image as (height, width).
         polygons (list[np.ndarray]): A list of polygons. Each polygon is a 1D array of coordinates with length M, where
             M % 2 = 0 (alternating x, y values).
         color (int, optional): The color value to fill in the polygons on the mask.
         downsample_ratio (int, optional): Factor by which to downsample the mask.
 
-    Returns:
+    返回：
         (np.ndarray): A binary mask of the specified image size with the polygons filled in.
     """
     mask = np.zeros(imgsz, dtype=np.uint8)
@@ -328,23 +328,23 @@ def polygon2mask(
     polygons = polygons.reshape((polygons.shape[0], -1, 2))
     cv2.fillPoly(mask, polygons, color=color)
     nh, nw = (imgsz[0] // downsample_ratio, imgsz[1] // downsample_ratio)
-    # Note: fillPoly first then resize is trying to keep the same loss calculation method when mask-ratio=1
+    # 注意：先 fillPoly 再 resize 是为了在 mask-ratio=1 时保持相同的损失计算方法
     return cv2.resize(mask, (nw, nh))
 
 
 def polygons2masks(
     imgsz: tuple[int, int], polygons: list[np.ndarray], color: int, downsample_ratio: int = 1
 ) -> np.ndarray:
-    """Convert a list of polygons to a set of binary masks of the specified image size.
+    """将多边形列表转换为指定图像尺寸的一组二值掩码。
 
-    Args:
+    参数：
         imgsz (tuple[int, int]): The size of the image as (height, width).
         polygons (list[np.ndarray]): A list of polygons. Each polygon is an array of coordinates that can be reshaped to
             (-1, 2) as (x, y) point pairs.
         color (int): The color value to fill in the polygons on the masks.
         downsample_ratio (int, optional): Factor by which to downsample each mask.
 
-    Returns:
+    返回：
         (np.ndarray): A set of binary masks of the specified image size with the polygons filled in.
     """
     return np.array([polygon2mask(imgsz, [x.reshape(-1)], color, downsample_ratio) for x in polygons])
@@ -353,7 +353,7 @@ def polygons2masks(
 def polygons2masks_overlap(
     imgsz: tuple[int, int], segments: list[np.ndarray], downsample_ratio: int = 1
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Return a downsampled overlap mask and sorted area indices."""
+    """返回下采样的重叠掩码和排序后的面积索引。"""
     masks = np.zeros(
         (imgsz[0] // downsample_ratio, imgsz[1] // downsample_ratio),
         dtype=np.int32 if len(segments) > 255 else np.uint8,
@@ -380,15 +380,15 @@ def polygons2masks_overlap(
 
 
 def find_dataset_yaml(path: Path) -> Path:
-    """Find and return the YAML file associated with a Detect, Segment or Pose dataset.
+    """查找并返回与检测、分割或姿态数据集关联的 YAML 文件。
 
     This function searches for a YAML file at the root level of the provided directory first, and if not found, it
     performs a recursive search. It prefers YAML files that have the same stem as the provided path.
 
-    Args:
+    参数：
         path (Path): The directory path to search for the YAML file.
 
-    Returns:
+    返回：
         (Path): The path of the found YAML file.
     """
     files = list(path.glob("*.yaml")) or list(path.rglob("*.yaml"))  # try root level first and then recursive
@@ -400,7 +400,7 @@ def find_dataset_yaml(path: Path) -> Path:
 
 
 def convert_ndjson_to_yolo_if_needed(data: str | Path) -> str | Path:
-    """Convert an NDJSON dataset or Platform dataset URI to YOLO format."""
+    """将 NDJSON 数据集或平台数据集 URI 转换为 YOLO 格式。"""
     data_str = str(data)
     if data_str.endswith(".ndjson") or (data_str.startswith("ul://") and "/datasets/" in data_str):
         import asyncio
@@ -412,34 +412,34 @@ def convert_ndjson_to_yolo_if_needed(data: str | Path) -> str | Path:
 
 
 def check_det_dataset(dataset: str, autodownload: bool = True) -> dict[str, Any]:
-    """Download, verify, and/or unzip a dataset if not found locally.
+    """如果在本地未找到，则下载、验证和/或解压数据集。
 
     This function checks the availability of a specified dataset, and if not found, it has the option to download and
     unzip the dataset. It then reads and parses the accompanying YAML data, ensuring key requirements are met and also
     resolves paths related to the dataset.
 
-    Args:
+    参数：
         dataset (str): Path to the dataset or dataset descriptor (like a YAML file).
         autodownload (bool, optional): Whether to automatically download the dataset if not found.
 
-    Returns:
+    返回：
         (dict[str, Any]): Parsed dataset information and paths.
     """
     file = Path(check_file(dataset))
     if file.is_dir():
         file = find_dataset_yaml(file)
 
-    # Download (optional)
+    # 下载（可选）
     extract_dir = ""
     if zipfile.is_zipfile(file) or is_tarfile(file):
         new_dir = safe_download(file, dir=DATASETS_DIR, unzip=True, delete=False)
         file = find_dataset_yaml(DATASETS_DIR / new_dir)
         extract_dir, autodownload = file.parent, False
 
-    # Read YAML
+    # 读取 YAML
     data = YAML.load(file, append_filename=True)  # dictionary
 
-    # Checks
+    # 检查
     for k in "train", "val":
         if k not in data:
             if k != "val" or "validation" not in data:
@@ -460,12 +460,12 @@ def check_det_dataset(dataset: str, autodownload: bool = True) -> dict[str, Any]
     data["names"] = check_class_names(data["names"])
     data["channels"] = data.get("channels", 3)  # get image channels, default to 3
 
-    # Resolve paths
+    # 解析路径
     path = Path(extract_dir or data.get("path") or Path(data.get("yaml_file", "")).parent)  # dataset root
     if not path.exists() and not path.is_absolute():
         path = (DATASETS_DIR / path).resolve()  # path relative to DATASETS_DIR
 
-    # Set paths
+    # 设置路径
     data["path"] = path  # download scripts
     for k in "train", "val", "test", "minival":
         if data.get(k):  # prepend path
@@ -477,7 +477,7 @@ def check_det_dataset(dataset: str, autodownload: bool = True) -> dict[str, Any]
             else:
                 data[k] = [str((path / x).resolve()) for x in data[k]]
 
-    # Parse YAML
+    # 解析 YAML
     val, s = (data.get(x) for x in ("val", "download"))
     if val:
         val = [Path(x).resolve() for x in (val if isinstance(val, list) else [val])]  # val path
@@ -508,16 +508,16 @@ def check_det_dataset(dataset: str, autodownload: bool = True) -> dict[str, Any]
 
 
 def check_cls_dataset(dataset: str | Path, split: str = "") -> dict[str, Any]:
-    """Check a classification dataset such as Imagenet.
+    """检查分类数据集（如 Imagenet）。
 
     This function accepts a `dataset` name and attempts to retrieve the corresponding dataset information. If the
     dataset is not found locally, it attempts to download the dataset from the internet and save it locally.
 
-    Args:
+    参数：
         dataset (str | Path): The name of the dataset.
         split (str, optional): The split of the dataset. Either 'val', 'test', or ''.
 
-    Returns:
+    返回：
         (dict[str, Any]): A dictionary containing the following keys:
 
             - 'train' (Path): The directory path containing the training set of the dataset.
@@ -581,7 +581,7 @@ def check_cls_dataset(dataset: str | Path, split: str = "") -> dict[str, Any]:
     names = [x.name for x in (data_dir / "train").iterdir() if x.is_dir()]  # class names list
     names = dict(enumerate(sorted(names)))
 
-    # Print to console
+    # 打印到控制台
     for k, v in {"train": train_set, "val": val_set, "test": test_set}.items():
         prefix = f"{colorstr(f'{k}:')} {v}..."
         if v is None:
@@ -604,41 +604,41 @@ def check_cls_dataset(dataset: str | Path, split: str = "") -> dict[str, Any]:
 
 
 class HUBDatasetStats:
-    """A class for generating HUB dataset JSON and `-hub` dataset directory.
+    """用于生成 HUB 数据集 JSON 和 `-hub` 数据集目录的类。
 
-    Args:
+    参数：
         path (str): Path to data.yaml or data.zip (with data.yaml inside data.zip).
         task (str): Dataset task. Options are 'detect', 'segment', 'pose', 'classify', 'obb'.
         autodownload (bool): Attempt to download dataset if not found locally.
 
-    Attributes:
+    属性：
         task (str): Dataset task type.
         hub_dir (Path): Directory path for HUB dataset files.
         im_dir (Path): Directory path for compressed images.
         stats (dict): Statistics dictionary containing dataset information.
         data (dict): Dataset configuration data.
 
-    Methods:
+    方法：
         get_json: Return dataset JSON for Ultralytics HUB.
         process_images: Compress images for Ultralytics HUB.
 
-    Examples:
+    示例：
         >>> from ultralytics.data.utils import HUBDatasetStats
         >>> stats = HUBDatasetStats("path/to/coco8.zip", task="detect")  # detect dataset
         >>> stats = HUBDatasetStats("path/to/coco8-seg.zip", task="segment")  # segment dataset
         >>> stats = HUBDatasetStats("path/to/coco8-pose.zip", task="pose")  # pose dataset
-        >>> stats = HUBDatasetStats("path/to/dota8.zip", task="obb")  # OBB dataset
+        >>> stats = HUBDatasetStats("path/to/dota8.zip", task="obb")  # OBB 数据集
         >>> stats = HUBDatasetStats("path/to/imagenet10.zip", task="classify")  # classification dataset
         >>> stats.get_json(save=True)
         >>> stats.process_images()
 
-    Notes:
+    注意：
         Download *.zip files from https://github.com/ultralytics/hub/tree/main/example_datasets
         i.e. https://github.com/ultralytics/hub/raw/main/example_datasets/coco8.zip for coco8.zip.
     """
 
     def __init__(self, path: str = "coco8.yaml", task: str = "detect", autodownload: bool = False):
-        """Initialize class."""
+        """初始化类。"""
         path = Path(path).resolve()
         LOGGER.info(f"Starting HUB dataset checks for {path}....")
 
@@ -650,12 +650,12 @@ class HUBDatasetStats:
         else:  # detect, segment, pose, obb
             _, data_dir, yaml_path = self._unzip(Path(path))
             try:
-                # Load YAML with checks
+                # 带检查地加载 YAML
                 data = YAML.load(yaml_path)
                 data["path"] = ""  # strip path since YAML should be in dataset root for all HUB datasets
                 YAML.save(yaml_path, data)
                 data = check_det_dataset(yaml_path, autodownload)  # dict
-                data["path"] = data_dir  # YAML path should be set to '' (relative) or parent (absolute)
+                data["path"] = data_dir  # YAML 路径应设为 ''（相对）或父目录（绝对）
             except Exception as e:
                 raise Exception("error/HUB/dataset_stats/init") from e
 
@@ -666,7 +666,7 @@ class HUBDatasetStats:
 
     @staticmethod
     def _unzip(path: Path) -> tuple[bool, str, Path]:
-        """Unzip data.zip."""
+        """解压 data.zip。"""
         if not str(path).endswith(".zip"):  # path is data.yaml
             return False, None, path
         unzip_dir = unzip_file(path, path=path.parent)
@@ -676,17 +676,17 @@ class HUBDatasetStats:
         return True, str(unzip_dir), find_dataset_yaml(unzip_dir)  # zipped, data_dir, yaml_path
 
     def _hub_ops(self, f: str):
-        """Save a compressed image for HUB previews."""
+        """保存压缩图像用于 HUB 预览。"""
         compress_one_image(f, self.im_dir / Path(f).name)  # save to dataset-hub
 
     def get_json(self, save: bool = False, verbose: bool = False) -> dict:
-        """Return dataset JSON for Ultralytics HUB."""
+        """返回 Ultralytics HUB 的数据集 JSON。"""
 
         def _round(labels):
-            """Update labels to integer class and 4 decimal place floats."""
+            """将标签更新为整数类别和 4 位小数的浮点数。"""
             if self.task == "detect":
                 coordinates = labels["bboxes"]
-            elif self.task in {"segment", "obb"}:  # Segment and OBB use segments. OBB segments are normalized xyxyxyxy
+            elif self.task in {"segment", "obb"}:  # 分割和 OBB 使用 segments。OBB segments 为归一化的 xyxyxyxy
                 coordinates = [x.flatten() for x in labels["segments"]]
             elif self.task == "pose":
                 n, nk, nd = labels["keypoints"].shape
@@ -700,14 +700,14 @@ class HUBDatasetStats:
             self.stats[split] = None  # predefine
             path = self.data.get(split)
 
-            # Check split
+            # 检查划分
             if path is None:  # no split
                 continue
             files = [f for f in Path(path).rglob("*.*") if f.suffix[1:].lower() in IMG_FORMATS]  # image files in split
             if not files:  # no images
                 continue
 
-            # Get dataset statistics
+            # 获取数据集统计信息
             if self.task == "classify":
                 from torchvision.datasets import ImageFolder  # scope for faster 'import ultralytics'
 
@@ -742,7 +742,7 @@ class HUBDatasetStats:
                     "labels": [{Path(k).name: _round(v)} for k, v in zip(dataset.im_files, dataset.labels)],
                 }
 
-        # Save, print and return
+        # 保存、打印并返回
         if save:
             self.hub_dir.mkdir(parents=True, exist_ok=True)  # makes dataset-hub/
             stats_path = self.hub_dir / "stats.json"
@@ -754,8 +754,8 @@ class HUBDatasetStats:
         return self.stats
 
     def process_images(self) -> Path:
-        """Compress images for Ultralytics HUB."""
-        from ultralytics.data import YOLODataset  # ClassificationDataset
+        """压缩图像用于 Ultralytics HUB。"""
+        from ultralytics.data import YOLODataset  # ClassificationDataset 分类数据集
 
         self.im_dir.mkdir(parents=True, exist_ok=True)  # makes dataset-hub/images/
         for split in "train", "val", "test":
@@ -770,26 +770,26 @@ class HUBDatasetStats:
 
 
 def compress_one_image(f: str, f_new: str | None = None, max_dim: int = 1920, quality: int = 50):
-    """Compress a single image file to reduced size while preserving its aspect ratio and quality using either the
+    """压缩单个图像文件以减小尺寸，同时保持其宽高比和质量。
     Python Imaging Library (PIL) or OpenCV library. If the input image is smaller than the maximum dimension, it
     will not be resized.
 
-    Args:
+    参数：
         f (str): The path to the input image file.
         f_new (str, optional): The path to the output image file. If not specified, the input file will be overwritten.
         max_dim (int, optional): The maximum dimension (width or height) of the output image.
         quality (int, optional): The image compression quality as a percentage.
 
-    Examples:
+    示例：
         >>> from pathlib import Path
         >>> from ultralytics.data.utils import compress_one_image
         >>> for f in Path("path/to/dataset").rglob("*.jpg"):
         >>>    compress_one_image(f)
     """
     try:  # use PIL
-        Image.MAX_IMAGE_PIXELS = None  # Fix DecompressionBombError, allow optimization of image > ~178.9 million pixels
+        Image.MAX_IMAGE_PIXELS = None  # 修复 DecompressionBombError，允许优化大于 ~1.789 亿像素的图像
         im = Image.open(f)
-        if im.mode in {"RGBA", "LA"}:  # Convert to RGB if needed (for JPEG)
+        if im.mode in {"RGBA", "LA"}:  # 如果需要则转换为 RGB（用于 JPEG）
             im = im.convert("RGB")
         r = max_dim / max(im.height, im.width)  # ratio
         if r < 1.0:  # image too large
@@ -806,7 +806,7 @@ def compress_one_image(f: str, f_new: str | None = None, max_dim: int = 1920, qu
 
 
 def load_dataset_cache_file(path: Path) -> dict:
-    """Load an Ultralytics *.cache dictionary from path."""
+    """从路径加载 Ultralytics *.cache 字典。"""
     import gc
 
     gc.disable()  # reduce pickle load time https://github.com/ultralytics/ultralytics/pull/1585
@@ -816,7 +816,7 @@ def load_dataset_cache_file(path: Path) -> dict:
 
 
 def save_dataset_cache_file(prefix: str, path: Path, x: dict, version: str):
-    """Save an Ultralytics dataset *.cache dictionary x to path."""
+    """将 Ultralytics 数据集 *.cache 字典 x 保存到路径。"""
     x["version"] = version  # add cache version
     if is_dir_writeable(path.parent):
         if path.exists():

@@ -1,4 +1,4 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics 🚀 AGPL-3.0 许可证 - https://ultralytics.com/license
 
 from __future__ import annotations
 
@@ -10,52 +10,51 @@ import cv2
 
 @dataclass
 class SolutionConfig:
-    """Manages configuration parameters for Ultralytics Vision AI solutions.
+    """Ultralytics 视觉 AI 解决方案的集中式配置管理类。
 
-    The SolutionConfig class serves as a centralized configuration container for all the Ultralytics solution modules:
-    https://docs.ultralytics.com/solutions/#solutions. It leverages Python `dataclass` for clear, type-safe, and
-    maintainable parameter definitions.
+    SolutionConfig 类作为所有 Ultralytics 解决方案模块的统一配置容器：
+    https://docs.ultralytics.com/solutions/#solutions。它基于 Python `dataclass` 实现，
+    提供清晰、类型安全且易于维护的参数定义。
 
-    Attributes:
-        source (str, optional): Path to the input source (video, RTSP, etc.). Only usable with Solutions CLI.
-        model (str, optional): Path to the Ultralytics YOLO model to be used for inference.
-        classes (list[int], optional): List of class indices to filter detections.
-        show_conf (bool): Whether to show confidence scores on the visual output.
-        show_labels (bool): Whether to display class labels on visual output.
-        region (list[tuple[int, int]], optional): Polygonal region or line for object counting.
-        colormap (int, optional): OpenCV colormap constant for visual overlays (e.g., cv2.COLORMAP_DEEPGREEN).
-        show_in (bool): Whether to display count number for objects entering the region.
-        show_out (bool): Whether to display count number for objects leaving the region.
-        up_angle (float): Upper angle threshold used in pose-based workouts monitoring.
-        down_angle (int): Lower angle threshold used in pose-based workouts monitoring.
-        kpts (list[int]): Keypoint indices to monitor, e.g., for pose analytics.
-        analytics_type (str): Type of analytics to perform ("line", "area", "bar", "pie", etc.).
-        figsize (tuple[float, float], optional): Size of the matplotlib figure used for analytical plots (width,
-            height).
-        blur_ratio (float): Ratio used to blur objects in the video frames (0.0 to 1.0).
-        vision_point (tuple[int, int]): Reference point for directional tracking or perspective drawing.
-        crop_dir (str): Directory path to save cropped detection images.
-        json_file (str, optional): Path to a JSON file containing data for parking areas.
-        line_width (int): Width for visual display, e.g. bounding boxes, keypoints, and counts.
-        records (int): Number of detection records to send email alerts.
-        fps (float): Frame rate (Frames Per Second) for speed estimation calculation.
-        max_hist (int): Maximum number of historical points or states stored per tracked object for speed estimation.
-        meter_per_pixel (float): Scale for real-world measurement, used in speed or distance calculations.
-        max_speed (int): Maximum speed limit (e.g., km/h or mph) used in visual alerts or constraints.
-        show (bool): Whether to display the visual output on screen.
-        iou (float): Intersection-over-Union threshold for detection filtering.
-        conf (float): Confidence threshold for keeping predictions.
-        device (str, optional): Device to run inference on (e.g., 'cpu', '0' for CUDA GPU).
-        max_det (int): Maximum number of detections allowed per video frame.
-        half (bool): Whether to use FP16 precision (requires a supported CUDA device).
-        tracker (str): Path to tracking configuration YAML file (e.g., 'botsort.yaml').
-        verbose (bool): Enable verbose logging output for debugging or diagnostics.
-        data (str): Path to image directory used for similarity search.
+    属性:
+        source (str, 可选): 输入源路径（视频、RTSP 等）。仅用于 Solutions CLI 模式。
+        model (str, 可选): 用于推理的 Ultralytics YOLO 模型路径。
+        classes (list[int], 可选): 过滤检测结果的类别索引列表。
+        show_conf (bool): 是否在视觉输出中显示置信度分数。
+        show_labels (bool): 是否在视觉输出中显示类别标签。
+        region (list[tuple[int, int]], 可选): 用于目标计数的多边形区域或线段。
+        colormap (int, 可选): 用于视觉叠加的 OpenCV 颜色映射常量（如 cv2.COLORMAP_DEEPGREEN）。
+        show_in (bool): 是否显示进入区域的物体计数。
+        show_out (bool): 是否显示离开区域的物体计数。
+        up_angle (float): 姿态健身监测中判定"上"姿态的角度上限阈值。
+        down_angle (int): 姿态健身监测中判定"下"姿态的角度下限阈值。
+        kpts (list[int]): 需要监测的关键点索引列表，用于姿态分析。
+        analytics_type (str): 分析图表类型（"line"折线、"area"面积、"bar"柱状、"pie"饼图等）。
+        figsize (tuple[float, float], 可选): matplotlib 图表尺寸（宽度, 高度）。
+        blur_ratio (float): 目标模糊比例（0.0 到 1.0），值越大模糊程度越高。
+        vision_point (tuple[int, int]): 方向跟踪或透视绘制的参考视点坐标。
+        crop_dir (str): 保存裁剪检测图像的目录路径。
+        json_file (str, 可选): 包含停车区域数据的 JSON 文件路径。
+        line_width (int): 可视化线宽（边界框、关键点、计数字体等）。
+        records (int): 触发邮件告警的检测记录数阈值。
+        fps (float): 速度估计计算用的帧率（帧/秒）。
+        max_hist (int): 速度估计中每个跟踪目标保存的历史位置点/状态的最大数量。
+        meter_per_pixel (float): 像素到实际米数的比例尺，用于速度或距离计算。
+        max_speed (int): 速度上限（如 km/h），用于可视化告警或约束。
+        show (bool): 是否在屏幕上显示可视化输出。
+        iou (float): 检测过滤的交并比（IoU）阈值。
+        conf (float): 保留检测结果的置信度阈值。
+        device (str, 可选): 推理设备（如 'cpu'、'0' 表示 CUDA GPU）。
+        max_det (int): 每帧允许的最大检测数量。
+        half (bool): 是否使用 FP16 半精度推理（需要支持的 CUDA 设备）。
+        tracker (str): 跟踪配置文件 YAML 路径（如 'botsort.yaml'）。
+        verbose (bool): 是否启用详细日志输出，用于调试或诊断。
+        data (str): 用于相似度搜索的图像目录路径。
 
-    Methods:
-        update: Update the configuration with user-defined keyword arguments and raise error on invalid keys.
+    方法:
+        update: 使用用户提供的关键字参数更新配置，对无效键值抛出错误。
 
-    Examples:
+    示例:
         >>> from ultralytics.solutions.config import SolutionConfig
         >>> cfg = SolutionConfig(model="yolo26n.pt", region=[(0, 0), (100, 0), (100, 100), (0, 100)])
         >>> cfg.update(show=False, conf=0.3)
@@ -97,12 +96,12 @@ class SolutionConfig:
     data: str = "images"
 
     def update(self, **kwargs: Any):
-        """Update configuration parameters with new values provided as keyword arguments."""
+        """使用关键字参数提供的值更新配置参数。"""
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
             else:
                 url = "https://docs.ultralytics.com/solutions/#solutions-arguments"
-                raise ValueError(f"{key} is not a valid solution argument, see {url}")
+                raise ValueError(f"{key} 不是有效的解决方案参数，请参阅 {url}")
 
         return self

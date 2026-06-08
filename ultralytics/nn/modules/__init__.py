@@ -1,12 +1,12 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 """
-Ultralytics neural network modules.
+Ultralytics 神经网络模块包。
 
-This module provides access to various neural network components used in Ultralytics models, including convolution
-blocks, attention mechanisms, transformer components, and detection/segmentation heads.
+本模块提供 Ultralytics 模型所使用的各类神经网络组件，包括卷积模块、
+注意力机制、Transformer 组件以及检测/分割头等。
 
 Examples:
-    Visualize a module with Netron
+    使用 Netron 可视化某个模块
     >>> from ultralytics.nn.modules import Conv
     >>> import torch
     >>> import subprocess

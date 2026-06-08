@@ -15,48 +15,46 @@ from .utils import adjust_bboxes_to_image_border
 
 
 class FastSAMPredictor(SegmentationPredictor):
-    """FastSAMPredictor is specialized for fast SAM (Segment Anything Model) segmentation prediction tasks.
+    """专门用于快速 SAM（分割一切模型）分割预测任务的 FastSAMPredictor。
 
-    This class extends the SegmentationPredictor, customizing the prediction pipeline specifically for fast SAM. It
-    adjusts post-processing steps to incorporate mask prediction and non-maximum suppression while optimizing for
-    single-class segmentation.
+    该类继承自 SegmentationPredictor，专门针对快速 SAM 定制预测流程。它调整了后处理步骤，融合了掩码预测和
+    非极大值抑制，并针对单类别分割进行了优化。
 
     Attributes:
-        prompts (dict): Dictionary containing prompt information for segmentation (bboxes, points, labels, texts).
-        device (torch.device): Device on which model and tensors are processed.
-        clip (Any, optional): CLIP model used for text-based prompting, loaded on demand.
+        prompts (dict): 包含分割提示信息的字典（边界框、点、标签、文本）。
+        device (torch.device): 模型和张量所在的设备。
+        clip (Any, optional): 用于基于文本提示的 CLIP 模型，按需加载。
 
     Methods:
-        postprocess: Apply postprocessing to FastSAM predictions and handle prompts.
-        prompt: Perform image segmentation inference based on various prompt types.
-        set_prompts: Set prompts to be used during inference.
+        postprocess: 对 FastSAM 预测结果应用后处理并处理提示。
+        prompt: 基于各种提示类型执行图像分割推理。
+        set_prompts: 设置推理期间使用的提示。
     """
 
     def __init__(self, cfg=DEFAULT_CFG, overrides=None, _callbacks: dict | None = None):
-        """Initialize the FastSAMPredictor with configuration and callbacks.
+        """使用配置和回调初始化 FastSAMPredictor。
 
-        This initializes a predictor specialized for Fast SAM (Segment Anything Model) segmentation tasks. The predictor
-        extends SegmentationPredictor with custom post-processing for mask prediction and non-maximum suppression
-        optimized for single-class segmentation.
+        初始化一个专门用于快速 SAM（分割一切模型）分割任务的预测器。该预测器继承自 SegmentationPredictor，
+        添加了自定义后处理功能，用于掩码预测和非极大值抑制，并针对单类别分割进行了优化。
 
         Args:
-            cfg (dict): Configuration for the predictor.
-            overrides (dict, optional): Configuration overrides.
-            _callbacks (dict, optional): Dictionary of callback functions.
+            cfg (dict): 预测器的配置。
+            overrides (dict, optional): 配置覆盖项。
+            _callbacks (dict, optional): 回调函数字典。
         """
         super().__init__(cfg, overrides, _callbacks)
         self.prompts = {}
 
     def postprocess(self, preds, img, orig_imgs):
-        """Apply postprocessing to FastSAM predictions and handle prompts.
+        """对 FastSAM 预测结果应用后处理并处理提示。
 
         Args:
-            preds (list[torch.Tensor]): Raw predictions from the model.
-            img (torch.Tensor): Input image tensor that was fed to the model.
-            orig_imgs (list[np.ndarray]): Original images before preprocessing.
+            preds (list[torch.Tensor]): 模型的原始预测结果。
+            img (torch.Tensor): 输入模型的图像张量。
+            orig_imgs (list[np.ndarray]): 预处理前的原始图像。
 
         Returns:
-            (list[Results]): Processed results with prompts applied.
+            (list[Results]): 应用提示后的处理后结果。
         """
         bboxes = self.prompts.pop("bboxes", None)
         points = self.prompts.pop("points", None)
@@ -75,17 +73,17 @@ class FastSAMPredictor(SegmentationPredictor):
         return self.prompt(results, bboxes=bboxes, points=points, labels=labels, texts=texts)
 
     def prompt(self, results, bboxes=None, points=None, labels=None, texts=None):
-        """Perform image segmentation inference based on cues like bounding boxes, points, and text prompts.
+        """基于边界框、点和文本提示等线索执行图像分割推理。
 
         Args:
-            results (Results | list[Results]): Original inference results from FastSAM models without any prompts.
-            bboxes (np.ndarray | list, optional): Bounding boxes with shape (N, 4), in XYXY format.
-            points (np.ndarray | list, optional): Points indicating object locations with shape (N, 2), in pixels.
-            labels (np.ndarray | list, optional): Labels for point prompts, shape (N, ). 1 = foreground, 0 = background.
-            texts (str | list[str], optional): Textual prompts, a list containing string objects.
+            results (Results | list[Results]): FastSAM 模型在无任何提示时的原始推理结果。
+            bboxes (np.ndarray | list, optional): 边界框，形状为 (N, 4)，格式为 XYXY。
+            points (np.ndarray | list, optional): 指示物体位置的点，形状为 (N, 2)，单位为像素。
+            labels (np.ndarray | list, optional): 点提示的标签，形状为 (N, )。1 = 前景，0 = 背景。
+            texts (str | list[str], optional): 文本提示，包含字符串对象的列表。
 
         Returns:
-            (list[Results]): Output results filtered and determined by the provided prompts.
+            (list[Results]): 根据提供的提示过滤和确定的输出结果。
         """
         if bboxes is None and points is None and texts is None:
             return results
@@ -99,7 +97,7 @@ class FastSAMPredictor(SegmentationPredictor):
             masks = result.masks.data
             if masks.shape[1:] != result.orig_shape:
                 masks = (scale_masks(masks[None].float(), result.orig_shape)[0] > 0.5).byte()
-            # bboxes prompt
+            # 边界框提示
             idx = torch.zeros(len(result), dtype=torch.bool, device=self.device)
             if bboxes is not None:
                 bboxes = torch.as_tensor(bboxes, dtype=torch.int32, device=self.device)
@@ -121,7 +119,7 @@ class FastSAMPredictor(SegmentationPredictor):
                 )
                 point_idx = (
                     torch.ones(len(result), dtype=torch.bool, device=self.device)
-                    if labels.sum() == 0  # all negative points
+                    if labels.sum() == 0  # 所有点均为负样本
                     else torch.zeros(len(result), dtype=torch.bool, device=self.device)
                 )
                 for point, label in zip(points, labels):
@@ -133,7 +131,7 @@ class FastSAMPredictor(SegmentationPredictor):
                 crop_ims, filter_idx = [], []
                 for i, b in enumerate(result.boxes.xyxy.tolist()):
                     x1, y1, x2, y2 = (int(x) for x in b)
-                    if (masks[i].sum() if TORCH_1_10 else masks[i].sum(0).sum()) <= 100:  # torch 1.9 bug workaround
+                    if (masks[i].sum() if TORCH_1_10 else masks[i].sum(0).sum()) <= 100:  # torch 1.9 错误的变通方案
                         filter_idx.append(i)
                         continue
                     crop = result.orig_img[y1:y2, x1:x2] * masks[i, y1:y2, x1:x2, None].cpu().numpy()
@@ -141,7 +139,7 @@ class FastSAMPredictor(SegmentationPredictor):
                 similarity = self._clip_inference(crop_ims, texts)
                 text_idx = torch.argmax(similarity, dim=-1)  # (M, )
                 if len(filter_idx):
-                    # Remap text_idx to its original index before filter
+                    # 在过滤前将 text_idx 重新映射回原始索引
                     ori_idxs = [i for i in range(len(result)) if i not in filter_idx]
                     text_idx = torch.tensor(ori_idxs[int(text_idx)], device=self.device)
                 idx[text_idx] = True
@@ -151,14 +149,14 @@ class FastSAMPredictor(SegmentationPredictor):
         return prompt_results
 
     def _clip_inference(self, images, texts):
-        """Perform CLIP inference to calculate similarity between images and text prompts.
+        """执行 CLIP 推理，计算图像与文本提示之间的相似度。
 
         Args:
-            images (list[PIL.Image]): List of source images, each should be PIL.Image with RGB channel order.
-            texts (list[str]): List of prompt texts, each should be a string object.
+            images (list[PIL.Image]): 源图像列表，每个应为 RGB 通道顺序的 PIL.Image。
+            texts (list[str]): 提示文本列表，每个应为字符串对象。
 
         Returns:
-            (torch.Tensor): Similarity matrix between given images and texts with shape (M, N).
+            (torch.Tensor): 给定图像与文本之间的相似度矩阵，形状为 (M, N)。
         """
         from ultralytics.nn.text_model import CLIP
 
@@ -170,5 +168,5 @@ class FastSAMPredictor(SegmentationPredictor):
         return text_features @ image_features.T  # (M, N)
 
     def set_prompts(self, prompts):
-        """Set prompts to be used during inference."""
+        """设置推理期间使用的提示。"""
         self.prompts = prompts

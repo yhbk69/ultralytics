@@ -11,30 +11,30 @@ from .val import YOLOESegValidator
 
 
 class YOLOESegTrainer(YOLOETrainer, SegmentationTrainer):
-    """Trainer class for YOLOE segmentation models.
+    """用于 YOLOE 分割模型的训练器类。
 
-    This class combines YOLOETrainer and SegmentationTrainer to provide training functionality specifically for YOLOE
-    segmentation models, enabling both object detection and instance segmentation capabilities.
+    该类结合 YOLOETrainer 和 SegmentationTrainer，专门为 YOLOE 分割模型
+    提供训练功能，同时支持目标检测和实例分割能力。
 
     Attributes:
-        cfg (dict): Configuration dictionary with training parameters.
-        overrides (dict): Dictionary with parameter overrides.
-        _callbacks (dict): Dictionary of callback functions for training events.
+        cfg (dict): 训练参数字典。
+        overrides (dict): 参数字典覆盖项。
+        _callbacks (dict): 训练事件的回调函数字典。
     """
 
     def get_model(self, cfg=None, weights=None, verbose=True):
-        """Return YOLOESegModel initialized with specified config and weights.
+        """返回使用指定配置和权重初始化的 YOLOESegModel。
 
         Args:
-            cfg (dict | str, optional): Model configuration dictionary or YAML file path.
-            weights (str, optional): Path to pretrained weights file.
-            verbose (bool): Whether to display model information.
+            cfg (dict | str, optional): 模型配置字典或 YAML 文件路径。
+            weights (str, optional): 预训练权重文件路径。
+            verbose (bool): 是否显示模型信息。
 
         Returns:
-            (YOLOESegModel): Initialized YOLOE segmentation model.
+            (YOLOESegModel): 初始化后的 YOLOE 分割模型。
         """
-        # NOTE: This `nc` here is the max number of different text samples in one image, rather than the actual `nc`.
-        # NOTE: Following the official config, nc hard-coded to 80 for now.
+        # 注意：此处的 `nc` 是单张图像中不同文本样本的最大数量，而非实际的 `nc`。
+        # 注意：遵循官方配置，nc 当前硬编码为 80。
         model = YOLOESegModel(
             cfg["yaml_file"] if isinstance(cfg, dict) else cfg,
             ch=self.data["channels"],
@@ -47,10 +47,10 @@ class YOLOESegTrainer(YOLOETrainer, SegmentationTrainer):
         return model
 
     def get_validator(self):
-        """Create and return a validator for YOLOE segmentation model evaluation.
+        """创建并返回用于 YOLOE 分割模型评估的验证器。
 
         Returns:
-            (YOLOESegValidator): Validator for YOLOE segmentation models.
+            (YOLOESegValidator): YOLOE 分割模型的验证器。
         """
         self.loss_names = "box", "seg", "cls", "dfl"
         return YOLOESegValidator(
@@ -59,28 +59,28 @@ class YOLOESegTrainer(YOLOETrainer, SegmentationTrainer):
 
 
 class YOLOEPESegTrainer(SegmentationTrainer):
-    """Fine-tune YOLOESeg model in linear probing way.
+    """使用线性探测方式微调 YOLOESeg 模型。
 
-    This trainer specializes in fine-tuning YOLOESeg models using a linear probing approach, which involves freezing
-    most of the model and only training specific layers for efficient adaptation to new tasks.
+    该训练器专门使用线性探测方法微调 YOLOESeg 模型，
+    通过冻结模型的大部分层并仅训练特定层，以高效适应新任务。
 
     Attributes:
-        data (dict): Dataset configuration containing channels, class names, and number of classes.
+        data (dict): 包含通道数、类别名称和类别数量的数据集配置。
     """
 
     def get_model(self, cfg=None, weights=None, verbose=True):
-        """Return YOLOESegModel initialized with specified config and weights for linear probing.
+        """返回使用指定配置和权重初始化的 YOLOESegModel，用于线性探测。
 
         Args:
-            cfg (dict | str, optional): Model configuration dictionary or YAML file path.
-            weights (str, optional): Path to pretrained weights file.
-            verbose (bool): Whether to display model information.
+            cfg (dict | str, optional): 模型配置字典或 YAML 文件路径。
+            weights (str, optional): 预训练权重文件路径。
+            verbose (bool): 是否显示模型信息。
 
         Returns:
-            (YOLOESegModel): Initialized YOLOE segmentation model configured for linear probing.
+            (YOLOESegModel): 初始化好的 YOLOE 分割模型，配置为线性探测模式。
         """
-        # NOTE: This `nc` here is the max number of different text samples in one image, rather than the actual `nc`.
-        # NOTE: Following the official config, nc hard-coded to 80 for now.
+        # 注意：此处的 `nc` 是单张图像中不同文本样本的最大数量，而非实际的 `nc`。
+        # 注意：遵循官方配置，nc 当前硬编码为 80。
         model = YOLOESegModel(
             cfg["yaml_file"] if isinstance(cfg, dict) else cfg,
             ch=self.data["channels"],
@@ -96,8 +96,8 @@ class YOLOEPESegTrainer(SegmentationTrainer):
 
         model.eval()
         names = list(self.data["names"].values())
-        # NOTE: `get_text_pe` related to text model and YOLOEDetect.reprta,
-        # it'd get correct results as long as loading proper pretrained weights.
+        # 注意：`get_text_pe` 与文本模型和 YOLOEDetect.reprta 相关，
+        # 只要加载了正确的预训练权重，就能获得正确的结果。
         tpe = model.get_text_pe(names)
         model.set_classes(names, tpe)
         model.model[-1].fuse(model.pe)
@@ -116,12 +116,12 @@ class YOLOEPESegTrainer(SegmentationTrainer):
 
 
 class YOLOESegTrainerFromScratch(YOLOETrainerFromScratch, YOLOESegTrainer):
-    """Trainer for YOLOE segmentation models trained from scratch without pretrained weights."""
+    """从头训练不使用预训练权重的 YOLOE 分割模型训练器。"""
 
     pass
 
 
 class YOLOESegVPTrainer(YOLOEVPTrainer, YOLOESegTrainerFromScratch):
-    """Trainer for YOLOE segmentation models with Vision Prompt (VP) capabilities."""
+    """用于支持视觉提示 (VP) 能力的 YOLOE 分割模型训练器。"""
 
     pass

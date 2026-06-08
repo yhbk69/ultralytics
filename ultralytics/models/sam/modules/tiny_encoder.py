@@ -22,15 +22,14 @@ from ultralytics.utils.instance import to_2tuple
 
 
 class Conv2d_BN(torch.nn.Sequential):
-    """A sequential container that performs 2D convolution followed by batch normalization.
+    """执行二维卷积后跟批归一化的顺序容器。
 
-    This module combines a 2D convolution layer with batch normalization, providing a common building block for
-    convolutional neural networks. The batch normalization weights and biases are initialized to specific values for
-    optimal training performance.
+    此模块将二维卷积层与批归一化相结合，为卷积神经网络提供通用的构建块。
+    批归一化的权重和偏置被初始化为特定值以获得最佳训练性能。
 
     Attributes:
-        c (torch.nn.Conv2d): 2D convolution layer.
-        bn (torch.nn.BatchNorm2d): Batch normalization layer.
+        c (torch.nn.Conv2d): 二维卷积层。
+        bn (torch.nn.BatchNorm2d): 批归一化层。
 
     Examples:
         >>> conv_bn = Conv2d_BN(3, 64, ks=3, stride=1, pad=1)
@@ -51,17 +50,17 @@ class Conv2d_BN(torch.nn.Sequential):
         groups: int = 1,
         bn_weight_init: float = 1,
     ):
-        """Initialize a sequential container with 2D convolution followed by batch normalization.
+        """初始化一个包含二维卷积和批归一化的顺序容器。
 
         Args:
-            a (int): Number of input channels.
-            b (int): Number of output channels.
-            ks (int, optional): Kernel size for the convolution.
-            stride (int, optional): Stride for the convolution.
-            pad (int, optional): Padding for the convolution.
-            dilation (int, optional): Dilation factor for the convolution.
-            groups (int, optional): Number of groups for the convolution.
-            bn_weight_init (float, optional): Initial value for batch normalization weight.
+            a (int): 输入通道数。
+            b (int): 输出通道数。
+            ks (int, optional): 卷积的卷积核大小。
+            stride (int, optional): 卷积的步幅。
+            pad (int, optional): 卷积的填充。
+            dilation (int, optional): 卷积的膨胀因子。
+            groups (int, optional): 卷积的分组数。
+            bn_weight_init (float, optional): 批归一化权重的初始值。
         """
         super().__init__()
         self.add_module("c", torch.nn.Conv2d(a, b, ks, stride, pad, dilation, groups, bias=False))
@@ -72,17 +71,17 @@ class Conv2d_BN(torch.nn.Sequential):
 
 
 class PatchEmbed(nn.Module):
-    """Embed images into patches and project them into a specified embedding dimension.
+    """将图像嵌入为图块并投影到指定的嵌入维度。
 
-    This module converts input images into patch embeddings using a sequence of convolutional layers, effectively
-    downsampling the spatial dimensions while increasing the channel dimension.
+    此模块使用一系列卷积层将输入图像转换为图块嵌入，有效地下采样
+    空间维度同时增加通道维度。
 
     Attributes:
-        patches_resolution (tuple[int, int]): Resolution of the patches after embedding.
-        num_patches (int): Total number of patches.
-        in_chans (int): Number of input channels.
-        embed_dim (int): Dimension of the embedding.
-        seq (nn.Sequential): Sequence of convolutional and activation layers for patch embedding.
+        patches_resolution (tuple[int, int]): 嵌入后图块的分辨率。
+        num_patches (int): 图块总数。
+        in_chans (int): 输入通道数。
+        embed_dim (int): 嵌入的维度。
+        seq (nn.Sequential): 用于图块嵌入的卷积和激活层序列。
 
     Examples:
         >>> import torch
@@ -94,13 +93,13 @@ class PatchEmbed(nn.Module):
     """
 
     def __init__(self, in_chans: int, embed_dim: int, resolution: int, activation):
-        """Initialize patch embedding with convolutional layers for image-to-patch conversion and projection.
+        """使用卷积层初始化图块嵌入，用于图像到图块的转换和投影。
 
         Args:
-            in_chans (int): Number of input channels.
-            embed_dim (int): Dimension of the embedding.
-            resolution (int): Input image resolution.
-            activation (nn.Module): Activation function to use between convolutions.
+            in_chans (int): 输入通道数。
+            embed_dim (int): 嵌入的维度。
+            resolution (int): 输入图像分辨率。
+            activation (nn.Module): 卷积之间使用的激活函数。
         """
         super().__init__()
         img_size: tuple[int, int] = to_2tuple(resolution)
@@ -116,27 +115,27 @@ class PatchEmbed(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Process input tensor through patch embedding sequence, converting images to patch embeddings."""
+        """通过图块嵌入序列处理输入张量，将图像转换为图块嵌入。"""
         return self.seq(x)
 
 
 class MBConv(nn.Module):
-    """Mobile Inverted Bottleneck Conv (MBConv) layer, part of the EfficientNet architecture.
+    """Mobile Inverted Bottleneck Conv (MBConv) 层，属于EfficientNet架构。
 
-    This module implements the mobile inverted bottleneck convolution with expansion, depthwise convolution, and
-    projection phases, along with residual connections for improved gradient flow.
+    此模块实现了移动倒置瓶颈卷积，具有扩展、深度可分离卷积和
+    投影阶段，以及用于改善梯度流的残差连接。
 
     Attributes:
-        in_chans (int): Number of input channels.
-        hidden_chans (int): Number of hidden channels after expansion.
-        out_chans (int): Number of output channels.
-        conv1 (Conv2d_BN): First convolutional layer for channel expansion.
-        act1 (nn.Module): First activation function.
-        conv2 (Conv2d_BN): Depthwise convolutional layer.
-        act2 (nn.Module): Second activation function.
-        conv3 (Conv2d_BN): Final convolutional layer for projection.
-        act3 (nn.Module): Third activation function.
-        drop_path (nn.Module): Drop path layer (Identity for inference).
+        in_chans (int): 输入通道数。
+        hidden_chans (int): 扩展后的隐藏通道数。
+        out_chans (int): 输出通道数。
+        conv1 (Conv2d_BN): 用于通道扩展的第一个卷积层。
+        act1 (nn.Module): 第一个激活函数。
+        conv2 (Conv2d_BN): 深度可分离卷积层。
+        act2 (nn.Module): 第二个激活函数。
+        conv3 (Conv2d_BN): 用于投影的最终卷积层。
+        act3 (nn.Module): 第三个激活函数。
+        drop_path (nn.Module): Drop path层（推理时为恒等映射）。
 
     Examples:
         >>> in_chans, out_chans = 32, 64
@@ -148,14 +147,14 @@ class MBConv(nn.Module):
     """
 
     def __init__(self, in_chans: int, out_chans: int, expand_ratio: float, activation, drop_path: float):
-        """Initialize the MBConv layer with specified input/output channels, expansion ratio, and activation.
+        """使用指定的输入/输出通道、扩展比率和激活函数初始化MBConv层。
 
         Args:
-            in_chans (int): Number of input channels.
-            out_chans (int): Number of output channels.
-            expand_ratio (float): Channel expansion ratio for the hidden layer.
-            activation (nn.Module): Activation function to use.
-            drop_path (float): Drop path rate for stochastic depth.
+            in_chans (int): 输入通道数。
+            out_chans (int): 输出通道数。
+            expand_ratio (float): 隐藏层的通道扩展比率。
+            activation (nn.Module): 要使用的激活函数。
+            drop_path (float): 随机深度的drop path率。
         """
         super().__init__()
         self.in_chans = in_chans
@@ -176,7 +175,7 @@ class MBConv(nn.Module):
         self.drop_path = nn.Identity()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Implement the forward pass of MBConv, applying convolutions and skip connection."""
+        """实现MBConv的前向传播，应用卷积和跳跃连接。"""
         shortcut = x
         x = self.conv1(x)
         x = self.act1(x)
@@ -189,20 +188,19 @@ class MBConv(nn.Module):
 
 
 class PatchMerging(nn.Module):
-    """Merge neighboring patches in the feature map and project to a new dimension.
+    """合并特征图中的相邻图块并投影到新维度。
 
-    This class implements a patch merging operation that combines spatial information and adjusts the feature dimension
-    using a series of convolutional layers with batch normalization. It effectively reduces spatial resolution while
-    potentially increasing channel dimensions.
+    此类实现了图块合并操作，使用一系列带批归一化的卷积层来组合空间信息
+    并调整特征维度。它能有效降低空间分辨率，同时可能增加通道维度。
 
     Attributes:
-        input_resolution (tuple[int, int]): The input resolution (height, width) of the feature map.
-        dim (int): The input dimension of the feature map.
-        out_dim (int): The output dimension after merging and projection.
-        act (nn.Module): The activation function used between convolutions.
-        conv1 (Conv2d_BN): The first convolutional layer for dimension projection.
-        conv2 (Conv2d_BN): The second convolutional layer for spatial merging.
-        conv3 (Conv2d_BN): The third convolutional layer for final projection.
+        input_resolution (tuple[int, int]): 特征图的输入分辨率（高度、宽度）。
+        dim (int): 特征图的输入维度。
+        out_dim (int): 合并和投影后的输出维度。
+        act (nn.Module): 卷积之间使用的激活函数。
+        conv1 (Conv2d_BN): 用于维度投影的第一个卷积层。
+        conv2 (Conv2d_BN): 用于空间合并的第二个卷积层。
+        conv3 (Conv2d_BN): 用于最终投影的第三个卷积层。
 
     Examples:
         >>> input_resolution = (56, 56)
@@ -214,13 +212,13 @@ class PatchMerging(nn.Module):
     """
 
     def __init__(self, input_resolution: tuple[int, int], dim: int, out_dim: int, activation):
-        """Initialize the PatchMerging module for merging and projecting neighboring patches in feature maps.
+        """初始化PatchMerging模块，用于合并和投影特征图中的相邻图块。
 
         Args:
-            input_resolution (tuple[int, int]): The input resolution (height, width) of the feature map.
-            dim (int): The input dimension of the feature map.
-            out_dim (int): The output dimension after merging and projection.
-            activation (nn.Module): The activation function used between convolutions.
+            input_resolution (tuple[int, int]): 特征图的输入分辨率（高度、宽度）。
+            dim (int): 特征图的输入维度。
+            out_dim (int): 合并和投影后的输出维度。
+            activation (nn.Module): 卷积之间使用的激活函数。
         """
         super().__init__()
 
@@ -234,7 +232,7 @@ class PatchMerging(nn.Module):
         self.conv3 = Conv2d_BN(out_dim, out_dim, 1, 1, 0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply patch merging and dimension projection to the input feature map."""
+        """对输入特征图应用图块合并和维度投影。"""
         if x.ndim == 3:
             H, W = self.input_resolution
             B = len(x)
@@ -251,18 +249,17 @@ class PatchMerging(nn.Module):
 
 
 class ConvLayer(nn.Module):
-    """Convolutional Layer featuring multiple MobileNetV3-style inverted bottleneck convolutions (MBConv).
+    """包含多个MobileNetV3风格倒置瓶颈卷积（MBConv）的卷积层。
 
-    This layer optionally applies downsample operations to the output and supports gradient checkpointing for memory
-    efficiency during training.
+    此层可选择性地对输出应用下采样操作，并支持梯度检查点以节省训练期间的内存。
 
     Attributes:
-        dim (int): Dimensionality of the input and output.
-        input_resolution (tuple[int, int]): Resolution of the input image.
-        depth (int): Number of MBConv layers in the block.
-        use_checkpoint (bool): Whether to use gradient checkpointing to save memory.
-        blocks (nn.ModuleList): List of MBConv layers.
-        downsample (nn.Module | None): Function for downsampling the output.
+        dim (int): 输入和输出的维度。
+        input_resolution (tuple[int, int]): 输入图像的分辨率。
+        depth (int): 块中MBConv层的数量。
+        use_checkpoint (bool): 是否使用梯度检查点来节省内存。
+        blocks (nn.ModuleList): MBConv层的列表。
+        downsample (nn.Module | None): 下采样输出的函数。
 
     Examples:
         >>> input_tensor = torch.randn(1, 64, 56, 56)
@@ -284,21 +281,20 @@ class ConvLayer(nn.Module):
         out_dim: int | None = None,
         conv_expand_ratio: float = 4.0,
     ):
-        """Initialize the ConvLayer with the given dimensions and settings.
+        """使用给定的维度和设置初始化ConvLayer。
 
-        This layer consists of multiple MobileNetV3-style inverted bottleneck convolutions (MBConv) and optionally
-        applies downsampling to the output.
+        此层由多个MobileNetV3风格的倒置瓶颈卷积（MBConv）组成，并可选择性地对输出应用下采样。
 
         Args:
-            dim (int): The dimensionality of the input and output.
-            input_resolution (tuple[int, int]): The resolution of the input image.
-            depth (int): The number of MBConv layers in the block.
-            activation (nn.Module): Activation function applied after each convolution.
-            drop_path (float | list[float], optional): Drop path rate. Single float or a list of floats for each MBConv.
-            downsample (nn.Module | None, optional): Function for downsampling the output. None to skip downsampling.
-            use_checkpoint (bool, optional): Whether to use gradient checkpointing to save memory.
-            out_dim (int | None, optional): Output dimensions. None means it will be the same as `dim`.
-            conv_expand_ratio (float, optional): Expansion ratio for the MBConv layers.
+            dim (int): 输入和输出的维度。
+            input_resolution (tuple[int, int]): 输入图像的分辨率。
+            depth (int): 块中MBConv层的数量。
+            activation (nn.Module): 每次卷积后应用的激活函数。
+            drop_path (float | list[float], optional): Drop path率。单个浮点数或每个MBConv的浮点数列表。
+            downsample (nn.Module | None, optional): 下采样输出的函数。None表示跳过下采样。
+            use_checkpoint (bool, optional): 是否使用梯度检查点来节省内存。
+            out_dim (int | None, optional): 输出维度。None表示与`dim`相同。
+            conv_expand_ratio (float, optional): MBConv层的扩展比率。
         """
         super().__init__()
         self.dim = dim
@@ -328,24 +324,24 @@ class ConvLayer(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Process input through convolutional layers, applying MBConv blocks and optional downsampling."""
+        """通过卷积层处理输入，应用MBConv块和可选的下采样。"""
         for blk in self.blocks:
             x = torch.utils.checkpoint(blk, x) if self.use_checkpoint else blk(x)  # warn: checkpoint is slow import
         return x if self.downsample is None else self.downsample(x)
 
 
 class MLP(nn.Module):
-    """Multi-layer Perceptron (MLP) module for transformer architectures.
+    """用于transformer架构的多层感知机（MLP）模块。
 
-    This module applies layer normalization, two fully-connected layers with an activation function in between, and
-    dropout. It is commonly used in transformer-based architectures for processing token embeddings.
+    此模块应用层归一化、两个全连接层（中间有激活函数）和dropout。
+    它通常用于基于transformer的架构中处理令牌嵌入。
 
     Attributes:
-        norm (nn.LayerNorm): Layer normalization applied to the input.
-        fc1 (nn.Linear): First fully-connected layer.
-        fc2 (nn.Linear): Second fully-connected layer.
-        act (nn.Module): Activation function applied after the first fully-connected layer.
-        drop (nn.Dropout): Dropout layer applied after the activation function.
+        norm (nn.LayerNorm): 应用于输入的层归一化。
+        fc1 (nn.Linear): 第一全连接层。
+        fc2 (nn.Linear): 第二全连接层。
+        act (nn.Module): 在第一全连接层后应用的激活函数。
+        drop (nn.Dropout): 在激活函数后应用的dropout层。
 
     Examples:
         >>> import torch
@@ -365,14 +361,14 @@ class MLP(nn.Module):
         activation=nn.GELU,
         drop: float = 0.0,
     ):
-        """Initialize a multi-layer perceptron with configurable input, hidden, and output dimensions.
+        """初始化具有可配置输入、隐藏和输出维度的多层感知机。
 
         Args:
-            in_features (int): Number of input features.
-            hidden_features (int | None, optional): Number of hidden features.
-            out_features (int | None, optional): Number of output features.
-            activation (nn.Module): Activation function applied after the first fully-connected layer.
-            drop (float, optional): Dropout probability.
+            in_features (int): 输入特征数。
+            hidden_features (int | None, optional): 隐藏特征数。
+            out_features (int | None, optional): 输出特征数。
+            activation (nn.Module): 在第一全连接层后应用的激活函数。
+            drop (float, optional): Dropout概率。
         """
         super().__init__()
         out_features = out_features or in_features
@@ -384,7 +380,7 @@ class MLP(nn.Module):
         self.drop = nn.Dropout(drop)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply MLP operations: layer norm, FC layers, activation, and dropout to the input tensor."""
+        """对输入张量应用MLP操作：层归一化、全连接层、激活函数和dropout。"""
         x = self.norm(x)
         x = self.fc1(x)
         x = self.act(x)
@@ -394,26 +390,25 @@ class MLP(nn.Module):
 
 
 class Attention(torch.nn.Module):
-    """Multi-head attention module with spatial awareness and trainable attention biases.
+    """具有空间感知能力和可训练注意力偏置的多头注意力模块。
 
-    This module implements a multi-head attention mechanism with support for spatial awareness, applying attention
-    biases based on spatial resolution. It includes trainable attention biases for each unique offset between spatial
-    positions in the resolution grid.
+    此模块实现了支持空间感知的多头注意力机制，基于空间分辨率应用注意力偏置。
+    它包含针对分辨率网格中空间位置之间每个唯一偏移量的可训练注意力偏置。
 
     Attributes:
-        num_heads (int): Number of attention heads.
-        scale (float): Scaling factor for attention scores.
-        key_dim (int): Dimensionality of the keys and queries.
-        nh_kd (int): Product of num_heads and key_dim.
-        d (int): Dimensionality of the value vectors.
-        dh (int): Product of d and num_heads.
-        attn_ratio (float): Attention ratio affecting the dimensions of the value vectors.
-        norm (nn.LayerNorm): Layer normalization applied to input.
-        qkv (nn.Linear): Linear layer for computing query, key, and value projections.
-        proj (nn.Linear): Linear layer for final projection.
-        attention_biases (nn.Parameter): Learnable attention biases.
-        attention_bias_idxs (torch.Tensor): Indices for attention biases.
-        ab (torch.Tensor): Cached attention biases for inference, deleted during training.
+        num_heads (int): 注意力头数。
+        scale (float): 注意力分数的缩放因子。
+        key_dim (int): 键和查询的维度。
+        nh_kd (int): num_heads和key_dim的乘积。
+        d (int): 值向量的维度。
+        dh (int): d和num_heads的乘积。
+        attn_ratio (float): 影响值向量维度的注意力比率。
+        norm (nn.LayerNorm): 应用于输入的层归一化。
+        qkv (nn.Linear): 用于计算查询、键和值投影的线性层。
+        proj (nn.Linear): 用于最终投影的线性层。
+        attention_biases (nn.Parameter): 可学习的注意力偏置。
+        attention_bias_idxs (torch.Tensor): 注意力偏置的索引。
+        ab (torch.Tensor): 推理时缓存的注意力偏置，训练时删除。
 
     Examples:
         >>> attn = Attention(dim=256, key_dim=64, num_heads=8, resolution=(14, 14))
@@ -431,18 +426,17 @@ class Attention(torch.nn.Module):
         attn_ratio: float = 4,
         resolution: tuple[int, int] = (14, 14),
     ):
-        """Initialize the Attention module for multi-head attention with spatial awareness.
+        """为具有空间感知能力的多头注意力初始化Attention模块。
 
-        This module implements a multi-head attention mechanism with support for spatial awareness, applying attention
-        biases based on spatial resolution. It includes trainable attention biases for each unique offset between
-        spatial positions in the resolution grid.
+        此模块实现了支持空间感知的多头注意力机制，基于空间分辨率应用注意力偏置。
+        它包含针对分辨率网格中空间位置之间每个唯一偏移量的可训练注意力偏置。
 
         Args:
-            dim (int): The dimensionality of the input and output.
-            key_dim (int): The dimensionality of the keys and queries.
-            num_heads (int, optional): Number of attention heads.
-            attn_ratio (float, optional): Attention ratio, affecting the dimensions of the value vectors.
-            resolution (tuple[int, int], optional): Spatial resolution of the input feature map.
+            dim (int): 输入和输出的维度。
+            key_dim (int): 键和查询的维度。
+            num_heads (int, optional): 注意力头数。
+            attn_ratio (float, optional): 注意力比率，影响值向量的维度。
+            resolution (tuple[int, int], optional): 输入特征图的空间分辨率。
         """
         super().__init__()
 
@@ -475,7 +469,7 @@ class Attention(torch.nn.Module):
 
     @torch.no_grad()
     def train(self, mode: bool = True):
-        """Set the module in training mode and handle the 'ab' attribute for cached attention biases."""
+        """设置模块的训练模式，并处理缓存注意力偏置的'ab'属性。"""
         super().train(mode)
         if mode and hasattr(self, "ab"):
             del self.ab
@@ -483,7 +477,7 @@ class Attention(torch.nn.Module):
             self.ab = self.attention_biases[:, self.attention_bias_idxs]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply multi-head attention with spatial awareness and trainable attention biases."""
+        """应用具有空间感知能力和可训练注意力偏置的多头注意力。"""
         B, N, _ = x.shape  # B, N, C
 
         # Normalization
@@ -507,22 +501,21 @@ class Attention(torch.nn.Module):
 
 
 class TinyViTBlock(nn.Module):
-    """TinyViT Block that applies self-attention and a local convolution to the input.
+    """TinyViT块，对输入应用自注意力和局部卷积。
 
-    This block is a key component of the TinyViT architecture, combining self-attention mechanisms with local
-    convolutions to process input features efficiently. It supports windowed attention for computational efficiency and
-    includes residual connections.
+    此块是TinyViT架构的关键组件，结合自注意力机制和局部卷积来高效处理输入特征。
+    它支持窗口注意力以提高计算效率，并包含残差连接。
 
     Attributes:
-        dim (int): The dimensionality of the input and output.
-        input_resolution (tuple[int, int]): Spatial resolution of the input feature map.
-        num_heads (int): Number of attention heads.
-        window_size (int): Size of the attention window.
-        mlp_ratio (float): Ratio of MLP hidden dimension to embedding dimension.
-        drop_path (nn.Module): Stochastic depth layer, identity function during inference.
-        attn (Attention): Self-attention module.
-        mlp (MLP): Multi-layer perceptron module.
-        local_conv (Conv2d_BN): Depth-wise local convolution layer.
+        dim (int): 输入和输出的维度。
+        input_resolution (tuple[int, int]): 输入特征图的空间分辨率。
+        num_heads (int): 注意力头数。
+        window_size (int): 注意力窗口的大小。
+        mlp_ratio (float): MLP隐藏维度与嵌入维度的比率。
+        drop_path (nn.Module): 随机深度层，推理时是恒等映射。
+        attn (Attention): 自注意力模块。
+        mlp (MLP): 多层感知机模块。
+        local_conv (Conv2d_BN): 深度可分离局部卷积层。
 
     Examples:
         >>> input_tensor = torch.randn(1, 196, 192)
@@ -544,21 +537,20 @@ class TinyViTBlock(nn.Module):
         local_conv_size: int = 3,
         activation=nn.GELU,
     ):
-        """Initialize a TinyViT block with self-attention and local convolution.
+        """初始化具有自注意力和局部卷积的TinyViT块。
 
-        This block is a key component of the TinyViT architecture, combining self-attention mechanisms with local
-        convolutions to process input features efficiently.
+        此块是TinyViT架构的关键组件，结合自注意力机制和局部卷积来高效处理输入特征。
 
         Args:
-            dim (int): Dimensionality of the input and output features.
-            input_resolution (tuple[int, int]): Spatial resolution of the input feature map (height, width).
-            num_heads (int): Number of attention heads.
-            window_size (int, optional): Size of the attention window. Must be greater than 0.
-            mlp_ratio (float, optional): Ratio of MLP hidden dimension to embedding dimension.
-            drop (float, optional): Dropout rate.
-            drop_path (float, optional): Stochastic depth rate.
-            local_conv_size (int, optional): Kernel size of the local convolution.
-            activation (nn.Module): Activation function for MLP.
+            dim (int): 输入和输出特征的维度。
+            input_resolution (tuple[int, int]): 输入特征图的空间分辨率（高度、宽度）。
+            num_heads (int): 注意力头数。
+            window_size (int, optional): 注意力窗口的大小。必须大于0。
+            mlp_ratio (float, optional): MLP隐藏维度与嵌入维度的比率。
+            drop (float, optional): Dropout率。
+            drop_path (float, optional): 随机深度率。
+            local_conv_size (int, optional): 局部卷积的卷积核大小。
+            activation (nn.Module): MLP的激活函数。
         """
         super().__init__()
         self.dim = dim
@@ -586,7 +578,7 @@ class TinyViTBlock(nn.Module):
         self.local_conv = Conv2d_BN(dim, dim, ks=local_conv_size, stride=1, pad=pad, groups=dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Apply self-attention, local convolution, and MLP operations to the input tensor."""
+        """对输入张量应用自注意力、局部卷积和MLP操作。"""
         h, w = self.input_resolution
         b, hw, c = x.shape  # batch, height*width, channels
         assert hw == h * w, "input feature has wrong size"
@@ -628,13 +620,13 @@ class TinyViTBlock(nn.Module):
         return x + self.drop_path(self.mlp(x))
 
     def extra_repr(self) -> str:
-        """Return a string representation of the TinyViTBlock's parameters.
+        """返回TinyViTBlock参数的字符串表示。
 
-        This method provides a formatted string containing key information about the TinyViTBlock, including its
-        dimension, input resolution, number of attention heads, window size, and MLP ratio.
+        此方法提供包含TinyViTBlock关键信息的格式化字符串，包括其维度、输入分辨率、
+        注意力头数、窗口大小和MLP比率。
 
         Returns:
-            (str): A formatted string containing the block's parameters.
+            (str): 包含块参数的格式化字符串。
 
         Examples:
             >>> block = TinyViTBlock(dim=192, input_resolution=(14, 14), num_heads=3, window_size=7, mlp_ratio=4.0)
@@ -648,19 +640,18 @@ class TinyViTBlock(nn.Module):
 
 
 class BasicLayer(nn.Module):
-    """A basic TinyViT layer for one stage in a TinyViT architecture.
+    """TinyViT架构中一个阶段的基本TinyViT层。
 
-    This class represents a single layer in the TinyViT model, consisting of multiple TinyViT blocks and an optional
-    downsampling operation. It processes features at a specific resolution and dimensionality within the overall
-    architecture.
+    此类表示TinyViT模型中的单个层，由多个TinyViT块和一个可选的下采样操作组成。
+    它在整体架构中以特定分辨率和维度处理特征。
 
     Attributes:
-        dim (int): The dimensionality of the input and output features.
-        input_resolution (tuple[int, int]): Spatial resolution of the input feature map.
-        depth (int): Number of TinyViT blocks in this layer.
-        use_checkpoint (bool): Whether to use gradient checkpointing to save memory.
-        blocks (nn.ModuleList): List of TinyViT blocks that make up this layer.
-        downsample (nn.Module | None): Downsample layer at the end of the layer, if specified.
+        dim (int): 输入和输出特征的维度。
+        input_resolution (tuple[int, int]): 输入特征图的空间分辨率。
+        depth (int): 此层中TinyViT块的数量。
+        use_checkpoint (bool): 是否使用梯度检查点来节省内存。
+        blocks (nn.ModuleList): 构成此层的TinyViT块列表。
+        downsample (nn.Module | None): 层末尾的下采样层（如果指定）。
 
     Examples:
         >>> input_tensor = torch.randn(1, 3136, 192)
@@ -686,27 +677,25 @@ class BasicLayer(nn.Module):
         activation=nn.GELU,
         out_dim: int | None = None,
     ):
-        """Initialize a BasicLayer in the TinyViT architecture.
+        """在TinyViT架构中初始化BasicLayer。
 
-        This layer consists of multiple TinyViT blocks and an optional downsampling operation. It is designed to process
-        feature maps at a specific resolution and dimensionality within the TinyViT model.
+        此层由多个TinyViT块和一个可选的下采样操作组成。它设计用于在TinyViT模型中
+        以特定分辨率和维度处理特征图。
 
         Args:
-            dim (int): Dimensionality of the input and output features.
-            input_resolution (tuple[int, int]): Spatial resolution of the input feature map (height, width).
-            depth (int): Number of TinyViT blocks in this layer.
-            num_heads (int): Number of attention heads in each TinyViT block.
-            window_size (int): Size of the local window for attention computation.
-            mlp_ratio (float, optional): Ratio of MLP hidden dimension to embedding dimension.
-            drop (float, optional): Dropout rate.
-            drop_path (float | list[float], optional): Stochastic depth rate. Can be a float or a list of floats for
-                each block.
-            downsample (nn.Module | None, optional): Downsampling layer at the end of the layer. None to skip
-                downsampling.
-            use_checkpoint (bool, optional): Whether to use gradient checkpointing to save memory.
-            local_conv_size (int, optional): Kernel size for the local convolution in each TinyViT block.
-            activation (nn.Module): Activation function used in the MLP.
-            out_dim (int | None, optional): Output dimension after downsampling. None means it will be the same as dim.
+            dim (int): 输入和输出特征的维度。
+            input_resolution (tuple[int, int]): 输入特征图的空间分辨率（高度、宽度）。
+            depth (int): 此层中TinyViT块的数量。
+            num_heads (int): 每个TinyViT块中的注意力头数。
+            window_size (int): 注意力计算的局部窗口大小。
+            mlp_ratio (float, optional): MLP隐藏维度与嵌入维度的比率。
+            drop (float, optional): Dropout率。
+            drop_path (float | list[float], optional): 随机深度率。可以是浮点数或每个块的浮点数列表。
+            downsample (nn.Module | None, optional): 层末尾的下采样层。None表示跳过下采样。
+            use_checkpoint (bool, optional): 是否使用梯度检查点来节省内存。
+            local_conv_size (int, optional): 每个TinyViT块中局部卷积的卷积核大小。
+            activation (nn.Module): MLP中使用的激活函数。
+            out_dim (int | None, optional): 下采样后的输出维度。None表示与dim相同。
         """
         super().__init__()
         self.dim = dim
@@ -740,35 +729,34 @@ class BasicLayer(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Process input through TinyViT blocks and optional downsampling."""
+        """通过TinyViT块和可选的下采样处理输入。"""
         for blk in self.blocks:
             x = torch.utils.checkpoint(blk, x) if self.use_checkpoint else blk(x)  # warn: checkpoint is slow import
         return x if self.downsample is None else self.downsample(x)
 
     def extra_repr(self) -> str:
-        """Return a string with the layer's parameters for printing."""
+        """返回包含层参数用于打印的字符串。"""
         return f"dim={self.dim}, input_resolution={self.input_resolution}, depth={self.depth}"
 
 
 class TinyViT(nn.Module):
-    """TinyViT: A compact vision transformer architecture for efficient image classification and feature extraction.
+    """TinyViT: 一种用于高效图像分类和特征提取的紧凑视觉transformer架构。
 
-    This class implements the TinyViT model, which combines elements of vision transformers and convolutional neural
-    networks for improved efficiency and performance on vision tasks. It features hierarchical processing with patch
-    embedding, multiple stages of attention and convolution blocks, and a feature refinement neck.
+    此类实现了TinyViT模型，结合了视觉transformer和卷积神经网络的元素，以提高视觉任务的效率和性能。
+    它具有层次化处理，包括图块嵌入、多阶段注意力和卷积块以及特征细化neck。
 
     Attributes:
-        img_size (int): Input image size.
-        num_classes (int): Number of classification classes.
-        depths (tuple[int, int, int, int]): Number of blocks in each stage.
-        num_layers (int): Total number of layers in the network.
-        mlp_ratio (float): Ratio of MLP hidden dimension to embedding dimension.
-        patch_embed (PatchEmbed): Module for patch embedding.
-        patches_resolution (tuple[int, int]): Resolution of embedded patches.
-        layers (nn.ModuleList): List of network layers.
-        norm_head (nn.LayerNorm): Layer normalization for the classifier head.
-        head (nn.Linear): Linear layer for final classification.
-        neck (nn.Sequential): Neck module for feature refinement.
+        img_size (int): 输入图像大小。
+        num_classes (int): 分类类别数。
+        depths (tuple[int, int, int, int]): 每个阶段的块数量。
+        num_layers (int): 网络的总层数。
+        mlp_ratio (float): MLP隐藏维度与嵌入维度的比率。
+        patch_embed (PatchEmbed): 图块嵌入模块。
+        patches_resolution (tuple[int, int]): 嵌入图块的分辨率。
+        layers (nn.ModuleList): 网络层列表。
+        norm_head (nn.LayerNorm): 分类器头的层归一化。
+        head (nn.Linear): 最终分类的线性层。
+        neck (nn.Sequential): 特征细化neck模块。
 
     Examples:
         >>> model = TinyViT(img_size=224, num_classes=1000)
@@ -795,26 +783,25 @@ class TinyViT(nn.Module):
         local_conv_size: int = 3,
         layer_lr_decay: float = 1.0,
     ):
-        """Initialize the TinyViT model.
+        """初始化TinyViT模型。
 
-        This constructor sets up the TinyViT architecture, including patch embedding, multiple layers of attention and
-        convolution blocks, and a classification head.
+        此构造函数设置TinyViT架构，包括图块嵌入、多层注意力和卷积块以及分类头。
 
         Args:
-            img_size (int, optional): Size of the input image.
-            in_chans (int, optional): Number of input channels.
-            num_classes (int, optional): Number of classes for classification.
-            embed_dims (tuple[int, int, int, int], optional): Embedding dimensions for each stage.
-            depths (tuple[int, int, int, int], optional): Number of blocks in each stage.
-            num_heads (tuple[int, int, int, int], optional): Number of attention heads in each stage.
-            window_sizes (tuple[int, int, int, int], optional): Window sizes for each stage.
-            mlp_ratio (float, optional): Ratio of MLP hidden dim to embedding dim.
-            drop_rate (float, optional): Dropout rate.
-            drop_path_rate (float, optional): Stochastic depth rate.
-            use_checkpoint (bool, optional): Whether to use checkpointing to save memory.
-            mbconv_expand_ratio (float, optional): Expansion ratio for MBConv layer.
-            local_conv_size (int, optional): Kernel size for local convolutions.
-            layer_lr_decay (float, optional): Layer-wise learning rate decay factor.
+            img_size (int, optional): 输入图像的大小。
+            in_chans (int, optional): 输入通道数。
+            num_classes (int, optional): 分类的类别数。
+            embed_dims (tuple[int, int, int, int], optional): 每个阶段的嵌入维度。
+            depths (tuple[int, int, int, int], optional): 每个阶段的块数量。
+            num_heads (tuple[int, int, int, int], optional): 每个阶段的注意力头数。
+            window_sizes (tuple[int, int, int, int], optional): 每个阶段的窗口大小。
+            mlp_ratio (float, optional): MLP隐藏维度与嵌入维度的比率。
+            drop_rate (float, optional): Dropout率。
+            drop_path_rate (float, optional): 随机深度率。
+            use_checkpoint (bool, optional): 是否使用检查点来节省内存。
+            mbconv_expand_ratio (float, optional): MBConv层的扩展比率。
+            local_conv_size (int, optional): 局部卷积的卷积核大小。
+            layer_lr_decay (float, optional): 逐层学习率衰减因子。
         """
         super().__init__()
         self.img_size = img_size
@@ -892,7 +879,7 @@ class TinyViT(nn.Module):
         )
 
     def set_layer_lr_decay(self, layer_lr_decay: float):
-        """Set layer-wise learning rate decay for the TinyViT model based on depth."""
+        """根据深度为TinyViT模型设置逐层学习率衰减。"""
         decay_rate = layer_lr_decay
 
         # Layers -> blocks (depth)
@@ -900,7 +887,7 @@ class TinyViT(nn.Module):
         lr_scales = [decay_rate ** (depth - i - 1) for i in range(depth)]
 
         def _set_lr_scale(m, scale):
-            """Set the learning rate scale for each layer in the model based on the layer's depth."""
+            """根据层的深度为模型中的每层设置学习率缩放因子。"""
             for p in m.parameters():
                 p.lr_scale = scale
 
@@ -920,7 +907,7 @@ class TinyViT(nn.Module):
             p.param_name = k
 
         def _check_lr_scale(m):
-            """Check if the learning rate scale attribute is present in module's parameters."""
+            """检查模块参数中是否存在学习率缩放属性。"""
             for p in m.parameters():
                 assert hasattr(p, "lr_scale"), p.param_name
 
@@ -928,7 +915,7 @@ class TinyViT(nn.Module):
 
     @staticmethod
     def _init_weights(m):
-        """Initialize weights for linear and normalization layers in the TinyViT model."""
+        """为TinyViT模型中的线性和归一化层初始化权重。"""
         if isinstance(m, nn.Linear):
             # NOTE: This initialization is needed only for training.
             # trunc_normal_(m.weight, std=.02)
@@ -940,11 +927,11 @@ class TinyViT(nn.Module):
 
     @torch.jit.ignore
     def no_weight_decay_keywords(self):
-        """Return a set of keywords for parameters that should not use weight decay."""
+        """返回不应使用权重衰减的参数关键字集合。"""
         return {"attention_biases"}
 
     def forward_features(self, x: torch.Tensor) -> torch.Tensor:
-        """Process input through feature extraction layers, returning spatial features."""
+        """通过特征提取层处理输入，返回空间特征。"""
         x = self.patch_embed(x)  # x input is (N, C, H, W)
 
         x = self.layers[0](x)
@@ -959,11 +946,11 @@ class TinyViT(nn.Module):
         return self.neck(x)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Perform the forward pass through the TinyViT model, extracting features from the input image."""
+        """通过TinyViT模型执行前向传播，从输入图像提取特征。"""
         return self.forward_features(x)
 
     def set_imgsz(self, imgsz: list[int] = [1024, 1024]):
-        """Set image size to make model compatible with different image sizes."""
+        """设置图像大小以使模型兼容不同尺寸的图像。"""
         imgsz = [s // 4 for s in imgsz]
         self.patches_resolution = imgsz
         for i, layer in enumerate(self.layers):

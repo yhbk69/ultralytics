@@ -20,45 +20,45 @@ except ImportError:
 
 
 class TextModel(nn.Module):
-    """Abstract base class for text encoding models.
+    """文本编码模型的抽象基类。
 
-    This class defines the interface for text encoding models used in vision-language tasks. Subclasses must implement
-    the tokenize and encode_text methods to provide text tokenization and encoding functionality.
+    定义了视觉-语言任务中文本编码模型的接口规范。
+    子类必须实现 tokenize 和 encode_text 方法，以提供文本分词和编码功能。
 
     Methods:
-        tokenize: Convert input texts to tokens for model processing.
-        encode_text: Encode tokenized texts into normalized feature vectors.
+        tokenize: 将输入文本转换为模型可处理的 token。
+        encode_text: 将 token 编码为归一化的特征向量。
     """
 
     def __init__(self):
-        """Initialize the TextModel base class."""
+        """初始化 TextModel 基类。"""
         super().__init__()
 
     @abstractmethod
     def tokenize(self, texts):
-        """Convert input texts to tokens for model processing."""
+        """将输入文本转换为 token，供模型处理。"""
         pass
 
     @abstractmethod
     def encode_text(self, texts, dtype):
-        """Encode tokenized texts into normalized feature vectors."""
+        """将 token 编码为归一化特征向量。"""
         pass
 
 
 class CLIP(TextModel):
-    """Implements OpenAI's CLIP (Contrastive Language-Image Pre-training) text encoder.
+    """实现 OpenAI CLIP（对比语言-图像预训练）文本编码器。
 
-    This class provides a text encoder based on OpenAI's CLIP model, which can convert text into feature vectors that
-    are aligned with corresponding image features in a shared embedding space.
+    基于 OpenAI 的 CLIP 模型提供文本编码器，可将文本转换为与图像特征对齐的
+    共享嵌入空间中的特征向量。
 
     Attributes:
-        model (clip.model.CLIP): The loaded CLIP model.
-        image_preprocess (callable): Preprocessing transform for images.
-        device (torch.device): Device where the model is loaded.
+        model (clip.model.CLIP): 已加载的 CLIP 模型。
+        image_preprocess (callable): 图像预处理变换函数。
+        device (torch.device): 模型所在设备。
 
     Methods:
-        tokenize: Convert input texts to CLIP tokens.
-        encode_text: Encode tokenized texts into normalized feature vectors.
+        tokenize: 将输入文本转换为 CLIP token。
+        encode_text: 将 token 编码为归一化特征向量。
 
     Examples:
         >>> import torch
@@ -70,14 +70,14 @@ class CLIP(TextModel):
     """
 
     def __init__(self, size: str, device: torch.device) -> None:
-        """Initialize the CLIP text encoder.
+        """初始化 CLIP 文本编码器。
 
-        This class implements the TextModel interface using OpenAI's CLIP model for text encoding. It loads a
-        pre-trained CLIP model of the specified size and prepares it for text encoding tasks.
+        实现 TextModel 接口，使用 OpenAI CLIP 模型进行文本编码。
+        加载指定大小的预训练 CLIP 模型，并准备进行文本编码任务。
 
         Args:
-            size (str): Model size identifier (e.g., 'ViT-B/32').
-            device (torch.device): Device to load the model on.
+            size (str): 模型大小标识符（如 'ViT-B/32'）。
+            device (torch.device): 加载模型的目标设备。
         """
         super().__init__()
         self.model, self.image_preprocess = clip.load(size, device=device)
@@ -86,38 +86,39 @@ class CLIP(TextModel):
         self.eval()
 
     def tokenize(self, texts: str | list[str], truncate: bool = True) -> torch.Tensor:
-        """Convert input texts to CLIP tokens.
+        """将输入文本转换为 CLIP token。
 
         Args:
-            texts (str | list[str]): Input text or list of texts to tokenize.
-            truncate (bool, optional): Whether to trim texts that exceed CLIP's context length. Defaults to True to
-                avoid RuntimeError from overly long inputs while still allowing explicit opt-out.
+            texts (str | list[str]): 待分词的文本或文本列表。
+            truncate (bool, optional): 是否截断超过 CLIP 上下文长度的文本，默认为 True
+                以避免过长输入引发 RuntimeError，同时允许显式关闭此行为。
 
         Returns:
-            (torch.Tensor): Tokenized text tensor with shape (batch_size, context_length) ready for model processing.
+            (torch.Tensor): 分词后的 token 张量，形状为 (batch_size, context_length)，
+                可直接传入模型。
 
         Examples:
             >>> model = CLIP("ViT-B/32", device="cpu")
             >>> tokens = model.tokenize("a photo of a cat")
             >>> print(tokens.shape)  # torch.Size([1, 77])
-            >>> strict_tokens = model.tokenize("a photo of a cat", truncate=False)  # Enforce strict length checks
-            >>> print(strict_tokens.shape)  # Same shape/content as tokens since prompt less than 77 tokens
+            >>> strict_tokens = model.tokenize("a photo of a cat", truncate=False)  # 严格长度检查
+            >>> print(strict_tokens.shape)  # 内容与 tokens 相同，因提示词不足 77 个 token
         """
         return clip.tokenize(texts, truncate=truncate).to(self.device)
 
     @smart_inference_mode()
     def encode_text(self, texts: torch.Tensor, dtype: torch.dtype = torch.float32) -> torch.Tensor:
-        """Encode tokenized texts into normalized feature vectors.
+        """将 token 编码为归一化特征向量。
 
-        This method processes tokenized text inputs through the CLIP model to generate feature vectors, which are then
-        normalized to unit length. These normalized vectors can be used for text-image similarity comparisons.
+        通过 CLIP 模型处理 token 输入生成特征向量，再进行 L2 归一化。
+        归一化后的向量可用于文本-图像相似度计算。
 
         Args:
-            texts (torch.Tensor): Tokenized text inputs, typically created using the tokenize() method.
-            dtype (torch.dtype, optional): Data type for output features.
+            texts (torch.Tensor): token 输入张量，通常由 tokenize() 方法创建。
+            dtype (torch.dtype, optional): 输出特征向量的数据类型。
 
         Returns:
-            (torch.Tensor): Normalized text feature vectors with unit length (L2 norm = 1).
+            (torch.Tensor): L2 范数为 1 的归一化文本特征向量。
 
         Examples:
             >>> clip_model = CLIP("ViT-B/32", device="cuda")
@@ -132,18 +133,18 @@ class CLIP(TextModel):
 
     @smart_inference_mode()
     def encode_image(self, image: Image.Image | torch.Tensor, dtype: torch.dtype = torch.float32) -> torch.Tensor:
-        """Encode images into normalized feature vectors.
+        """将图像编码为归一化特征向量。
 
-        This method processes image inputs through the CLIP model to generate feature vectors, which are then
-        normalized to unit length. These normalized vectors can be used for text-image similarity comparisons.
+        通过 CLIP 模型处理图像输入生成特征向量，再进行 L2 归一化。
+        归一化后的向量可用于文本-图像相似度计算。
 
         Args:
-            image (PIL.Image | torch.Tensor): Image input as a PIL Image or preprocessed tensor. If a PIL Image is
-                provided, it will be converted to a tensor using the model's image preprocessing function.
-            dtype (torch.dtype, optional): Data type for output features.
+            image (PIL.Image | torch.Tensor): PIL 图像或预处理后的张量。
+                若传入 PIL 图像，将使用模型的图像预处理函数自动转换。
+            dtype (torch.dtype, optional): 输出特征向量的数据类型。
 
         Returns:
-            (torch.Tensor): Normalized image feature vectors with unit length (L2 norm = 1).
+            (torch.Tensor): L2 范数为 1 的归一化图像特征向量。
 
         Examples:
             >>> from ultralytics.nn.text_model import CLIP
@@ -163,20 +164,20 @@ class CLIP(TextModel):
 
 
 class MobileCLIP(TextModel):
-    """Implement Apple's MobileCLIP text encoder for efficient text encoding.
+    """实现苹果 MobileCLIP 文本编码器，具备高效文本编码能力。
 
-    This class implements the TextModel interface using Apple's MobileCLIP model, providing efficient text encoding
-    capabilities for vision-language tasks with reduced computational requirements compared to standard CLIP models.
+    使用苹果 MobileCLIP 模型实现 TextModel 接口，与标准 CLIP 相比计算开销更低，
+    适用于需要高效推理的视觉-语言任务。
 
     Attributes:
-        model (mobileclip.model.MobileCLIP): The loaded MobileCLIP model.
-        tokenizer (callable): Tokenizer function for processing text inputs.
-        device (torch.device): Device where the model is loaded.
-        config_size_map (dict): Mapping from size identifiers to model configuration names.
+        model (mobileclip.model.MobileCLIP): 已加载的 MobileCLIP 模型。
+        tokenizer (callable): 文本分词函数。
+        device (torch.device): 模型所在设备。
+        config_size_map (dict): 大小标识符到模型配置名称的映射。
 
     Methods:
-        tokenize: Convert input texts to MobileCLIP tokens.
-        encode_text: Encode tokenized texts into normalized feature vectors.
+        tokenize: 将输入文本转换为 MobileCLIP token。
+        encode_text: 将 token 编码为归一化特征向量。
 
     Examples:
         >>> device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -188,18 +189,18 @@ class MobileCLIP(TextModel):
     config_size_map = {"s0": "s0", "s1": "s1", "s2": "s2", "b": "b", "blt": "b"}
 
     def __init__(self, size: str, device: torch.device) -> None:
-        """Initialize the MobileCLIP text encoder.
+        """初始化 MobileCLIP 文本编码器。
 
-        This class implements the TextModel interface using Apple's MobileCLIP model for efficient text encoding.
+        使用苹果 MobileCLIP 模型实现 TextModel 接口，提供高效文本编码。
 
         Args:
-            size (str): Model size identifier (e.g., 's0', 's1', 's2', 'b', 'blt').
-            device (torch.device): Device to load the model on.
+            size (str): 模型大小标识符（如 's0'、's1'、's2'、'b'、'blt'）。
+            device (torch.device): 加载模型的目标设备。
         """
         try:
             import mobileclip
         except ImportError:
-            # Ultralytics fork preferred since Apple MobileCLIP repo has incorrect version of torchvision
+            # 优先使用 Ultralytics fork，因为苹果官方 MobileCLIP 仓库的 torchvision 版本不兼容
             checks.check_requirements("git+https://github.com/ultralytics/mobileclip.git")
             import mobileclip
 
@@ -217,13 +218,13 @@ class MobileCLIP(TextModel):
         self.eval()
 
     def tokenize(self, texts: list[str]) -> torch.Tensor:
-        """Convert input texts to MobileCLIP tokens.
+        """将输入文本转换为 MobileCLIP token。
 
         Args:
-            texts (list[str]): List of text strings to tokenize.
+            texts (list[str]): 待分词的文本列表。
 
         Returns:
-            (torch.Tensor): Tokenized text inputs with shape (batch_size, sequence_length).
+            (torch.Tensor): 分词后的 token 张量，形状为 (batch_size, sequence_length)。
 
         Examples:
             >>> model = MobileCLIP("s0", "cpu")
@@ -233,21 +234,21 @@ class MobileCLIP(TextModel):
 
     @smart_inference_mode()
     def encode_text(self, texts: torch.Tensor, dtype: torch.dtype = torch.float32) -> torch.Tensor:
-        """Encode tokenized texts into normalized feature vectors.
+        """将 token 编码为归一化特征向量。
 
         Args:
-            texts (torch.Tensor): Tokenized text inputs.
-            dtype (torch.dtype, optional): Data type for output features.
+            texts (torch.Tensor): token 输入张量。
+            dtype (torch.dtype, optional): 输出特征向量的数据类型。
 
         Returns:
-            (torch.Tensor): Normalized text feature vectors with L2 normalization applied.
+            (torch.Tensor): 经 L2 归一化后的文本特征向量。
 
         Examples:
             >>> model = MobileCLIP("s0", device="cpu")
             >>> tokens = model.tokenize(["a photo of a cat", "a photo of a dog"])
             >>> features = model.encode_text(tokens)
             >>> features.shape
-            torch.Size([2, 512])  # Actual dimension depends on model size
+            torch.Size([2, 512])  # 实际维度取决于模型大小
         """
         text_features = self.model.encode_text(texts).to(dtype)
         text_features /= text_features.norm(p=2, dim=-1, keepdim=True)
@@ -255,19 +256,19 @@ class MobileCLIP(TextModel):
 
 
 class MobileCLIPTS(TextModel):
-    """Load a TorchScript traced version of MobileCLIP.
+    """加载 TorchScript 追踪版本的 MobileCLIP。
 
-    This class implements the TextModel interface using Apple's MobileCLIP model in TorchScript format, providing
-    efficient text encoding capabilities for vision-language tasks with optimized inference performance.
+    使用苹果 MobileCLIP 模型的 TorchScript 格式实现 TextModel 接口，
+    通过优化后的推理性能提供高效文本编码能力。
 
     Attributes:
-        encoder (torch.jit.ScriptModule): The loaded TorchScript MobileCLIP text encoder.
-        tokenizer (callable): Tokenizer function for processing text inputs.
-        device (torch.device): Device where the model is loaded.
+        encoder (torch.jit.ScriptModule): 已加载的 TorchScript MobileCLIP 文本编码器。
+        tokenizer (callable): 文本分词函数。
+        device (torch.device): 模型所在设备。
 
     Methods:
-        tokenize: Convert input texts to MobileCLIP tokens.
-        encode_text: Encode tokenized texts into normalized feature vectors.
+        tokenize: 将输入文本转换为 MobileCLIP token。
+        encode_text: 将 token 编码为归一化特征向量。
 
     Examples:
         >>> device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -277,14 +278,14 @@ class MobileCLIPTS(TextModel):
     """
 
     def __init__(self, device: torch.device, weight: str = "mobileclip_blt.ts"):
-        """Initialize the MobileCLIP TorchScript text encoder.
+        """初始化 MobileCLIP TorchScript 文本编码器。
 
-        This class implements the TextModel interface using Apple's MobileCLIP model in TorchScript format for efficient
-        text encoding with optimized inference performance.
+        使用苹果 MobileCLIP 模型的 TorchScript 格式实现 TextModel 接口，
+        以优化的推理性能进行高效文本编码。
 
         Args:
-            device (torch.device): Device to load the model on.
-            weight (str): Path to the TorchScript model weights.
+            device (torch.device): 加载模型的目标设备。
+            weight (str): TorchScript 模型权重文件路径。
         """
         super().__init__()
         from ultralytics.utils.downloads import attempt_download_asset
@@ -294,56 +295,56 @@ class MobileCLIPTS(TextModel):
         self.device = device
 
     def tokenize(self, texts: list[str], truncate: bool = True) -> torch.Tensor:
-        """Convert input texts to MobileCLIP tokens.
+        """将输入文本转换为 MobileCLIP token。
 
         Args:
-            texts (list[str]): List of text strings to tokenize.
-            truncate (bool, optional): Whether to trim texts that exceed the tokenizer context length. Defaults to True,
-                matching CLIP's behavior to prevent runtime failures on long captions.
+            texts (list[str]): 待分词的文本列表。
+            truncate (bool, optional): 是否截断超过上下文长度的文本，默认为 True，
+                与 CLIP 行为一致，防止长标题导致运行时错误。
 
         Returns:
-            (torch.Tensor): Tokenized text inputs with shape (batch_size, sequence_length).
+            (torch.Tensor): 分词后的 token 张量，形状为 (batch_size, sequence_length)。
 
         Examples:
             >>> model = MobileCLIPTS(device=torch.device("cpu"))
             >>> tokens = model.tokenize(["a photo of a cat", "a photo of a dog"])
             >>> strict_tokens = model.tokenize(
             ...     ["a very long caption"], truncate=False
-            ... )  # RuntimeError if exceeds 77-token
+            ... )  # 若超过 77 个 token 则抛出 RuntimeError
         """
         return self.tokenizer(texts, truncate=truncate).to(self.device)
 
     @smart_inference_mode()
     def encode_text(self, texts: torch.Tensor, dtype: torch.dtype = torch.float32) -> torch.Tensor:
-        """Encode tokenized texts into normalized feature vectors.
+        """将 token 编码为归一化特征向量。
 
         Args:
-            texts (torch.Tensor): Tokenized text inputs.
-            dtype (torch.dtype, optional): Data type for output features.
+            texts (torch.Tensor): token 输入张量。
+            dtype (torch.dtype, optional): 输出特征向量的数据类型。
 
         Returns:
-            (torch.Tensor): Normalized text feature vectors with L2 normalization applied.
+            (torch.Tensor): 经 L2 归一化后的文本特征向量。
 
         Examples:
             >>> model = MobileCLIPTS(device="cpu")
             >>> tokens = model.tokenize(["a photo of a cat", "a photo of a dog"])
             >>> features = model.encode_text(tokens)
             >>> features.shape
-            torch.Size([2, 512])  # Actual dimension depends on model size
+            torch.Size([2, 512])  # 实际维度取决于模型大小
         """
-        # NOTE: no need to do normalization here as it's embedded in the torchscript model
+        # 注意：此处无需归一化，归一化已内嵌在 TorchScript 模型中
         return self.encoder(texts).to(dtype)
 
 
 def build_text_model(variant: str, device: torch.device = None) -> TextModel:
-    """Build a text encoding model based on the specified variant.
+    """根据指定的变体名称构建文本编码模型。
 
     Args:
-        variant (str): Model variant in format "base:size" (e.g., "clip:ViT-B/32" or "mobileclip:s0").
-        device (torch.device, optional): Device to load the model on.
+        variant (str): 格式为 "base:size" 的模型变体（如 "clip:ViT-B/32" 或 "mobileclip:s0"）。
+        device (torch.device, optional): 加载模型的目标设备。
 
     Returns:
-        (TextModel): Instantiated text encoding model.
+        (TextModel): 实例化的文本编码模型。
 
     Examples:
         >>> model = build_text_model("clip:ViT-B/32", device=torch.device("cuda"))

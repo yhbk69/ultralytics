@@ -13,14 +13,14 @@ __all__ = "inverse_sigmoid", "multi_scale_deformable_attn_pytorch"
 
 
 def _get_clones(module, n):
-    """Create a list of cloned modules from the given module.
+    """从给定模块创建 n 个深拷贝，返回 ModuleList。
 
     Args:
-        module (nn.Module): The module to be cloned.
-        n (int): Number of clones to create.
+        module (nn.Module): 待克隆的模块。
+        n (int): 克隆数量。
 
     Returns:
-        (nn.ModuleList): A ModuleList containing n clones of the input module.
+        (nn.ModuleList): 包含 n 个输入模块深拷贝的 ModuleList。
 
     Examples:
         >>> import torch.nn as nn
@@ -33,35 +33,33 @@ def _get_clones(module, n):
 
 
 def bias_init_with_prob(prior_prob=0.01):
-    """Initialize conv/fc bias value according to a given probability value.
+    """根据给定的先验概率值初始化卷积/全连接层的偏置。
 
-    This function calculates the bias initialization value based on a prior probability using the inverse sigmoid
-    (logit)
-    function. It's commonly used in object detection models to initialize classification layers with a specific positive
-    prediction probability.
+    通过逆 Sigmoid（logit）函数将先验概率转换为偏置初始值，
+    常用于目标检测模型的分类层初始化，使初始正样本预测概率等于 prior_prob。
 
     Args:
-        prior_prob (float, optional): Prior probability for bias initialization.
+        prior_prob (float, optional): 用于偏置初始化的先验概率。
 
     Returns:
-        (float): Bias initialization value calculated from the prior probability.
+        (float): 由先验概率计算得出的偏置初始值。
 
     Examples:
         >>> bias = bias_init_with_prob(0.01)
         >>> print(f"Bias initialization value: {bias:.4f}")
         Bias initialization value: -4.5951
     """
-    return float(-np.log((1 - prior_prob) / prior_prob))  # return bias_init
+    return float(-np.log((1 - prior_prob) / prior_prob))  # 返回偏置初始值
 
 
 def linear_init(module):
-    """Initialize the weights and biases of a linear module.
+    """初始化线性模块的权重和偏置。
 
-    This function initializes the weights of a linear module using a uniform distribution within bounds calculated from
-    the output dimension. If the module has a bias, it is also initialized.
+    使用由输出维度计算的范围内的均匀分布初始化权重，
+    若模块有偏置项也一并初始化。
 
     Args:
-        module (nn.Module): Linear module to initialize.
+        module (nn.Module): 待初始化的线性模块。
 
     Examples:
         >>> import torch.nn as nn
@@ -75,17 +73,16 @@ def linear_init(module):
 
 
 def inverse_sigmoid(x, eps=1e-5):
-    """Calculate the inverse sigmoid function for a tensor.
+    """计算张量的逆 Sigmoid 函数。
 
-    This function applies the inverse of the sigmoid function to a tensor, which is useful in various neural network
-    operations, particularly in attention mechanisms and coordinate transformations.
+    对张量应用 Sigmoid 的逆运算，在注意力机制和坐标变换等神经网络操作中十分有用。
 
     Args:
-        x (torch.Tensor): Input tensor with values in range [0, 1].
-        eps (float, optional): Small epsilon value to prevent numerical instability.
+        x (torch.Tensor): 值域为 [0, 1] 的输入张量。
+        eps (float, optional): 防止数值不稳定的小 epsilon 值。
 
     Returns:
-        (torch.Tensor): Tensor after applying the inverse sigmoid function.
+        (torch.Tensor): 应用逆 Sigmoid 后的输出张量。
 
     Examples:
         >>> x = torch.tensor([0.2, 0.5, 0.8])
@@ -104,21 +101,20 @@ def multi_scale_deformable_attn_pytorch(
     sampling_locations: torch.Tensor,
     attention_weights: torch.Tensor,
 ) -> torch.Tensor:
-    """Implement multi-scale deformable attention in PyTorch.
+    """用 PyTorch 实现多尺度可变形注意力。
 
-    This function performs deformable attention across multiple feature map scales, allowing the model to attend to
-    different spatial locations with learned offsets.
+    在多个特征图尺度上执行可变形注意力，允许模型通过学习到的偏移量关注不同空间位置。
 
     Args:
-        value (torch.Tensor): The value tensor with shape (bs, num_keys, num_heads, embed_dims).
-        value_spatial_shapes (torch.Tensor): Spatial shapes of the value tensor with shape (num_levels, 2).
-        sampling_locations (torch.Tensor): The sampling locations with shape (bs, num_queries, num_heads, num_levels,
-            num_points, 2).
-        attention_weights (torch.Tensor): The attention weights with shape (bs, num_queries, num_heads, num_levels,
-            num_points).
+        value (torch.Tensor): 值张量，形状为 (bs, num_keys, num_heads, embed_dims)。
+        value_spatial_shapes (torch.Tensor): 各尺度特征图的空间尺寸，形状为 (num_levels, 2)。
+        sampling_locations (torch.Tensor): 采样位置，形状为
+            (bs, num_queries, num_heads, num_levels, num_points, 2)。
+        attention_weights (torch.Tensor): 注意力权重，形状为
+            (bs, num_queries, num_heads, num_levels, num_points)。
 
     Returns:
-        (torch.Tensor): The output tensor with shape (bs, num_queries, num_heads * embed_dims).
+        (torch.Tensor): 输出张量，形状为 (bs, num_queries, num_heads * embed_dims)。
 
     References:
         https://github.com/IDEA-Research/detrex/blob/main/detrex/layers/multi_scale_deform_attn.py

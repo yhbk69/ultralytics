@@ -1,5 +1,5 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
-"""Model head modules."""
+"""模型头部模块。"""
 
 from __future__ import annotations
 
@@ -24,73 +24,73 @@ __all__ = "OBB", "Classify", "Detect", "Pose", "RTDETRDecoder", "Segment", "YOLO
 
 
 class Detect(nn.Module):
-    """YOLO Detect head for object detection models.
+    """YOLO 检测头，用于目标检测模型。
 
-    This class implements the detection head used in YOLO models for predicting bounding boxes and class probabilities.
-    It supports both training and inference modes, with optional end-to-end detection capabilities.
+    该类实现了 YOLO 模型中用于预测边界框和类别概率的检测头。
+    支持训练和推理模式，以及可选的端到端检测能力。
 
     Attributes:
-        dynamic (bool): Force grid reconstruction.
-        export (bool): Export mode flag.
-        format (str): Export format.
-        end2end (bool): End-to-end detection mode.
-        max_det (int): Maximum detections per image.
-        shape (tuple): Input shape.
-        anchors (torch.Tensor): Anchor points.
-        strides (torch.Tensor): Feature map strides.
-        legacy (bool): Backward compatibility for v3/v5/v8/v9/v11 models.
-        xyxy (bool): Output format, xyxy or xywh.
-        nc (int): Number of classes.
-        nl (int): Number of detection layers.
-        reg_max (int): DFL channels.
-        no (int): Number of outputs per anchor.
-        stride (torch.Tensor): Strides computed during build.
-        cv2 (nn.ModuleList): Convolution layers for box regression.
-        cv3 (nn.ModuleList): Convolution layers for classification.
-        dfl (nn.Module): Distribution Focal Loss layer.
-        one2one_cv2 (nn.ModuleList): One-to-one convolution layers for box regression.
-        one2one_cv3 (nn.ModuleList): One-to-one convolution layers for classification.
+        dynamic (bool): 强制网格重建。
+        export (bool): 导出模式标志。
+        format (str): 导出格式。
+        end2end (bool): 端到端检测模式。
+        max_det (int): 每张图像的最大检测数。
+        shape (tuple): 输入形状。
+        anchors (torch.Tensor): 锚点。
+        strides (torch.Tensor): 特征图步幅。
+        legacy (bool): 向后兼容 v3/v5/v8/v9/v11 模型。
+        xyxy (bool): 输出格式，xyxy 或 xywh。
+        nc (int): 类别数。
+        nl (int): 检测层数。
+        reg_max (int): DFL 通道数。
+        no (int): 每个锚点的输出数。
+        stride (torch.Tensor): 构建时计算的步幅。
+        cv2 (nn.ModuleList): 边界框回归卷积层。
+        cv3 (nn.ModuleList): 分类卷积层。
+        dfl (nn.Module): 分布焦点损失层。
+        one2one_cv2 (nn.ModuleList): 一对一边界框回归卷积层。
+        one2one_cv3 (nn.ModuleList): 一对一分类卷积层。
 
     Methods:
-        forward: Perform forward pass and return predictions.
-        bias_init: Initialize detection head biases.
-        decode_bboxes: Decode bounding boxes from predictions.
-        postprocess: Post-process model predictions.
+        forward: 执行前向传播并返回预测结果。
+        bias_init: 初始化检测头偏置。
+        decode_bboxes: 从预测中解码边界框。
+        postprocess: 后处理模型预测。
 
     Examples:
-        Create a detection head for 80 classes
+        创建一个 80 类的检测头
         >>> detect = Detect(nc=80, ch=(256, 512, 1024))
         >>> x = [torch.randn(1, 256, 80, 80), torch.randn(1, 512, 40, 40), torch.randn(1, 1024, 20, 20)]
         >>> outputs = detect(x)
     """
 
-    dynamic = False  # force grid reconstruction
-    export = False  # export mode
-    format = None  # export format
-    max_det = 300  # max_det
+    dynamic = False  # 强制网格重建
+    export = False  # 导出模式
+    format = None  # 导出格式
+    max_det = 300  # 最大检测数
     agnostic_nms = False
     shape = None
-    anchors = torch.empty(0)  # init
-    strides = torch.empty(0)  # init
-    legacy = False  # backward compatibility for v3/v5/v8/v9 models
-    xyxy = False  # xyxy or xywh output
+    anchors = torch.empty(0)  # 初始化
+    strides = torch.empty(0)  # 初始化
+    legacy = False  # 向后兼容 v3/v5/v8/v9 模型
+    xyxy = False  # xyxy 或 xywh 输出
 
     def __init__(self, nc: int = 80, reg_max=16, end2end=False, ch: tuple = ()):
-        """Initialize the YOLO detection layer with specified number of classes and channels.
+        """初始化 YOLO 检测层，指定类别数和通道数。
 
         Args:
-            nc (int): Number of classes.
-            reg_max (int): Maximum number of DFL channels.
-            end2end (bool): Whether to use end-to-end NMS-free detection.
-            ch (tuple): Tuple of channel sizes from backbone feature maps.
+            nc (int): 类别数。
+            reg_max (int): DFL 最大通道数。
+            end2end (bool): 是否使用端到端无 NMS 检测。
+            ch (tuple): 骨干网络特征图的通道数元组。
         """
         super().__init__()
-        self.nc = nc  # number of classes
-        self.nl = len(ch)  # number of detection layers
-        self.reg_max = reg_max  # DFL channels (ch[0] // 16 to scale 4/8/12/16/20 for n/s/m/l/x)
-        self.no = nc + self.reg_max * 4  # number of outputs per anchor
-        self.stride = torch.zeros(self.nl)  # strides computed during build
-        c2, c3 = max((16, ch[0] // 4, self.reg_max * 4)), max(ch[0], min(self.nc, 100))  # channels
+        self.nc = nc  # 类别数
+        self.nl = len(ch)  # 检测层数
+        self.reg_max = reg_max  # DFL 通道数 (ch[0] // 16 来缩放 n/s/m/l/x 对应 4/8/12/16/20)
+        self.no = nc + self.reg_max * 4  # 每个锚点的输出数
+        self.stride = torch.zeros(self.nl)  # 构建时计算的步幅
+        c2, c3 = max((16, ch[0] // 4, self.reg_max * 4)), max(ch[0], min(self.nc, 100))  # 通道数
         self.cv2 = nn.ModuleList(
             nn.Sequential(Conv(x, c2, 3), Conv(c2, c2, 3), nn.Conv2d(c2, 4 * self.reg_max, 1)) for x in ch
         )
@@ -114,31 +114,31 @@ class Detect(nn.Module):
 
     @property
     def one2many(self):
-        """Returns the one-to-many head components, here for v3/v5/v8/v9/v11 backward compatibility."""
+        """返回一对多头部组件，此处用于 v3/v5/v8/v9/v11 向后兼容。"""
         return dict(box_head=self.cv2, cls_head=self.cv3)
 
     @property
     def one2one(self):
-        """Returns the one-to-one head components."""
+        """返回一对一头部组件。"""
         return dict(box_head=self.one2one_cv2, cls_head=self.one2one_cv3)
 
     @property
     def end2end(self):
-        """Checks if the model has one2one for v3/v5/v8/v9/v11 backward compatibility."""
+        """检查模型是否具有 one2one，用于 v3/v5/v8/v9/v11 向后兼容。"""
         return getattr(self, "_end2end", True) and hasattr(self, "one2one")
 
     @end2end.setter
     def end2end(self, value):
-        """Override the end-to-end detection mode."""
+        """覆盖端到端检测模式。"""
         self._end2end = value
 
     def forward_head(
         self, x: list[torch.Tensor], box_head: torch.nn.Module = None, cls_head: torch.nn.Module = None
     ) -> dict[str, torch.Tensor]:
-        """Concatenates and returns predicted bounding boxes and class probabilities."""
-        if box_head is None or cls_head is None:  # for fused inference
+        """拼接并返回预测的边界框和类别概率。"""
+        if box_head is None or cls_head is None:  # 融合推理时
             return dict()
-        bs = x[0].shape[0]  # batch size
+        bs = x[0].shape[0]  # 批次大小
         boxes = torch.cat([box_head[i](x[i]).view(bs, 4 * self.reg_max, -1) for i in range(self.nl)], dim=-1)
         scores = torch.cat([cls_head[i](x[i]).view(bs, self.nc, -1) for i in range(self.nl)], dim=-1)
         return dict(boxes=boxes, scores=scores, feats=x)
@@ -146,7 +146,7 @@ class Detect(nn.Module):
     def forward(
         self, x: list[torch.Tensor]
     ) -> dict[str, torch.Tensor] | torch.Tensor | tuple[torch.Tensor, dict[str, torch.Tensor]]:
-        """Concatenates and returns predicted bounding boxes and class probabilities."""
+        """拼接并返回预测的边界框和类别概率。"""
         preds = self.forward_head(x, **self.one2many)
         if self.end2end:
             x_detach = [xi.detach() for xi in x]
@@ -160,20 +160,20 @@ class Detect(nn.Module):
         return y if self.export else (y, preds)
 
     def _inference(self, x: dict[str, torch.Tensor]) -> torch.Tensor:
-        """Decode predicted bounding boxes and class probabilities based on multiple-level feature maps.
+        """解码预测的边界框和类别概率（基于多层特征图）。
 
         Args:
-            x (dict[str, torch.Tensor]): Dictionary of predictions from detection layers.
+            x (dict[str, torch.Tensor]): 检测层的预测字典。
 
         Returns:
-            (torch.Tensor): Concatenated tensor of decoded bounding boxes and class probabilities.
+            (torch.Tensor): 解码后的边界框和类别概率拼接张量。
         """
-        # Inference path
+        # 推理路径
         dbox = self._get_decode_boxes(x)
         return torch.cat((dbox, x["scores"].sigmoid()), 1)
 
     def _get_decode_boxes(self, x: dict[str, torch.Tensor]) -> torch.Tensor:
-        """Get decoded boxes based on anchors and strides."""
+        """基于锚点和步幅获取解码后的边界框。"""
         shape = x["feats"][0].shape  # BCHW
         if self.dynamic or self.shape != shape:
             self.anchors, self.strides = (a.transpose(0, 1) for a in make_anchors(x["feats"], self.stride, 0.5))
@@ -183,21 +183,21 @@ class Detect(nn.Module):
         return dbox
 
     def bias_init(self):
-        """Initialize Detect() biases, WARNING: requires stride availability."""
-        for i, (a, b) in enumerate(zip(self.one2many["box_head"], self.one2many["cls_head"])):  # from
-            a[-1].bias.data[:] = 2.0  # box
+        """初始化 Detect() 偏置，警告：需要步幅可用。"""
+        for i, (a, b) in enumerate(zip(self.one2many["box_head"], self.one2many["cls_head"])):  # 从
+            a[-1].bias.data[:] = 2.0  # 边界框
             b[-1].bias.data[: self.nc] = math.log(
                 5 / self.nc / (640 / self.stride[i]) ** 2
-            )  # cls (.01 objects, 80 classes, 640 img)
+            )  # 分类 (.01 目标, 80 类, 640 图像)
         if self.end2end:
-            for i, (a, b) in enumerate(zip(self.one2one["box_head"], self.one2one["cls_head"])):  # from
-                a[-1].bias.data[:] = 2.0  # box
+            for i, (a, b) in enumerate(zip(self.one2one["box_head"], self.one2one["cls_head"])):  # 从
+                a[-1].bias.data[:] = 2.0  # 边界框
                 b[-1].bias.data[: self.nc] = math.log(
                     5 / self.nc / (640 / self.stride[i]) ** 2
-                )  # cls (.01 objects, 80 classes, 640 img)
+                )  # 分类 (.01 目标, 80 类, 640 图像)
 
     def decode_bboxes(self, bboxes: torch.Tensor, anchors: torch.Tensor, xywh: bool = True) -> torch.Tensor:
-        """Decode bounding boxes from predictions."""
+        """从预测中解码边界框。"""
         return dist2bbox(
             bboxes,
             anchors,
@@ -206,15 +206,15 @@ class Detect(nn.Module):
         )
 
     def postprocess(self, preds: torch.Tensor) -> torch.Tensor:
-        """Post-processes YOLO model predictions.
+        """后处理 YOLO 模型预测。
 
         Args:
-            preds (torch.Tensor): Raw predictions with shape (batch_size, num_anchors, 4 + nc) with last dimension
-                format [x1, y1, x2, y2, class_probs].
+            preds (torch.Tensor): 原始预测，形状为 (batch_size, num_anchors, 4 + nc)，最后一维
+                格式为 [x1, y1, x2, y2, 类别概率]。
 
         Returns:
-            (torch.Tensor): Processed predictions with shape (batch_size, min(max_det, num_anchors), 6) and last
-                dimension format [x1, y1, x2, y2, max_class_prob, class_index].
+            (torch.Tensor): 处理后的预测，形状为 (batch_size, min(max_det, num_anchors), 6)，最后一维
+                格式为 [x1, y1, x2, y2, 最大类别概率, 类别索引]。
         """
         boxes, scores = preds.split([4, self.nc], dim=-1)
         scores, conf, idx = self.get_topk_index(scores, self.max_det)
@@ -222,18 +222,18 @@ class Detect(nn.Module):
         return torch.cat([boxes, scores, conf], dim=-1)
 
     def get_topk_index(self, scores: torch.Tensor, max_det: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Get top-k indices from scores.
+        """从分数中获取 top-k 索引。
 
         Args:
-            scores (torch.Tensor): Scores tensor with shape (batch_size, num_anchors, num_classes).
-            max_det (int): Maximum detections per image.
+            scores (torch.Tensor): 分数张量，形状为 (batch_size, num_anchors, num_classes)。
+            max_det (int): 每张图像的最大检测数。
 
         Returns:
-            (torch.Tensor, torch.Tensor, torch.Tensor): Top scores, class indices, and filtered indices.
+            (torch.Tensor, torch.Tensor, torch.Tensor): top 分数、类别索引和过滤后的索引。
         """
-        batch_size, anchors, nc = scores.shape  # i.e. shape(16,8400,84)
-        # Use max_det directly during export for TensorRT compatibility (requires k to be constant),
-        # otherwise use min(max_det, anchors) for safety with small inputs during Python inference
+        batch_size, anchors, nc = scores.shape  # 例如 shape(16,8400,84)
+        # 导出时直接使用 max_det 以兼容 TensorRT（要求 k 为常量），
+        # 否则使用 min(max_det, anchors) 以确保 Python 推理时小输入的安全性
         k = max_det if self.export else min(max_det, anchors)
         if self.agnostic_nms:
             scores, labels = scores.max(dim=-1, keepdim=True)
@@ -243,50 +243,50 @@ class Detect(nn.Module):
         ori_index = scores.max(dim=-1)[0].topk(k)[1].unsqueeze(-1)
         scores = scores.gather(dim=1, index=ori_index.repeat(1, 1, nc))
         scores, index = scores.flatten(1).topk(k)
-        idx = ori_index[torch.arange(batch_size)[..., None], index // nc]  # original index
+        idx = ori_index[torch.arange(batch_size)[..., None], index // nc]  # 原始索引
         return scores[..., None], (index % nc)[..., None].float(), idx
 
     def fuse(self) -> None:
-        """Remove the one2many head for inference optimization."""
+        """移除一对多头部以优化推理。"""
         self.cv2 = self.cv3 = None
 
 
 class Segment(Detect):
-    """YOLO Segment head for segmentation models.
+    """YOLO 分割头，用于分割模型。
 
-    This class extends the Detect head to include mask prediction capabilities for instance segmentation tasks.
+    该类扩展了 Detect 头，增加了掩码预测能力，用于实例分割任务。
 
     Attributes:
-        nm (int): Number of masks.
-        npr (int): Number of protos.
-        proto (Proto): Prototype generation module.
-        cv4 (nn.ModuleList): Convolution layers for mask coefficients.
+        nm (int): 掩码数。
+        npr (int): 原型数。
+        proto (Proto): 原型生成模块。
+        cv4 (nn.ModuleList): 掩码系数卷积层。
 
     Methods:
-        forward: Return model outputs and mask coefficients.
+        forward: 返回模型输出和掩码系数。
 
     Examples:
-        Create a segmentation head
+        创建一个分割头
         >>> segment = Segment(nc=80, nm=32, npr=256, ch=(256, 512, 1024))
         >>> x = [torch.randn(1, 256, 80, 80), torch.randn(1, 512, 40, 40), torch.randn(1, 1024, 20, 20)]
         >>> outputs = segment(x)
     """
 
     def __init__(self, nc: int = 80, nm: int = 32, npr: int = 256, reg_max=16, end2end=False, ch: tuple = ()):
-        """Initialize the YOLO model attributes such as the number of masks, prototypes, and the convolution layers.
+        """初始化 YOLO 模型属性，如掩码数、原型数和卷积层。
 
         Args:
-            nc (int): Number of classes.
-            nm (int): Number of masks.
-            npr (int): Number of protos.
-            reg_max (int): Maximum number of DFL channels.
-            end2end (bool): Whether to use end-to-end NMS-free detection.
-            ch (tuple): Tuple of channel sizes from backbone feature maps.
+            nc (int): 类别数。
+            nm (int): 掩码数。
+            npr (int): 原型数。
+            reg_max (int): DFL 最大通道数。
+            end2end (bool): 是否使用端到端无 NMS 检测。
+            ch (tuple): 骨干网络特征图的通道数元组。
         """
         super().__init__(nc, reg_max, end2end, ch)
-        self.nm = nm  # number of masks
-        self.npr = npr  # number of protos
-        self.proto = Proto(ch[0], self.npr, self.nm)  # protos
+        self.nm = nm  # 掩码数
+        self.npr = npr  # 原型数
+        self.proto = Proto(ch[0], self.npr, self.nm)  # 原型
 
         c4 = max(ch[0] // 4, self.nm)
         self.cv4 = nn.ModuleList(nn.Sequential(Conv(x, c4, 3), Conv(c4, c4, 3), nn.Conv2d(c4, self.nm, 1)) for x in ch)
@@ -295,20 +295,20 @@ class Segment(Detect):
 
     @property
     def one2many(self):
-        """Returns the one-to-many head components, here for backward compatibility."""
+        """返回一对多头部组件，此处用于向后兼容。"""
         return dict(box_head=self.cv2, cls_head=self.cv3, mask_head=self.cv4)
 
     @property
     def one2one(self):
-        """Returns the one-to-one head components."""
+        """返回一对一头部组件。"""
         return dict(box_head=self.one2one_cv2, cls_head=self.one2one_cv3, mask_head=self.one2one_cv4)
 
     def forward(self, x: list[torch.Tensor]) -> tuple | list[torch.Tensor] | dict[str, torch.Tensor]:
-        """Return model outputs and mask coefficients if training, otherwise return outputs and mask coefficients."""
+        """训练时返回模型输出和掩码系数，否则返回输出和掩码系数。"""
         outputs = super().forward(x)
         preds = outputs[1] if isinstance(outputs, tuple) else outputs
-        proto = self.proto(x[0])  # mask protos
-        if isinstance(preds, dict):  # training and validating during training
+        proto = self.proto(x[0])  # 掩码原型
+        if isinstance(preds, dict):  # 训练及训练期间验证时
             if self.end2end:
                 preds["one2many"]["proto"] = proto
                 preds["one2one"]["proto"] = proto.detach()
@@ -319,30 +319,30 @@ class Segment(Detect):
         return (outputs, proto) if self.export else ((outputs[0], proto), preds)
 
     def _inference(self, x: dict[str, torch.Tensor]) -> torch.Tensor:
-        """Decode predicted bounding boxes and class probabilities, concatenated with mask coefficients."""
+        """解码预测的边界框和类别概率，拼接掩码系数。"""
         preds = super()._inference(x)
         return torch.cat([preds, x["mask_coefficient"]], dim=1)
 
     def forward_head(
         self, x: list[torch.Tensor], box_head: torch.nn.Module, cls_head: torch.nn.Module, mask_head: torch.nn.Module
     ) -> dict[str, torch.Tensor]:
-        """Concatenates and returns predicted bounding boxes, class probabilities, and mask coefficients."""
+        """拼接并返回预测的边界框、类别概率和掩码系数。"""
         preds = super().forward_head(x, box_head, cls_head)
         if mask_head is not None:
-            bs = x[0].shape[0]  # batch size
+            bs = x[0].shape[0]  # 批次大小
             preds["mask_coefficient"] = torch.cat([mask_head[i](x[i]).view(bs, self.nm, -1) for i in range(self.nl)], 2)
         return preds
 
     def postprocess(self, preds: torch.Tensor) -> torch.Tensor:
-        """Post-process YOLO model predictions.
+        """后处理 YOLO 模型预测。
 
         Args:
-            preds (torch.Tensor): Raw predictions with shape (batch_size, num_anchors, 4 + nc + nm) with last dimension
-                format [x1, y1, x2, y2, class_probs, mask_coefficient].
+            preds (torch.Tensor): 原始预测，形状为 (batch_size, num_anchors, 4 + nc + nm)，最后一维
+                格式为 [x1, y1, x2, y2, 类别概率, 掩码系数]。
 
         Returns:
-            (torch.Tensor): Processed predictions with shape (batch_size, min(max_det, num_anchors), 6 + nm) and last
-                dimension format [x1, y1, x2, y2, max_class_prob, class_index, mask_coefficient].
+            (torch.Tensor): 处理后的预测，形状为 (batch_size, min(max_det, num_anchors), 6 + nm)，最后一维
+                格式为 [x1, y1, x2, y2, 最大类别概率, 类别索引, 掩码系数]。
         """
         boxes, scores, mask_coefficient = preds.split([4, self.nc, self.nm], dim=-1)
         scores, conf, idx = self.get_topk_index(scores, self.max_det)
@@ -351,51 +351,51 @@ class Segment(Detect):
         return torch.cat([boxes, scores, conf, mask_coefficient], dim=-1)
 
     def fuse(self) -> None:
-        """Remove the one2many head for inference optimization."""
+        """移除一对多头部以优化推理。"""
         self.cv2 = self.cv3 = self.cv4 = None
 
 
 class Segment26(Segment):
-    """YOLO26 Segment head for segmentation models.
+    """YOLO26 分割头，用于分割模型。
 
-    This class extends the Segment head with Proto26 for mask prediction in instance segmentation tasks.
+    该类扩展了 Segment 头，使用 Proto26 进行实例分割任务中的掩码预测。
 
     Attributes:
-        nm (int): Number of masks.
-        npr (int): Number of protos.
-        proto (Proto26): Prototype generation module.
-        cv4 (nn.ModuleList): Convolution layers for mask coefficients.
+        nm (int): 掩码数。
+        npr (int): 原型数。
+        proto (Proto26): 原型生成模块。
+        cv4 (nn.ModuleList): 掩码系数卷积层。
 
     Methods:
-        forward: Return model outputs and mask coefficients.
+        forward: 返回模型输出和掩码系数。
 
     Examples:
-        Create a segmentation head
+        创建一个分割头
         >>> segment = Segment26(nc=80, nm=32, npr=256, ch=(256, 512, 1024))
         >>> x = [torch.randn(1, 256, 80, 80), torch.randn(1, 512, 40, 40), torch.randn(1, 1024, 20, 20)]
         >>> outputs = segment(x)
     """
 
     def __init__(self, nc: int = 80, nm: int = 32, npr: int = 256, reg_max=16, end2end=False, ch: tuple = ()):
-        """Initialize the YOLO model attributes such as the number of masks, prototypes, and the convolution layers.
+        """初始化 YOLO 模型属性，如掩码数、原型数和卷积层。
 
         Args:
-            nc (int): Number of classes.
-            nm (int): Number of masks.
-            npr (int): Number of protos.
-            reg_max (int): Maximum number of DFL channels.
-            end2end (bool): Whether to use end-to-end NMS-free detection.
-            ch (tuple): Tuple of channel sizes from backbone feature maps.
+            nc (int): 类别数。
+            nm (int): 掩码数。
+            npr (int): 原型数。
+            reg_max (int): DFL 最大通道数。
+            end2end (bool): 是否使用端到端无 NMS 检测。
+            ch (tuple): 骨干网络特征图的通道数元组。
         """
         super().__init__(nc, nm, npr, reg_max, end2end, ch)
-        self.proto = Proto26(ch, self.npr, self.nm, nc)  # protos
+        self.proto = Proto26(ch, self.npr, self.nm, nc)  # 原型
 
     def forward(self, x: list[torch.Tensor]) -> tuple | list[torch.Tensor] | dict[str, torch.Tensor]:
-        """Return model outputs and mask coefficients if training, otherwise return outputs and mask coefficients."""
+        """训练时返回模型输出和掩码系数，否则返回输出和掩码系数。"""
         outputs = Detect.forward(self, x)
         preds = outputs[1] if isinstance(outputs, tuple) else outputs
-        proto = self.proto(x)  # mask protos
-        if isinstance(preds, dict):  # training and validating during training
+        proto = self.proto(x)  # 掩码原型
+        if isinstance(preds, dict):  # 训练及训练期间验证时
             if self.end2end:
                 preds["one2many"]["proto"] = proto
                 preds["one2one"]["proto"] = (
@@ -408,45 +408,45 @@ class Segment26(Segment):
         return (outputs, proto) if self.export else ((outputs[0], proto), preds)
 
     def fuse(self) -> None:
-        """Remove the one2many head and extra part of proto module for inference optimization."""
+        """移除一对多头部和原型模块的额外部分以优化推理。"""
         super().fuse()
         if hasattr(self.proto, "fuse"):
             self.proto.fuse()
 
 
 class OBB(Detect):
-    """YOLO OBB detection head for detection with rotation models.
+    """YOLO 旋转目标检测头，用于带旋转的检测模型。
 
-    This class extends the Detect head to include oriented bounding box prediction with rotation angles.
+    该类扩展了 Detect 头，增加了带旋转角度的旋转边界框预测能力。
 
     Attributes:
-        ne (int): Number of extra parameters.
-        cv4 (nn.ModuleList): Convolution layers for angle prediction.
-        angle (torch.Tensor): Predicted rotation angles.
+        ne (int): 额外参数数。
+        cv4 (nn.ModuleList): 角度预测卷积层。
+        angle (torch.Tensor): 预测的旋转角度。
 
     Methods:
-        forward: Concatenate and return predicted bounding boxes and class probabilities.
-        decode_bboxes: Decode rotated bounding boxes.
+        forward: 拼接并返回预测的边界框和类别概率。
+        decode_bboxes: 解码旋转边界框。
 
     Examples:
-        Create an OBB detection head
+        创建一个 OBB 检测头
         >>> obb = OBB(nc=80, ne=1, ch=(256, 512, 1024))
         >>> x = [torch.randn(1, 256, 80, 80), torch.randn(1, 512, 40, 40), torch.randn(1, 1024, 20, 20)]
         >>> outputs = obb(x)
     """
 
     def __init__(self, nc: int = 80, ne: int = 1, reg_max=16, end2end=False, ch: tuple = ()):
-        """Initialize OBB with number of classes `nc` and layer channels `ch`.
+        """初始化 OBB，指定类别数 nc 和层通道数 ch。
 
         Args:
-            nc (int): Number of classes.
-            ne (int): Number of extra parameters.
-            reg_max (int): Maximum number of DFL channels.
-            end2end (bool): Whether to use end-to-end NMS-free detection.
-            ch (tuple): Tuple of channel sizes from backbone feature maps.
+            nc (int): 类别数。
+            ne (int): 额外参数数。
+            reg_max (int): DFL 最大通道数。
+            end2end (bool): 是否使用端到端无 NMS 检测。
+            ch (tuple): 骨干网络特征图的通道数元组。
         """
         super().__init__(nc, reg_max, end2end, ch)
-        self.ne = ne  # number of extra parameters
+        self.ne = ne  # 额外参数数
 
         c4 = max(ch[0] // 4, self.ne)
         self.cv4 = nn.ModuleList(nn.Sequential(Conv(x, c4, 3), Conv(c4, c4, 3), nn.Conv2d(c4, self.ne, 1)) for x in ch)
@@ -455,17 +455,17 @@ class OBB(Detect):
 
     @property
     def one2many(self):
-        """Returns the one-to-many head components, here for backward compatibility."""
+        """返回一对多头部组件，此处用于向后兼容。"""
         return dict(box_head=self.cv2, cls_head=self.cv3, angle_head=self.cv4)
 
     @property
     def one2one(self):
-        """Returns the one-to-one head components."""
+        """返回一对一头部组件。"""
         return dict(box_head=self.one2one_cv2, cls_head=self.one2one_cv3, angle_head=self.one2one_cv4)
 
     def _inference(self, x: dict[str, torch.Tensor]) -> torch.Tensor:
-        """Decode predicted bounding boxes and class probabilities, concatenated with rotation angles."""
-        # For decode_bboxes convenience
+        """解码预测的边界框和类别概率，拼接旋转角度。"""
+        # 为 decode_bboxes 方便使用
         self.angle = x["angle"]
         preds = super()._inference(x)
         return torch.cat([preds, x["angle"]], dim=1)
@@ -473,10 +473,10 @@ class OBB(Detect):
     def forward_head(
         self, x: list[torch.Tensor], box_head: torch.nn.Module, cls_head: torch.nn.Module, angle_head: torch.nn.Module
     ) -> dict[str, torch.Tensor]:
-        """Concatenates and returns predicted bounding boxes, class probabilities, and angles."""
+        """拼接并返回预测的边界框、类别概率和角度。"""
         preds = super().forward_head(x, box_head, cls_head)
         if angle_head is not None:
-            bs = x[0].shape[0]  # batch size
+            bs = x[0].shape[0]  # 批次大小
             angle = torch.cat(
                 [angle_head[i](x[i]).view(bs, self.ne, -1) for i in range(self.nl)], 2
             )  # OBB theta logits
@@ -485,19 +485,19 @@ class OBB(Detect):
         return preds
 
     def decode_bboxes(self, bboxes: torch.Tensor, anchors: torch.Tensor) -> torch.Tensor:
-        """Decode rotated bounding boxes."""
+        """解码旋转边界框。"""
         return dist2rbox(bboxes, self.angle, anchors, dim=1)
 
     def postprocess(self, preds: torch.Tensor) -> torch.Tensor:
-        """Post-process YOLO model predictions.
+        """后处理 YOLO 模型预测。
 
         Args:
-            preds (torch.Tensor): Raw predictions with shape (batch_size, num_anchors, 4 + nc + ne) with last dimension
-                format [x, y, w, h, class_probs, angle].
+            preds (torch.Tensor): 原始预测，形状为 (batch_size, num_anchors, 4 + nc + ne)，最后一维
+                格式为 [x, y, w, h, 类别概率, 角度]。
 
         Returns:
-            (torch.Tensor): Processed predictions with shape (batch_size, min(max_det, num_anchors), 7) and last
-                dimension format [x, y, w, h, max_class_prob, class_index, angle].
+            (torch.Tensor): 处理后的预测，形状为 (batch_size, min(max_det, num_anchors), 7)，最后一维
+                格式为 [x, y, w, h, 最大类别概率, 类别索引, 角度]。
         """
         boxes, scores, angle = preds.split([4, self.nc, self.ne], dim=-1)
         scores, conf, idx = self.get_topk_index(scores, self.max_det)
@@ -506,25 +506,24 @@ class OBB(Detect):
         return torch.cat([boxes, scores, conf, angle], dim=-1)
 
     def fuse(self) -> None:
-        """Remove the one2many head for inference optimization."""
+        """移除一对多头部以优化推理。"""
         self.cv2 = self.cv3 = self.cv4 = None
 
 
 class OBB26(OBB):
-    """YOLO26 OBB detection head for detection with rotation models. This class extends the OBB head with modified angle
-    processing that outputs raw angle predictions without sigmoid transformation, compared to the original
-    OBB class.
+    """YOLO26 旋转目标检测头，用于带旋转的检测模型。该类扩展了 OBB 头，修改了角度处理方式，
+    输出原始角度预测（不经过 sigmoid 变换），与原始 OBB 类不同。
 
     Attributes:
-        ne (int): Number of extra parameters.
-        cv4 (nn.ModuleList): Convolution layers for angle prediction.
-        angle (torch.Tensor): Predicted rotation angles.
+        ne (int): 额外参数数。
+        cv4 (nn.ModuleList): 角度预测卷积层。
+        angle (torch.Tensor): 预测的旋转角度。
 
     Methods:
-        forward_head: Concatenate and return predicted bounding boxes, class probabilities, and raw angles.
+        forward_head: 拼接并返回预测的边界框、类别概率和原始角度。
 
     Examples:
-        Create an OBB26 detection head
+        创建一个 OBB26 检测头
         >>> obb26 = OBB26(nc=80, ne=1, ch=(256, 512, 1024))
         >>> x = [torch.randn(1, 256, 80, 80), torch.randn(1, 512, 40, 40), torch.randn(1, 1024, 20, 20)]
         >>> outputs = obb26(x)
@@ -533,51 +532,51 @@ class OBB26(OBB):
     def forward_head(
         self, x: list[torch.Tensor], box_head: torch.nn.Module, cls_head: torch.nn.Module, angle_head: torch.nn.Module
     ) -> dict[str, torch.Tensor]:
-        """Concatenates and returns predicted bounding boxes, class probabilities, and raw angles."""
+        """拼接并返回预测的边界框、类别概率和原始角度。"""
         preds = Detect.forward_head(self, x, box_head, cls_head)
         if angle_head is not None:
-            bs = x[0].shape[0]  # batch size
+            bs = x[0].shape[0]  # 批次大小
             angle = torch.cat(
                 [angle_head[i](x[i]).view(bs, self.ne, -1) for i in range(self.nl)], 2
-            )  # OBB theta logits (raw output without sigmoid transformation)
+            )  # OBB theta logits（原始输出，不经过 sigmoid 变换）
             preds["angle"] = angle
         return preds
 
 
 class Pose(Detect):
-    """YOLO Pose head for keypoints models.
+    """YOLO 关键点检测头，用于姿态估计模型。
 
-    This class extends the Detect head to include keypoint prediction capabilities for pose estimation tasks.
+    该类扩展了 Detect 头，增加了关键点预测能力，用于姿态估计任务。
 
     Attributes:
-        kpt_shape (tuple): Number of keypoints and dimensions (2 for x,y or 3 for x,y,visible).
-        nk (int): Total number of keypoint values.
-        cv4 (nn.ModuleList): Convolution layers for keypoint prediction.
+        kpt_shape (tuple): 关键点数和维度数（2 表示 x,y 或 3 表示 x,y,可见性）。
+        nk (int): 关键点总数值数。
+        cv4 (nn.ModuleList): 关键点预测卷积层。
 
     Methods:
-        forward: Perform forward pass through YOLO model and return predictions.
-        kpts_decode: Decode keypoints from predictions.
+        forward: 执行 YOLO 模型的前向传播并返回预测结果。
+        kpts_decode: 从预测中解码关键点。
 
     Examples:
-        Create a pose detection head
+        创建一个姿态检测头
         >>> pose = Pose(nc=80, kpt_shape=(17, 3), ch=(256, 512, 1024))
         >>> x = [torch.randn(1, 256, 80, 80), torch.randn(1, 512, 40, 40), torch.randn(1, 1024, 20, 20)]
         >>> outputs = pose(x)
     """
 
     def __init__(self, nc: int = 80, kpt_shape: tuple = (17, 3), reg_max=16, end2end=False, ch: tuple = ()):
-        """Initialize YOLO network with default parameters and Convolutional Layers.
+        """初始化 YOLO 网络，使用默认参数和卷积层。
 
         Args:
-            nc (int): Number of classes.
-            kpt_shape (tuple): Number of keypoints, number of dims (2 for x,y or 3 for x,y,visible).
-            reg_max (int): Maximum number of DFL channels.
-            end2end (bool): Whether to use end-to-end NMS-free detection.
-            ch (tuple): Tuple of channel sizes from backbone feature maps.
+            nc (int): 类别数。
+            kpt_shape (tuple): 关键点数和维度数（2 表示 x,y 或 3 表示 x,y,可见性）。
+            reg_max (int): DFL 最大通道数。
+            end2end (bool): 是否使用端到端无 NMS 检测。
+            ch (tuple): 骨干网络特征图的通道数元组。
         """
         super().__init__(nc, reg_max, end2end, ch)
-        self.kpt_shape = kpt_shape  # number of keypoints, number of dims (2 for x,y or 3 for x,y,visible)
-        self.nk = kpt_shape[0] * kpt_shape[1]  # number of keypoints total
+        self.kpt_shape = kpt_shape  # 关键点数和维度数（2 表示 x,y 或 3 表示 x,y,可见性）
+        self.nk = kpt_shape[0] * kpt_shape[1]  # 关键点总数值
 
         c4 = max(ch[0] // 4, self.nk)
         self.cv4 = nn.ModuleList(nn.Sequential(Conv(x, c4, 3), Conv(c4, c4, 3), nn.Conv2d(c4, self.nk, 1)) for x in ch)
@@ -586,39 +585,39 @@ class Pose(Detect):
 
     @property
     def one2many(self):
-        """Returns the one-to-many head components, here for backward compatibility."""
+        """返回一对多头部组件，此处用于向后兼容。"""
         return dict(box_head=self.cv2, cls_head=self.cv3, pose_head=self.cv4)
 
     @property
     def one2one(self):
-        """Returns the one-to-one head components."""
+        """返回一对一头部组件。"""
         return dict(box_head=self.one2one_cv2, cls_head=self.one2one_cv3, pose_head=self.one2one_cv4)
 
     def _inference(self, x: dict[str, torch.Tensor]) -> torch.Tensor:
-        """Decode predicted bounding boxes and class probabilities, concatenated with keypoints."""
+        """解码预测的边界框和类别概率，拼接关键点。"""
         preds = super()._inference(x)
         return torch.cat([preds, self.kpts_decode(x["kpts"])], dim=1)
 
     def forward_head(
         self, x: list[torch.Tensor], box_head: torch.nn.Module, cls_head: torch.nn.Module, pose_head: torch.nn.Module
     ) -> dict[str, torch.Tensor]:
-        """Concatenates and returns predicted bounding boxes, class probabilities, and keypoints."""
+        """拼接并返回预测的边界框、类别概率和关键点。"""
         preds = super().forward_head(x, box_head, cls_head)
         if pose_head is not None:
-            bs = x[0].shape[0]  # batch size
+            bs = x[0].shape[0]  # 批次大小
             preds["kpts"] = torch.cat([pose_head[i](x[i]).view(bs, self.nk, -1) for i in range(self.nl)], 2)
         return preds
 
     def postprocess(self, preds: torch.Tensor) -> torch.Tensor:
-        """Post-process YOLO model predictions.
+        """后处理 YOLO 模型预测。
 
         Args:
-            preds (torch.Tensor): Raw predictions with shape (batch_size, num_anchors, 4 + nc + nk) with last dimension
-                format [x1, y1, x2, y2, class_probs, keypoints].
+            preds (torch.Tensor): 原始预测，形状为 (batch_size, num_anchors, 4 + nc + nk)，最后一维
+                格式为 [x1, y1, x2, y2, 类别概率, 关键点]。
 
         Returns:
-            (torch.Tensor): Processed predictions with shape (batch_size, min(max_det, num_anchors), 6 + self.nk) and
-                last dimension format [x1, y1, x2, y2, max_class_prob, class_index, keypoints].
+            (torch.Tensor): 处理后的预测，形状为 (batch_size, min(max_det, num_anchors), 6 + self.nk)，
+                最后一维格式为 [x1, y1, x2, y2, 最大类别概率, 类别索引, 关键点]。
         """
         boxes, scores, kpts = preds.split([4, self.nc, self.nk], dim=-1)
         scores, conf, idx = self.get_topk_index(scores, self.max_det)
@@ -627,11 +626,11 @@ class Pose(Detect):
         return torch.cat([boxes, scores, conf, kpts], dim=-1)
 
     def fuse(self) -> None:
-        """Remove the one2many head for inference optimization."""
+        """移除一对多头部以优化推理。"""
         self.cv2 = self.cv3 = self.cv4 = None
 
     def kpts_decode(self, kpts: torch.Tensor) -> torch.Tensor:
-        """Decode keypoints from predictions."""
+        """从预测中解码关键点。"""
         ndim = self.kpt_shape[1]
         bs = kpts.shape[0]
         if self.export:
@@ -645,7 +644,7 @@ class Pose(Detect):
             if ndim == 3:
                 if NOT_MACOS14:
                     y[:, 2::ndim].sigmoid_()
-                else:  # Apple macOS14 MPS bug https://github.com/ultralytics/ultralytics/pull/21878
+                else:  # Apple macOS14 MPS 缺陷 https://github.com/ultralytics/ultralytics/pull/21878
                     y[:, 2::ndim] = y[:, 2::ndim].sigmoid()
             y[:, 0::ndim] = (y[:, 0::ndim] * 2.0 + (self.anchors[0] - 0.5)) * self.strides
             y[:, 1::ndim] = (y[:, 1::ndim] * 2.0 + (self.anchors[1] - 0.5)) * self.strides
@@ -653,35 +652,35 @@ class Pose(Detect):
 
 
 class Pose26(Pose):
-    """YOLO26 Pose head for keypoints models.
+    """YOLO26 关键点检测头，用于姿态估计模型。
 
-    This class extends the Pose head with normalizing flow for keypoint prediction in pose estimation tasks.
+    该类扩展了 Pose 头，使用归一化流进行关键点预测，用于姿态估计任务。
 
     Attributes:
-        kpt_shape (tuple): Number of keypoints and dimensions (2 for x,y or 3 for x,y,visible).
-        nk (int): Total number of keypoint values.
-        cv4 (nn.ModuleList): Convolution layers for keypoint prediction.
+        kpt_shape (tuple): 关键点数和维度数（2 表示 x,y 或 3 表示 x,y,可见性）。
+        nk (int): 关键点总数值数。
+        cv4 (nn.ModuleList): 关键点预测卷积层。
 
     Methods:
-        forward: Perform forward pass through YOLO model and return predictions.
-        kpts_decode: Decode keypoints from predictions.
+        forward: 执行 YOLO 模型的前向传播并返回预测结果。
+        kpts_decode: 从预测中解码关键点。
 
     Examples:
-        Create a pose detection head
+        创建一个姿态检测头
         >>> pose = Pose26(nc=80, kpt_shape=(17, 3), ch=(256, 512, 1024))
         >>> x = [torch.randn(1, 256, 80, 80), torch.randn(1, 512, 40, 40), torch.randn(1, 1024, 20, 20)]
         >>> outputs = pose(x)
     """
 
     def __init__(self, nc: int = 80, kpt_shape: tuple = (17, 3), reg_max=16, end2end=False, ch: tuple = ()):
-        """Initialize YOLO network with default parameters and Convolutional Layers.
+        """初始化 YOLO 网络，使用默认参数和卷积层。
 
         Args:
-            nc (int): Number of classes.
-            kpt_shape (tuple): Number of keypoints, number of dims (2 for x,y or 3 for x,y,visible).
-            reg_max (int): Maximum number of DFL channels.
-            end2end (bool): Whether to use end-to-end NMS-free detection.
-            ch (tuple): Tuple of channel sizes from backbone feature maps.
+            nc (int): 类别数。
+            kpt_shape (tuple): 关键点数和维度数（2 表示 x,y 或 3 表示 x,y,可见性）。
+            reg_max (int): DFL 最大通道数。
+            end2end (bool): 是否使用端到端无 NMS 检测。
+            ch (tuple): 骨干网络特征图的通道数元组。
         """
         super().__init__(nc, kpt_shape, reg_max, end2end, ch)
         self.flow_model = RealNVP()
@@ -690,7 +689,7 @@ class Pose26(Pose):
         self.cv4 = nn.ModuleList(nn.Sequential(Conv(x, c4, 3), Conv(c4, c4, 3)) for x in ch)
 
         self.cv4_kpts = nn.ModuleList(nn.Conv2d(c4, self.nk, 1) for _ in ch)
-        self.nk_sigma = kpt_shape[0] * 2  # sigma_x, sigma_y for each keypoint
+        self.nk_sigma = kpt_shape[0] * 2  # 每个关键点的 sigma_x, sigma_y
         self.cv4_sigma = nn.ModuleList(nn.Conv2d(c4, self.nk_sigma, 1) for _ in ch)
 
         if end2end:
@@ -700,7 +699,7 @@ class Pose26(Pose):
 
     @property
     def one2many(self):
-        """Returns the one-to-many head components, here for backward compatibility."""
+        """返回一对多头部组件，此处用于向后兼容。"""
         return dict(
             box_head=self.cv2,
             cls_head=self.cv3,
@@ -711,7 +710,7 @@ class Pose26(Pose):
 
     @property
     def one2one(self):
-        """Returns the one-to-one head components."""
+        """返回一对一头部组件。"""
         return dict(
             box_head=self.one2one_cv2,
             cls_head=self.one2one_cv3,
@@ -729,10 +728,10 @@ class Pose26(Pose):
         kpts_head: torch.nn.Module,
         kpts_sigma_head: torch.nn.Module,
     ) -> dict[str, torch.Tensor]:
-        """Concatenates and returns predicted bounding boxes, class probabilities, and keypoints."""
+        """拼接并返回预测的边界框、类别概率和关键点。"""
         preds = Detect.forward_head(self, x, box_head, cls_head)
         if pose_head is not None:
-            bs = x[0].shape[0]  # batch size
+            bs = x[0].shape[0]  # 批次大小
             features = [pose_head[i](x[i]) for i in range(self.nl)]
             preds["kpts"] = torch.cat([kpts_head[i](features[i]).view(bs, self.nk, -1) for i in range(self.nl)], 2)
             if self.training:
@@ -742,17 +741,17 @@ class Pose26(Pose):
         return preds
 
     def fuse(self) -> None:
-        """Remove the one2many head for inference optimization."""
+        """移除一对多头部以优化推理。"""
         super().fuse()
         self.cv4_kpts = self.cv4_sigma = self.flow_model = self.one2one_cv4_sigma = None
 
     def kpts_decode(self, kpts: torch.Tensor) -> torch.Tensor:
-        """Decode keypoints from predictions."""
+        """从预测中解码关键点。"""
         ndim = self.kpt_shape[1]
         bs = kpts.shape[0]
         if self.export:
             y = kpts.view(bs, *self.kpt_shape, -1)
-            # NCNN fix
+            # NCNN 修复
             a = (y[:, :, :2] + self.anchors) * self.strides
             if ndim == 3:
                 a = torch.cat((a, y[:, :, 2:3].sigmoid()), 2)
@@ -762,7 +761,7 @@ class Pose26(Pose):
             if ndim == 3:
                 if NOT_MACOS14:
                     y[:, 2::ndim].sigmoid_()
-                else:  # Apple macOS14 MPS bug https://github.com/ultralytics/ultralytics/pull/21878
+                else:  # Apple macOS14 MPS 缺陷 https://github.com/ultralytics/ultralytics/pull/21878
                     y[:, 2::ndim] = y[:, 2::ndim].sigmoid()
             y[:, 0::ndim] = (y[:, 0::ndim] + self.anchors[0]) * self.strides
             y[:, 1::ndim] = (y[:, 1::ndim] + self.anchors[1]) * self.strides
@@ -770,74 +769,73 @@ class Pose26(Pose):
 
 
 class Classify(nn.Module):
-    """YOLO classification head, i.e. x(b,c1,20,20) to x(b,c2).
+    """YOLO 分类头，即 x(b,c1,20,20) -> x(b,c2)。
 
-    This class implements a classification head that transforms feature maps into class predictions.
+    该类实现了将特征图转换为类别预测的分类头。
 
     Attributes:
-        export (bool): Export mode flag.
-        conv (Conv): Convolutional layer for feature transformation.
-        pool (nn.AdaptiveAvgPool2d): Global average pooling layer.
-        drop (nn.Dropout): Dropout layer for regularization.
-        linear (nn.Linear): Linear layer for final classification.
+        export (bool): 导出模式标志。
+        conv (Conv): 用于特征变换的卷积层。
+        pool (nn.AdaptiveAvgPool2d): 全局平均池化层。
+        drop (nn.Dropout): 正则化用的 Dropout 层。
+        linear (nn.Linear): 最终分类的线性层。
 
     Methods:
-        forward: Perform forward pass on input feature maps.
+        forward: 对输入特征图执行前向传播。
 
     Examples:
-        Create a classification head
+        创建一个分类头
         >>> classify = Classify(c1=1024, c2=1000)
         >>> x = torch.randn(1, 1024, 20, 20)
         >>> output = classify(x)
     """
 
-    export = False  # export mode
+    export = False  # 导出模式
 
     def __init__(self, c1: int, c2: int, k: int = 1, s: int = 1, p: int | None = None, g: int = 1):
-        """Initialize YOLO classification head to transform input tensor from (b,c1,20,20) to (b,c2) shape.
+        """初始化 YOLO 分类头，将输入张量从 (b,c1,20,20) 变换为 (b,c2) 形状。
 
         Args:
-            c1 (int): Number of input channels.
-            c2 (int): Number of output classes.
-            k (int): Kernel size.
-            s (int): Stride.
-            p (int, optional): Padding.
-            g (int): Groups.
+            c1 (int): 输入通道数。
+            c2 (int): 输出类别数。
+            k (int): 卷积核大小。
+            s (int): 步幅。
+            p (int, optional): 填充。
+            g (int): 分组数。
         """
         super().__init__()
-        c_ = 1280  # efficientnet_b0 size
+        c_ = 1280  # efficientnet_b0 大小
         self.conv = Conv(c1, c_, k, s, p, g)
-        self.pool = nn.AdaptiveAvgPool2d(1)  # to x(b,c_,1,1)
+        self.pool = nn.AdaptiveAvgPool2d(1)  # 变为 x(b,c_,1,1)
         self.drop = nn.Dropout(p=0.0, inplace=True)
-        self.linear = nn.Linear(c_, c2)  # to x(b,c2)
+        self.linear = nn.Linear(c_, c2)  # 变为 x(b,c2)
 
     def forward(self, x: list[torch.Tensor] | torch.Tensor) -> torch.Tensor | tuple:
-        """Perform forward pass on input feature maps."""
+        """对输入特征图执行前向传播。"""
         if isinstance(x, list):
             x = torch.cat(x, 1)
         x = self.linear(self.drop(self.pool(self.conv(x)).flatten(1)))
         if self.training:
             return x
-        y = x.softmax(1)  # get final output
+        y = x.softmax(1)  # 获取最终输出
         return y if self.export else (y, x)
 
 
 class WorldDetect(Detect):
-    """Head for integrating YOLO detection models with semantic understanding from text embeddings.
+    """用于将 YOLO 检测模型与文本嵌入语义理解相结合的检测头。
 
-    This class extends the standard Detect head to incorporate text embeddings for enhanced semantic understanding in
-    object detection tasks.
+    该类扩展了标准 Detect 头，整合文本嵌入以增强目标检测任务中的语义理解。
 
     Attributes:
-        cv3 (nn.ModuleList): Convolution layers for embedding features.
-        cv4 (nn.ModuleList): Contrastive head layers for text-vision alignment.
+        cv3 (nn.ModuleList): 嵌入特征卷积层。
+        cv4 (nn.ModuleList): 文本-视觉对齐的对比头层。
 
     Methods:
-        forward: Concatenate and return predicted bounding boxes and class probabilities.
-        bias_init: Initialize detection head biases.
+        forward: 拼接并返回预测的边界框和类别概率。
+        bias_init: 初始化检测头偏置。
 
     Examples:
-        Create a WorldDetect head
+        创建一个 WorldDetect 头
         >>> world_detect = WorldDetect(nc=80, embed=512, with_bn=False, ch=(256, 512, 1024))
         >>> x = [torch.randn(1, 256, 80, 80), torch.randn(1, 512, 40, 40), torch.randn(1, 1024, 20, 20)]
         >>> text = torch.randn(1, 80, 512)
@@ -853,15 +851,15 @@ class WorldDetect(Detect):
         end2end: bool = False,
         ch: tuple = (),
     ):
-        """Initialize YOLO detection layer with nc classes and layer channels ch.
+        """初始化 YOLO 检测层，指定类别数 nc 和层通道数 ch。
 
         Args:
-            nc (int): Number of classes.
-            embed (int): Embedding dimension.
-            with_bn (bool): Whether to use batch normalization in contrastive head.
-            reg_max (int): Maximum number of DFL channels.
-            end2end (bool): Whether to use end-to-end NMS-free detection.
-            ch (tuple): Tuple of channel sizes from backbone feature maps.
+            nc (int): 类别数。
+            embed (int): 嵌入维度。
+            with_bn (bool): 是否在对比头中使用批归一化。
+            reg_max (int): DFL 最大通道数。
+            end2end (bool): 是否使用端到端无 NMS 检测。
+            ch (tuple): 骨干网络特征图的通道数元组。
         """
         super().__init__(nc, reg_max=reg_max, end2end=end2end, ch=ch)
         c3 = max(ch[0], min(self.nc, 100))
@@ -869,11 +867,11 @@ class WorldDetect(Detect):
         self.cv4 = nn.ModuleList(BNContrastiveHead(embed) if with_bn else ContrastiveHead() for _ in ch)
 
     def forward(self, x: list[torch.Tensor], text: torch.Tensor) -> dict[str, torch.Tensor] | tuple:
-        """Concatenate and return predicted bounding boxes and class probabilities."""
-        feats = [xi.clone() for xi in x]  # save original features for anchor generation
+        """拼接并返回预测的边界框和类别概率。"""
+        feats = [xi.clone() for xi in x]  # 保存原始特征用于锚点生成
         for i in range(self.nl):
             x[i] = torch.cat((self.cv2[i](x[i]), self.cv4[i](self.cv3[i](x[i]), text)), 1)
-        self.no = self.nc + self.reg_max * 4  # self.nc could be changed when inference with different texts
+        self.no = self.nc + self.reg_max * 4  # 使用不同文本推理时 nc 可能会变化
         bs = x[0].shape[0]
         x_cat = torch.cat([xi.view(bs, self.no, -1) for xi in x], 2)
         boxes, scores = x_cat.split((self.reg_max * 4, self.nc), 1)
@@ -884,33 +882,32 @@ class WorldDetect(Detect):
         return y if self.export else (y, preds)
 
     def bias_init(self):
-        """Initialize Detect() biases, WARNING: requires stride availability."""
-        m = self  # self.model[-1]  # Detect() module
+        """初始化 Detect() 偏置，警告：需要步幅可用。"""
+        m = self  # self.model[-1]  # Detect() 模块
         # cf = torch.bincount(torch.tensor(np.concatenate(dataset.labels, 0)[:, 0]).long(), minlength=nc) + 1
-        # ncf = math.log(0.6 / (m.nc - 0.999999)) if cf is None else torch.log(cf / cf.sum())  # nominal class frequency
-        for a, b, s in zip(m.cv2, m.cv3, m.stride):  # from
-            a[-1].bias.data[:] = 1.0  # box
-            # b[-1].bias.data[:] = math.log(5 / m.nc / (640 / s) ** 2)  # cls (.01 objects, 80 classes, 640 img)
+        # ncf = math.log(0.6 / (m.nc - 0.999999)) if cf is None else torch.log(cf / cf.sum())  # 名义类别频率
+        for a, b, s in zip(m.cv2, m.cv3, m.stride):  # 从
+            a[-1].bias.data[:] = 1.0  # 边界框
+            # b[-1].bias.data[:] = math.log(5 / m.nc / (640 / s) ** 2)  # 分类 (.01 目标, 80 类, 640 图像)
 
 
 class LRPCHead(nn.Module):
-    """Lightweight Region Proposal and Classification Head for efficient object detection.
+    """轻量级区域建议与分类头，用于高效目标检测。
 
-    This head combines region proposal filtering with classification to enable efficient detection with dynamic
-    vocabulary support.
+    该头结合区域建议过滤和分类，支持动态词汇表的高效检测。
 
     Attributes:
-        vocab (nn.Module): Vocabulary/classification layer.
-        pf (nn.Module): Proposal filter module.
-        loc (nn.Module): Localization module.
-        enabled (bool): Whether the head is enabled.
+        vocab (nn.Module): 词汇/分类层。
+        pf (nn.Module): 建议过滤模块。
+        loc (nn.Module): 定位模块。
+        enabled (bool): 头是否启用。
 
     Methods:
-        conv2linear: Convert a 1x1 convolutional layer to a linear layer.
-        forward: Process classification and localization features to generate detection proposals.
+        conv2linear: 将 1x1 卷积层转换为线性层。
+        forward: 处理分类和定位特征以生成检测建议。
 
     Examples:
-        Create an LRPC head
+        创建一个 LRPC 头
         >>> vocab = nn.Conv2d(256, 80, 1)
         >>> pf = nn.Conv2d(256, 1, 1)
         >>> loc = nn.Conv2d(256, 4, 1)
@@ -918,13 +915,13 @@ class LRPCHead(nn.Module):
     """
 
     def __init__(self, vocab: nn.Module, pf: nn.Module, loc: nn.Module, enabled: bool = True):
-        """Initialize LRPCHead with vocabulary, proposal filter, and localization components.
+        """初始化 LRPCHead，包含词汇、建议过滤和定位组件。
 
         Args:
-            vocab (nn.Module): Vocabulary/classification module.
-            pf (nn.Module): Proposal filter module.
-            loc (nn.Module): Localization module.
-            enabled (bool): Whether to enable the head functionality.
+            vocab (nn.Module): 词汇/分类模块。
+            pf (nn.Module): 建议过滤模块。
+            loc (nn.Module): 定位模块。
+            enabled (bool): 是否启用头部功能。
         """
         super().__init__()
         self.vocab = self.conv2linear(vocab) if enabled else vocab
@@ -934,7 +931,7 @@ class LRPCHead(nn.Module):
 
     @staticmethod
     def conv2linear(conv: nn.Conv2d) -> nn.Linear:
-        """Convert a 1x1 convolutional layer to a linear layer."""
+        """将 1x1 卷积层转换为线性层。"""
         assert isinstance(conv, nn.Conv2d) and conv.kernel_size == (1, 1)
         linear = nn.Linear(conv.in_channels, conv.out_channels)
         linear.weight.data = conv.weight.view(conv.out_channels, -1).data
@@ -942,7 +939,7 @@ class LRPCHead(nn.Module):
         return linear
 
     def forward(self, cls_feat: torch.Tensor, loc_feat: torch.Tensor, conf: float) -> tuple[tuple, torch.Tensor]:
-        """Process classification and localization features to generate detection proposals."""
+        """处理分类和定位特征以生成检测建议。"""
         if self.enabled:
             pf_score = self.pf(cls_feat)[0, 0].flatten(0)
             mask = pf_score.sigmoid() > conf
@@ -960,29 +957,29 @@ class LRPCHead(nn.Module):
 
 
 class YOLOEDetect(Detect):
-    """Head for integrating YOLO detection models with semantic understanding from text embeddings.
+    """用于将 YOLO 检测模型与文本嵌入语义理解相结合的检测头。
 
-    This class extends the standard Detect head to support text-guided detection with enhanced semantic understanding
-    through text embeddings and visual prompt embeddings.
+    该类扩展了标准 Detect 头，支持通过文本嵌入和视觉提示嵌入进行文本引导检测，
+    增强语义理解。
 
     Attributes:
-        is_fused (bool): Whether the model is fused for inference.
-        cv3 (nn.ModuleList): Convolution layers for embedding features.
-        cv4 (nn.ModuleList): Contrastive head layers for text-vision alignment.
-        reprta (Residual): Residual block for text prompt embeddings.
-        savpe (SAVPE): Spatial-aware visual prompt embeddings module.
-        embed (int): Embedding dimension.
+        is_fused (bool): 模型是否已融合用于推理。
+        cv3 (nn.ModuleList): 嵌入特征卷积层。
+        cv4 (nn.ModuleList): 文本-视觉对齐的对比头层。
+        reprta (Residual): 文本提示嵌入的残差块。
+        savpe (SAVPE): 空间感知视觉提示嵌入模块。
+        embed (int): 嵌入维度。
 
     Methods:
-        fuse: Fuse text features with model weights for efficient inference.
-        get_tpe: Get text prompt embeddings with normalization.
-        get_vpe: Get visual prompt embeddings with spatial awareness.
-        forward_lrpc: Process features with fused text embeddings for prompt-free model.
-        forward: Process features with class prompt embeddings to generate detections.
-        bias_init: Initialize biases for detection heads.
+        fuse: 将文本特征与模型权重融合以实现高效推理。
+        get_tpe: 获取带归一化的文本提示嵌入。
+        get_vpe: 获取带空间感知的视觉提示嵌入。
+        forward_lrpc: 使用融合的文本嵌入处理特征，用于无提示模型。
+        forward: 使用类别提示嵌入处理特征以生成检测结果。
+        bias_init: 初始化检测头的偏置。
 
     Examples:
-        Create a YOLOEDetect head
+        创建一个 YOLOEDetect 头
         >>> yoloe_detect = YOLOEDetect(nc=80, embed=512, with_bn=True, ch=(256, 512, 1024))
         >>> x = [torch.randn(1, 256, 80, 80), torch.randn(1, 512, 40, 40), torch.randn(1, 1024, 20, 20)]
         >>> cls_pe = torch.randn(1, 80, 512)
@@ -994,15 +991,15 @@ class YOLOEDetect(Detect):
     def __init__(
         self, nc: int = 80, embed: int = 512, with_bn: bool = False, reg_max=16, end2end=False, ch: tuple = ()
     ):
-        """Initialize YOLO detection layer with nc classes and layer channels ch.
+        """初始化 YOLO 检测层，指定类别数 nc 和层通道数 ch。
 
         Args:
-            nc (int): Number of classes.
-            embed (int): Embedding dimension.
-            with_bn (bool): Whether to use batch normalization in contrastive head.
-            reg_max (int): Maximum number of DFL channels.
-            end2end (bool): Whether to use end-to-end NMS-free detection.
-            ch (tuple): Tuple of channel sizes from backbone feature maps.
+            nc (int): 类别数。
+            embed (int): 嵌入维度。
+            with_bn (bool): 是否在对比头中使用批归一化。
+            reg_max (int): DFL 最大通道数。
+            end2end (bool): 是否使用端到端无 NMS 检测。
+            ch (tuple): 骨干网络特征图的通道数元组。
         """
         super().__init__(nc, reg_max, end2end, ch)
         c3 = max(ch[0], min(self.nc, 100))
@@ -1022,7 +1019,7 @@ class YOLOEDetect(Detect):
         )
         self.cv4 = nn.ModuleList(BNContrastiveHead(embed) if with_bn else ContrastiveHead() for _ in ch)
         if end2end:
-            self.one2one_cv3 = copy.deepcopy(self.cv3)  # overwrite with new cv3
+            self.one2one_cv3 = copy.deepcopy(self.cv3)  # 用新的 cv3 覆盖
             self.one2one_cv4 = copy.deepcopy(self.cv4)
 
         self.reprta = Residual(SwiGLUFFN(embed, embed))
@@ -1031,8 +1028,8 @@ class YOLOEDetect(Detect):
 
     @smart_inference_mode()
     def fuse(self, txt_feats: torch.Tensor = None):
-        """Fuse text features with model weights for efficient inference."""
-        if txt_feats is None:  # means eliminate one2many branch
+        """将文本特征与模型权重融合以实现高效推理。"""
+        if txt_feats is None:  # 表示移除一对多分支
             self.cv2 = self.cv3 = self.cv4 = None
             return
         if self.is_fused:
@@ -1049,7 +1046,7 @@ class YOLOEDetect(Detect):
         self.is_fused = True
 
     def _fuse_tp(self, txt_feats: torch.Tensor, cls_head: torch.nn.Module, bn_head: torch.nn.Module) -> None:
-        """Fuse text prompt embeddings with model weights for efficient inference."""
+        """将文本提示嵌入与模型权重融合以实现高效推理。"""
         for cls_h, bn_h in zip(cls_head, bn_head):
             assert isinstance(cls_h, nn.Sequential)
             assert isinstance(bn_h, BNContrastiveHead)
@@ -1086,12 +1083,12 @@ class YOLOEDetect(Detect):
             bn_h.fuse()
 
     def get_tpe(self, tpe: torch.Tensor | None) -> torch.Tensor | None:
-        """Get text prompt embeddings with normalization."""
+        """获取带归一化的文本提示嵌入。"""
         return None if tpe is None else F.normalize(self.reprta(tpe), dim=-1, p=2)
 
     def get_vpe(self, x: list[torch.Tensor], vpe: torch.Tensor) -> torch.Tensor:
-        """Get visual prompt embeddings with spatial awareness."""
-        if vpe.shape[1] == 0:  # no visual prompt embeddings
+        """获取带空间感知的视觉提示嵌入。"""
+        if vpe.shape[1] == 0:  # 无视觉提示嵌入
             return torch.zeros(x[0].shape[0], 0, self.embed, device=x[0].device)
         if vpe.ndim == 4:  # (B, N, H, W)
             vpe = self.savpe(x, vpe)
@@ -1099,13 +1096,13 @@ class YOLOEDetect(Detect):
         return vpe
 
     def forward(self, x: list[torch.Tensor]) -> torch.Tensor | tuple:
-        """Process features with class prompt embeddings to generate detections."""
-        if hasattr(self, "lrpc"):  # for prompt-free inference
+        """使用类别提示嵌入处理特征以生成检测结果。"""
+        if hasattr(self, "lrpc"):  # 用于无提示推理
             return self.forward_lrpc(x[:3])
         return super().forward(x)
 
     def forward_lrpc(self, x: list[torch.Tensor]) -> torch.Tensor | tuple:
-        """Process features with fused text embeddings to generate detections for prompt-free model."""
+        """使用融合的文本嵌入处理特征，为无提示模型生成检测结果。"""
         boxes, scores, index = [], [], []
         bs = x[0].shape[0]
         cv2 = self.cv2 if not self.end2end else self.one2one_cv2
@@ -1129,7 +1126,7 @@ class YOLOEDetect(Detect):
         return y if self.export else (y, preds)
 
     def _get_decode_boxes(self, x):
-        """Decode predicted bounding boxes for inference."""
+        """解码预测的边界框用于推理。"""
         dbox = super()._get_decode_boxes(x)
         if hasattr(self, "lrpc"):
             dbox = dbox if self.export and not self.dynamic else dbox[..., x["index"]]
@@ -1137,62 +1134,61 @@ class YOLOEDetect(Detect):
 
     @property
     def one2many(self):
-        """Returns the one-to-many head components, here for v3/v5/v8/v9/v11 backward compatibility."""
+        """返回一对多头部组件，此处用于 v3/v5/v8/v9/v11 向后兼容。"""
         return dict(box_head=self.cv2, cls_head=self.cv3, contrastive_head=self.cv4)
 
     @property
     def one2one(self):
-        """Returns the one-to-one head components."""
+        """返回一对一头部组件。"""
         return dict(box_head=self.one2one_cv2, cls_head=self.one2one_cv3, contrastive_head=self.one2one_cv4)
 
     def forward_head(self, x, box_head, cls_head, contrastive_head):
-        """Concatenates and returns predicted bounding boxes, class probabilities, and contrastive scores."""
+        """拼接并返回预测的边界框、类别概率和对比分数。"""
         assert len(x) == 4, f"Expected 4 features including 3 feature maps and 1 text embeddings, but got {len(x)}."
-        if box_head is None or cls_head is None:  # for fused inference
+        if box_head is None or cls_head is None:  # 融合推理时
             return dict()
-        bs = x[0].shape[0]  # batch size
+        bs = x[0].shape[0]  # 批次大小
         boxes = torch.cat([box_head[i](x[i]).view(bs, 4 * self.reg_max, -1) for i in range(self.nl)], dim=-1)
         self.nc = x[-1].shape[1]
         scores = torch.cat(
             [contrastive_head[i](cls_head[i](x[i]), x[-1]).reshape(bs, self.nc, -1) for i in range(self.nl)], dim=-1
         )
-        self.no = self.nc + self.reg_max * 4  # self.nc could be changed when inference with different texts
+        self.no = self.nc + self.reg_max * 4  # 使用不同文本推理时 nc 可能会变化
         return dict(boxes=boxes, scores=scores, feats=x[:3])
 
     def bias_init(self):
-        """Initialize Detect() biases, WARNING: requires stride availability."""
+        """初始化 Detect() 偏置，警告：需要步幅可用。"""
         for i, (a, b, c) in enumerate(
             zip(self.one2many["box_head"], self.one2many["cls_head"], self.one2many["contrastive_head"])
         ):
-            a[-1].bias.data[:] = 2.0  # box
+            a[-1].bias.data[:] = 2.0  # 边界框
             b[-1].bias.data[:] = 0.0
             c.bias.data[:] = math.log(5 / self.nc / (640 / self.stride[i]) ** 2)
         if self.end2end:
             for i, (a, b, c) in enumerate(
                 zip(self.one2one["box_head"], self.one2one["cls_head"], self.one2one["contrastive_head"])
             ):
-                a[-1].bias.data[:] = 2.0  # box
+                a[-1].bias.data[:] = 2.0  # 边界框
                 b[-1].bias.data[:] = 0.0
                 c.bias.data[:] = math.log(5 / self.nc / (640 / self.stride[i]) ** 2)
 
 
 class YOLOESegment(YOLOEDetect):
-    """YOLO segmentation head with text embedding capabilities.
+    """带文本嵌入能力的 YOLO 分割头。
 
-    This class extends YOLOEDetect to include mask prediction capabilities for instance segmentation tasks with
-    text-guided semantic understanding.
+    该类扩展了 YOLOEDetect，增加了掩码预测能力，用于带文本引导语义理解的实例分割任务。
 
     Attributes:
-        nm (int): Number of masks.
-        npr (int): Number of protos.
-        proto (Proto): Prototype generation module.
-        cv5 (nn.ModuleList): Convolution layers for mask coefficients.
+        nm (int): 掩码数。
+        npr (int): 原型数。
+        proto (Proto): 原型生成模块。
+        cv5 (nn.ModuleList): 掩码系数卷积层。
 
     Methods:
-        forward: Return model outputs and mask coefficients.
+        forward: 返回模型输出和掩码系数。
 
     Examples:
-        Create a YOLOESegment head
+        创建一个 YOLOESegment 头
         >>> yoloe_segment = YOLOESegment(nc=80, nm=32, npr=256, embed=512, with_bn=True, ch=(256, 512, 1024))
         >>> x = [torch.randn(1, 256, 80, 80), torch.randn(1, 512, 40, 40), torch.randn(1, 1024, 20, 20)]
         >>> text = torch.randn(1, 80, 512)
@@ -1210,17 +1206,17 @@ class YOLOESegment(YOLOEDetect):
         end2end=False,
         ch: tuple = (),
     ):
-        """Initialize YOLOESegment with class count, mask parameters, and embedding dimensions.
+        """初始化 YOLOESegment，指定类别数、掩码参数和嵌入维度。
 
         Args:
-            nc (int): Number of classes.
-            nm (int): Number of masks.
-            npr (int): Number of protos.
-            embed (int): Embedding dimension.
-            with_bn (bool): Whether to use batch normalization in contrastive head.
-            reg_max (int): Maximum number of DFL channels.
-            end2end (bool): Whether to use end-to-end NMS-free detection.
-            ch (tuple): Tuple of channel sizes from backbone feature maps.
+            nc (int): 类别数。
+            nm (int): 掩码数。
+            npr (int): 原型数。
+            embed (int): 嵌入维度。
+            with_bn (bool): 是否在对比头中使用批归一化。
+            reg_max (int): DFL 最大通道数。
+            end2end (bool): 是否使用端到端无 NMS 检测。
+            ch (tuple): 骨干网络特征图的通道数元组。
         """
         super().__init__(nc, embed, with_bn, reg_max, end2end, ch)
         self.nm = nm
@@ -1234,12 +1230,12 @@ class YOLOESegment(YOLOEDetect):
 
     @property
     def one2many(self):
-        """Returns the one-to-many head components, here for v3/v5/v8/v9/v11 backward compatibility."""
+        """返回一对多头部组件，此处用于 v3/v5/v8/v9/v11 向后兼容。"""
         return dict(box_head=self.cv2, cls_head=self.cv3, mask_head=self.cv5, contrastive_head=self.cv4)
 
     @property
     def one2one(self):
-        """Returns the one-to-one head components."""
+        """返回一对一头部组件。"""
         return dict(
             box_head=self.one2one_cv2,
             cls_head=self.one2one_cv3,
@@ -1248,7 +1244,7 @@ class YOLOESegment(YOLOEDetect):
         )
 
     def forward_lrpc(self, x: list[torch.Tensor]) -> torch.Tensor | tuple:
-        """Process features with fused text embeddings to generate detections for prompt-free model."""
+        """使用融合的文本嵌入处理特征，为无提示模型生成检测结果。"""
         boxes, scores, index = [], [], []
         bs = x[0].shape[0]
         cv2 = self.cv2 if not self.end2end else self.one2one_cv2
@@ -1281,11 +1277,11 @@ class YOLOESegment(YOLOEDetect):
         return y if self.export else (y, preds)
 
     def forward(self, x: list[torch.Tensor]) -> tuple | list[torch.Tensor] | dict[str, torch.Tensor]:
-        """Return model outputs and mask coefficients if training, otherwise return outputs and mask coefficients."""
+        """训练时返回模型输出和掩码系数，否则返回输出和掩码系数。"""
         outputs = super().forward(x)
         preds = outputs[1] if isinstance(outputs, tuple) else outputs
-        proto = self.proto(x[0])  # mask protos
-        if isinstance(preds, dict):  # training and validating during training
+        proto = self.proto(x[0])  # 掩码原型
+        if isinstance(preds, dict):  # 训练及训练期间验证时
             if self.end2end:
                 preds["one2many"]["proto"] = proto
                 preds["one2one"]["proto"] = proto.detach()
@@ -1296,7 +1292,7 @@ class YOLOESegment(YOLOEDetect):
         return (outputs, proto) if self.export else ((outputs[0], proto), preds)
 
     def _inference(self, x: dict[str, torch.Tensor]) -> torch.Tensor:
-        """Decode predicted bounding boxes and class probabilities, concatenated with mask coefficients."""
+        """解码预测的边界框和类别概率，拼接掩码系数。"""
         preds = super()._inference(x)
         return torch.cat([preds, x["mask_coefficient"]], dim=1)
 
@@ -1308,23 +1304,23 @@ class YOLOESegment(YOLOEDetect):
         mask_head: torch.nn.Module,
         contrastive_head: torch.nn.Module,
     ) -> dict[str, torch.Tensor]:
-        """Concatenates and returns predicted bounding boxes, class probabilities, and mask coefficients."""
+        """拼接并返回预测的边界框、类别概率和掩码系数。"""
         preds = super().forward_head(x, box_head, cls_head, contrastive_head)
         if mask_head is not None:
-            bs = x[0].shape[0]  # batch size
+            bs = x[0].shape[0]  # 批次大小
             preds["mask_coefficient"] = torch.cat([mask_head[i](x[i]).view(bs, self.nm, -1) for i in range(self.nl)], 2)
         return preds
 
     def postprocess(self, preds: torch.Tensor) -> torch.Tensor:
-        """Post-process YOLO model predictions.
+        """后处理 YOLO 模型预测。
 
         Args:
-            preds (torch.Tensor): Raw predictions with shape (batch_size, num_anchors, 4 + nc + nm) with last dimension
-                format [x1, y1, x2, y2, class_probs, mask_coefficient].
+            preds (torch.Tensor): 原始预测，形状为 (batch_size, num_anchors, 4 + nc + nm)，最后一维
+                格式为 [x1, y1, x2, y2, 类别概率, 掩码系数]。
 
         Returns:
-            (torch.Tensor): Processed predictions with shape (batch_size, min(max_det, num_anchors), 6 + nm) and last
-                dimension format [x1, y1, x2, y2, max_class_prob, class_index, mask_coefficient].
+            (torch.Tensor): 处理后的预测，形状为 (batch_size, min(max_det, num_anchors), 6 + nm)，最后一维
+                格式为 [x1, y1, x2, y2, 最大类别概率, 类别索引, 掩码系数]。
         """
         boxes, scores, mask_coefficient = preds.split([4, self.nc, self.nm], dim=-1)
         scores, conf, idx = self.get_topk_index(scores, self.max_det)
@@ -1333,9 +1329,9 @@ class YOLOESegment(YOLOEDetect):
         return torch.cat([boxes, scores, conf, mask_coefficient], dim=-1)
 
     def fuse(self, txt_feats: torch.Tensor = None):
-        """Fuse text features with model weights for efficient inference."""
+        """将文本特征与模型权重融合以实现高效推理。"""
         super().fuse(txt_feats)
-        if txt_feats is None:  # means eliminate one2many branch
+        if txt_feats is None:  # 表示移除一对多分支
             self.cv5 = None
             if hasattr(self.proto, "fuse"):
                 self.proto.fuse()
@@ -1343,27 +1339,27 @@ class YOLOESegment(YOLOEDetect):
 
 
 class YOLOESegment26(YOLOESegment):
-    """YOLOE-style segmentation head module using Proto26 for mask generation.
+    """使用 Proto26 生成掩码的 YOLOE 风格分割头模块。
 
-    This class extends the YOLOESegment functionality to include segmentation capabilities by integrating a Proto26
-    generation module and convolutional layers to predict mask coefficients.
+    该类扩展了 YOLOESegment 的功能，通过集成 Proto26 生成模块和卷积层来预测掩码系数，
+    实现分割能力。
 
     Args:
-        nc (int): Number of classes. Defaults to 80.
-        nm (int): Number of masks. Defaults to 32.
-        npr (int): Number of prototype channels. Defaults to 256.
-        embed (int): Embedding dimensionality. Defaults to 512.
-        with_bn (bool): Whether to use Batch Normalization. Defaults to False.
-        reg_max (int): Maximum number of DFL channels. Defaults to 16.
-        end2end (bool): Whether to use end-to-end detection mode. Defaults to False.
-        ch (tuple[int, ...]): Input channels for each scale.
+        nc (int): 类别数。默认为 80。
+        nm (int): 掩码数。默认为 32。
+        npr (int): 原型通道数。默认为 256。
+        embed (int): 嵌入维度。默认为 512。
+        with_bn (bool): 是否使用批归一化。默认为 False。
+        reg_max (int): DFL 最大通道数。默认为 16。
+        end2end (bool): 是否使用端到端检测模式。默认为 False。
+        ch (tuple[int, ...]): 每个尺度的输入通道数。
 
     Attributes:
-        nm (int): Number of segmentation masks.
-        npr (int): Number of prototype channels.
-        proto (Proto26): Prototype generation module for segmentation.
-        cv5 (nn.ModuleList): Convolutional layers for generating mask coefficients from features.
-        one2one_cv5 (nn.ModuleList, optional): Deep copy of cv5 for end-to-end detection branches.
+        nm (int): 分割掩码数。
+        npr (int): 原型通道数。
+        proto (Proto26): 分割用原型生成模块。
+        cv5 (nn.ModuleList): 从特征生成掩码系数的卷积层。
+        one2one_cv5 (nn.ModuleList, optional): cv5 的深拷贝，用于端到端检测分支。
     """
 
     def __init__(
@@ -1377,11 +1373,11 @@ class YOLOESegment26(YOLOESegment):
         end2end=False,
         ch: tuple = (),
     ):
-        """Initialize YOLOESegment26 with class count, mask parameters, and embedding dimensions."""
+        """初始化 YOLOESegment26，指定类别数、掩码参数和嵌入维度。"""
         YOLOEDetect.__init__(self, nc, embed, with_bn, reg_max, end2end, ch)
         self.nm = nm
         self.npr = npr
-        self.proto = Proto26(ch, self.npr, self.nm, nc)  # protos
+        self.proto = Proto26(ch, self.npr, self.nm, nc)  # 原型
 
         c5 = max(ch[0] // 4, self.nm)
         self.cv5 = nn.ModuleList(nn.Sequential(Conv(x, c5, 3), Conv(c5, c5, 3), nn.Conv2d(c5, self.nm, 1)) for x in ch)
@@ -1389,13 +1385,13 @@ class YOLOESegment26(YOLOESegment):
             self.one2one_cv5 = copy.deepcopy(self.cv5)
 
     def forward(self, x: list[torch.Tensor]) -> tuple | list[torch.Tensor] | dict[str, torch.Tensor]:
-        """Return model outputs and mask coefficients if training, otherwise return outputs and mask coefficients."""
+        """训练时返回模型输出和掩码系数，否则返回输出和掩码系数。"""
         outputs = YOLOEDetect.forward(self, x)
         preds = outputs[1] if isinstance(outputs, tuple) else outputs
-        proto = self.proto([xi.detach() for xi in x], return_semseg=False)  # mask protos
+        proto = self.proto([xi.detach() for xi in x], return_semseg=False)  # 掩码原型
 
-        if isinstance(preds, dict):  # training and validating during training
-            if self.end2end and not hasattr(self, "lrpc"):  # not prompt-free
+        if isinstance(preds, dict):  # 训练及训练期间验证时
+            if self.end2end and not hasattr(self, "lrpc"):  # 非无提示模式
                 preds["one2many"]["proto"] = proto
                 preds["one2one"]["proto"] = proto.detach()
             else:
@@ -1406,46 +1402,45 @@ class YOLOESegment26(YOLOESegment):
 
 
 class RTDETRDecoder(nn.Module):
-    """Real-Time Deformable Transformer Decoder (RTDETRDecoder) module for object detection.
+    """实时可变形 Transformer 解码器（RTDETRDecoder）模块，用于目标检测。
 
-    This decoder module utilizes Transformer architecture along with deformable convolutions to predict bounding boxes
-    and class labels for objects in an image. It integrates features from multiple layers and runs through a series of
-    Transformer decoder layers to output the final predictions.
+    该解码器模块利用 Transformer 架构和可变形卷积来预测图像中目标的边界框和类别标签。
+    它整合了多层特征，通过一系列 Transformer 解码器层输出最终预测。
 
     Attributes:
-        export (bool): Export mode flag.
-        hidden_dim (int): Dimension of hidden layers.
-        nhead (int): Number of heads in multi-head attention.
-        nl (int): Number of feature levels.
-        nc (int): Number of classes.
-        num_queries (int): Number of query points.
-        num_decoder_layers (int): Number of decoder layers.
-        input_proj (nn.ModuleList): Input projection layers for backbone features.
-        decoder (DeformableTransformerDecoder): Transformer decoder module.
-        denoising_class_embed (nn.Embedding): Class embeddings for denoising.
-        num_denoising (int): Number of denoising queries.
-        label_noise_ratio (float): Label noise ratio for training.
-        box_noise_scale (float): Box noise scale for training.
-        learnt_init_query (bool): Whether to learn initial query embeddings.
-        tgt_embed (nn.Embedding): Target embeddings for queries.
-        query_pos_head (MLP): Query position head.
-        enc_output (nn.Sequential): Encoder output layers.
-        enc_score_head (nn.Linear): Encoder score prediction head.
-        enc_bbox_head (MLP): Encoder bbox prediction head.
-        dec_score_head (nn.ModuleList): Decoder score prediction heads.
-        dec_bbox_head (nn.ModuleList): Decoder bbox prediction heads.
+        export (bool): 导出模式标志。
+        hidden_dim (int): 隐藏层维度。
+        nhead (int): 多头注意力中的头数。
+        nl (int): 特征层数。
+        nc (int): 类别数。
+        num_queries (int): 查询点数。
+        num_decoder_layers (int): 解码器层数。
+        input_proj (nn.ModuleList): 骨干特征的输入投影层。
+        decoder (DeformableTransformerDecoder): Transformer 解码器模块。
+        denoising_class_embed (nn.Embedding): 去噪的类别嵌入。
+        num_denoising (int): 去噪查询数。
+        label_noise_ratio (float): 训练时的标签噪声比。
+        box_noise_scale (float): 训练时的边界框噪声缩放。
+        learnt_init_query (bool): 是否学习初始查询嵌入。
+        tgt_embed (nn.Embedding): 查询的目标嵌入。
+        query_pos_head (MLP): 查询位置头。
+        enc_output (nn.Sequential): 编码器输出层。
+        enc_score_head (nn.Linear): 编码器分数预测头。
+        enc_bbox_head (MLP): 编码器边界框预测头。
+        dec_score_head (nn.ModuleList): 解码器分数预测头。
+        dec_bbox_head (nn.ModuleList): 解码器边界框预测头。
 
     Methods:
-        forward: Run forward pass and return bounding box and classification scores.
+        forward: 执行前向传播并返回边界框和分类分数。
 
     Examples:
-        Create an RTDETRDecoder
+        创建一个 RTDETRDecoder
         >>> decoder = RTDETRDecoder(nc=80, ch=(512, 1024, 2048), hd=256, nq=300)
         >>> x = [torch.randn(1, 512, 64, 64), torch.randn(1, 1024, 32, 32), torch.randn(1, 2048, 16, 16)]
         >>> outputs = decoder(x)
     """
 
-    export = False  # export mode
+    export = False  # 导出模式
     shapes = []
     anchors = torch.empty(0)
     valid_mask = torch.empty(0)
@@ -1455,98 +1450,97 @@ class RTDETRDecoder(nn.Module):
         self,
         nc: int = 80,
         ch: tuple = (512, 1024, 2048),
-        hd: int = 256,  # hidden dim
-        nq: int = 300,  # num queries
-        ndp: int = 4,  # num decoder points
-        nh: int = 8,  # num head
-        ndl: int = 6,  # num decoder layers
-        d_ffn: int = 1024,  # dim of feedforward
+        hd: int = 256,  # 隐藏维度
+        nq: int = 300,  # 查询数
+        ndp: int = 4,  # 解码器点数
+        nh: int = 8,  # 注意力头数
+        ndl: int = 6,  # 解码器层数
+        d_ffn: int = 1024,  # 前馈网络维度
         dropout: float = 0.0,
         act: nn.Module = nn.ReLU(),
         eval_idx: int = -1,
-        # Training args
-        nd: int = 100,  # num denoising
+        # 训练参数
+        nd: int = 100,  # 去噪数
         label_noise_ratio: float = 0.5,
         box_noise_scale: float = 1.0,
         learnt_init_query: bool = False,
     ):
-        """Initialize the RTDETRDecoder module with the given parameters.
+        """初始化 RTDETRDecoder 模块，使用给定参数。
 
         Args:
-            nc (int): Number of classes.
-            ch (tuple): Channels in the backbone feature maps.
-            hd (int): Dimension of hidden layers.
-            nq (int): Number of query points.
-            ndp (int): Number of decoder points.
-            nh (int): Number of heads in multi-head attention.
-            ndl (int): Number of decoder layers.
-            d_ffn (int): Dimension of the feed-forward networks.
-            dropout (float): Dropout rate.
-            act (nn.Module): Activation function.
-            eval_idx (int): Evaluation index.
-            nd (int): Number of denoising.
-            label_noise_ratio (float): Label noise ratio.
-            box_noise_scale (float): Box noise scale.
-            learnt_init_query (bool): Whether to learn initial query embeddings.
+            nc (int): 类别数。
+            ch (tuple): 骨干网络特征图的通道数。
+            hd (int): 隐藏层维度。
+            nq (int): 查询点数。
+            ndp (int): 解码器点数。
+            nh (int): 多头注意力中的头数。
+            ndl (int): 解码器层数。
+            d_ffn (int): 前馈网络维度。
+            dropout (float): Dropout 率。
+            act (nn.Module): 激活函数。
+            eval_idx (int): 评估索引。
+            nd (int): 去噪数。
+            label_noise_ratio (float): 标签噪声比。
+            box_noise_scale (float): 边界框噪声缩放。
+            learnt_init_query (bool): 是否学习初始查询嵌入。
         """
         super().__init__()
         self.hidden_dim = hd
         self.nhead = nh
-        self.nl = len(ch)  # num level
+        self.nl = len(ch)  # 特征层数
         self.nc = nc
         self.num_queries = nq
         self.num_decoder_layers = ndl
 
-        # Backbone feature projection
+        # 骨干特征投影
         self.input_proj = nn.ModuleList(nn.Sequential(nn.Conv2d(x, hd, 1, bias=False), nn.BatchNorm2d(hd)) for x in ch)
-        # NOTE: simplified version but it's not consistent with .pt weights.
+        # 注意：简化版本，但与 .pt 权重不一致。
         # self.input_proj = nn.ModuleList(Conv(x, hd, act=False) for x in ch)
 
-        # Transformer module
+        # Transformer 模块
         decoder_layer = DeformableTransformerDecoderLayer(hd, nh, d_ffn, dropout, act, self.nl, ndp)
         self.decoder = DeformableTransformerDecoder(hd, decoder_layer, ndl, eval_idx)
 
-        # Denoising part
+        # 去噪部分
         self.denoising_class_embed = nn.Embedding(nc, hd)
         self.num_denoising = nd
         self.label_noise_ratio = label_noise_ratio
         self.box_noise_scale = box_noise_scale
 
-        # Decoder embedding
+        # 解码器嵌入
         self.learnt_init_query = learnt_init_query
         if learnt_init_query:
             self.tgt_embed = nn.Embedding(nq, hd)
         self.query_pos_head = MLP(4, 2 * hd, hd, num_layers=2)
 
-        # Encoder head
+        # 编码器头
         self.enc_output = nn.Sequential(nn.Linear(hd, hd), nn.LayerNorm(hd))
         self.enc_score_head = nn.Linear(hd, nc)
         self.enc_bbox_head = MLP(hd, hd, 4, num_layers=3)
 
-        # Decoder head
+        # 解码器头
         self.dec_score_head = nn.ModuleList([nn.Linear(hd, nc) for _ in range(ndl)])
         self.dec_bbox_head = nn.ModuleList([MLP(hd, hd, 4, num_layers=3) for _ in range(ndl)])
 
         self._reset_parameters()
 
     def forward(self, x: list[torch.Tensor], batch: dict | None = None) -> tuple | torch.Tensor:
-        """Run the forward pass of the module, returning bounding box and classification scores for the input.
+        """执行模块的前向传播，返回输入的边界框和分类分数。
 
         Args:
-            x (list[torch.Tensor]): List of feature maps from the backbone.
-            batch (dict, optional): Batch information for training.
+            x (list[torch.Tensor]): 骨干网络的特征图列表。
+            batch (dict, optional): 训练的批次信息。
 
         Returns:
-            outputs (tuple | torch.Tensor): During training, returns a tuple of bounding boxes, scores, and other
-                metadata. During inference, returns a tensor of shape (bs, num_queries, 6) containing bounding boxes,
-                confidence scores, and class labels.
+            outputs (tuple | torch.Tensor): 训练时返回边界框、分数和其他元数据的元组。
+                推理时返回形状为 (bs, num_queries, 6) 的张量，包含边界框、置信度和类别标签。
         """
         from ultralytics.models.utils.ops import get_cdn_group
 
-        # Input projection and embedding
+        # 输入投影和嵌入
         feats, shapes = self._get_encoder_input(x)
 
-        # Prepare denoising training
+        # 准备去噪训练
         dn_embed, dn_bbox, attn_mask, dn_meta = get_cdn_group(
             batch,
             self.nc,
@@ -1560,7 +1554,7 @@ class RTDETRDecoder(nn.Module):
 
         embed, refer_bbox, enc_bboxes, enc_scores = self._get_decoder_input(feats, shapes, dn_embed, dn_bbox)
 
-        # Decoder
+        # 解码器
         dec_bboxes, dec_scores = self.decoder(
             embed,
             refer_bbox,
@@ -1572,7 +1566,7 @@ class RTDETRDecoder(nn.Module):
             attn_mask=attn_mask,
         )
         if self.training and dn_meta is None:
-            # Touch denoising_class_embed so DDP sees it as used when batch has zero GTs.
+            # 触碰 denoising_class_embed 以使 DDP 在批次无 GT 时也认为其被使用
             dec_bboxes = dec_bboxes + 0 * self.denoising_class_embed.weight.sum()
         x = dec_bboxes, dec_scores, enc_bboxes, enc_scores, dn_meta
         if self.training:
@@ -1582,15 +1576,15 @@ class RTDETRDecoder(nn.Module):
         return y if self.export else (y, x)
 
     def postprocess(self, boxes: torch.Tensor, scores: torch.Tensor) -> torch.Tensor:
-        """Post-process predictions to select top-k detections.
+        """后处理预测，选择 top-k 检测。
 
         Args:
-            boxes (torch.Tensor): Predicted bounding boxes with shape (batch_size, num_queries, 4) in xywh format.
-            scores (torch.Tensor): Class scores with shape (batch_size, num_queries, nc).
+            boxes (torch.Tensor): 预测的边界框，形状为 (batch_size, num_queries, 4)，xywh 格式。
+            scores (torch.Tensor): 类别分数，形状为 (batch_size, num_queries, nc)。
 
         Returns:
-            (torch.Tensor): Processed predictions with shape (batch_size, num_queries, 6) and last dimension format [cx,
-                cy, w, h, max_class_prob, class_index].
+            (torch.Tensor): 处理后的预测，形状为 (batch_size, num_queries, 6)，最后一维格式为
+                [cx, cy, w, h, 最大类别概率, 类别索引]。
         """
         scores, index = scores.flatten(1).topk(self.num_queries)
         query_idx = index // self.nc
@@ -1605,18 +1599,18 @@ class RTDETRDecoder(nn.Module):
         device: str = "cpu",
         eps: float = 1e-2,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Generate anchor bounding boxes for given shapes with specific grid size and validate them.
+        """为给定形状生成锚点边界框，使用指定网格大小并验证。
 
         Args:
-            shapes (list): List of feature map shapes.
-            grid_size (float, optional): Base size of grid cells.
-            dtype (torch.dtype, optional): Data type for tensors.
-            device (str, optional): Device to create tensors on.
-            eps (float, optional): Small value for numerical stability.
+            shapes (list): 特征图形状列表。
+            grid_size (float, optional): 网格单元的基础大小。
+            dtype (torch.dtype, optional): 张量的数据类型。
+            device (str, optional): 创建张量的设备。
+            eps (float, optional): 数值稳定性用的小值。
 
         Returns:
-            anchors (torch.Tensor): Generated anchor boxes.
-            valid_mask (torch.Tensor): Valid mask for anchors.
+            anchors (torch.Tensor): 生成的锚点框。
+            valid_mask (torch.Tensor): 锚点的有效掩码。
         """
         anchors = []
         for i, (h, w) in enumerate(shapes):
@@ -1637,18 +1631,18 @@ class RTDETRDecoder(nn.Module):
         return anchors, valid_mask
 
     def _get_encoder_input(self, x: list[torch.Tensor]) -> tuple[torch.Tensor, list[list[int]]]:
-        """Process and return encoder inputs by getting projection features from input and concatenating them.
+        """处理并返回编码器输入，通过获取输入的投影特征并拼接。
 
         Args:
-            x (list[torch.Tensor]): List of feature maps from the backbone.
+            x (list[torch.Tensor]): 骨干网络的特征图列表。
 
         Returns:
-            feats (torch.Tensor): Processed features.
-            shapes (list): List of feature map shapes.
+            feats (torch.Tensor): 处理后的特征。
+            shapes (list): 特征图形状列表。
         """
-        # Get projection features
+        # 获取投影特征
         x = [self.input_proj[i](feat) for i, feat in enumerate(x)]
-        # Get encoder inputs
+        # 获取编码器输入
         feats = []
         shapes = []
         for feat in x:
@@ -1669,30 +1663,30 @@ class RTDETRDecoder(nn.Module):
         dn_embed: torch.Tensor | None = None,
         dn_bbox: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Generate and prepare the input required for the decoder from the provided features and shapes.
+        """从提供的特征和形状生成并准备解码器所需的输入。
 
         Args:
-            feats (torch.Tensor): Processed features from encoder.
-            shapes (list): List of feature map shapes.
-            dn_embed (torch.Tensor, optional): Denoising embeddings.
-            dn_bbox (torch.Tensor, optional): Denoising bounding boxes.
+            feats (torch.Tensor): 编码器处理后的特征。
+            shapes (list): 特征图形状列表。
+            dn_embed (torch.Tensor, optional): 去噪嵌入。
+            dn_bbox (torch.Tensor, optional): 去噪边界框。
 
         Returns:
-            embeddings (torch.Tensor): Query embeddings for decoder.
-            refer_bbox (torch.Tensor): Reference bounding boxes.
-            enc_bboxes (torch.Tensor): Encoded bounding boxes.
-            enc_scores (torch.Tensor): Encoded scores.
+            embeddings (torch.Tensor): 解码器的查询嵌入。
+            refer_bbox (torch.Tensor): 参考边界框。
+            enc_bboxes (torch.Tensor): 编码的边界框。
+            enc_scores (torch.Tensor): 编码的分数。
         """
         bs = feats.shape[0]
         if self.dynamic or self.shapes != shapes:
             self.anchors, self.valid_mask = self._generate_anchors(shapes, dtype=feats.dtype, device=feats.device)
             self.shapes = shapes
 
-        # Prepare input for decoder
+        # 准备解码器输入
         features = self.enc_output(self.valid_mask * feats)  # bs, h*w, 256
         enc_outputs_scores = self.enc_score_head(features)  # (bs, h*w, nc)
 
-        # Query selection
+        # 查询选择
         # (bs*num_queries,)
         topk_ind = torch.topk(enc_outputs_scores.max(-1).values, self.num_queries, dim=1).indices.view(-1)
         # (bs*num_queries,)
@@ -1703,7 +1697,7 @@ class RTDETRDecoder(nn.Module):
         # (bs, num_queries, 4)
         top_k_anchors = self.anchors[:, topk_ind].view(bs, self.num_queries, -1)
 
-        # Dynamic anchors + static content
+        # 动态锚点 + 静态内容
         refer_bbox = self.enc_bbox_head(top_k_features) + top_k_anchors
 
         enc_bboxes = refer_bbox.sigmoid()
@@ -1722,10 +1716,10 @@ class RTDETRDecoder(nn.Module):
         return embeddings, refer_bbox, enc_bboxes, enc_scores
 
     def _reset_parameters(self):
-        """Initialize or reset the parameters of the model's various components with predefined weights and biases."""
-        # Class and bbox head init
+        """初始化或重置模型各组件的参数，使用预定义的权重和偏置。"""
+        # 类别和边界框头初始化
         bias_cls = bias_init_with_prob(0.01) / 80 * self.nc
-        # NOTE: the weight initialization in `linear_init` would cause NaN when training with custom datasets.
+        # 注意：`linear_init` 中的权重初始化在使用自定义数据集训练时会导致 NaN。
         # linear_init(self.enc_score_head)
         constant_(self.enc_score_head.bias, bias_cls)
         constant_(self.enc_bbox_head.layers[-1].weight, 0.0)
@@ -1747,25 +1741,25 @@ class RTDETRDecoder(nn.Module):
 
 
 class v10Detect(Detect):
-    """v10 Detection head from https://arxiv.org/pdf/2405.14458.
+    """v10 检测头，来自 https://arxiv.org/pdf/2405.14458。
 
-    This class implements the YOLOv10 detection head with dual-assignment training and consistent dual predictions for
-    improved efficiency and performance.
+    该类实现了 YOLOv10 检测头，采用双分配训练和一致的双重预测，
+    以提高效率和性能。
 
     Attributes:
-        end2end (bool): End-to-end detection mode.
-        max_det (int): Maximum number of detections.
-        cv3 (nn.ModuleList): Light classification head layers.
-        one2one_cv3 (nn.ModuleList): One-to-one classification head layers.
+        end2end (bool): 端到端检测模式。
+        max_det (int): 最大检测数。
+        cv3 (nn.ModuleList): 轻量分类头层。
+        one2one_cv3 (nn.ModuleList): 一对一分类头层。
 
     Methods:
-        __init__: Initialize the v10Detect object with specified number of classes and input channels.
-        forward: Perform forward pass of the v10Detect module.
-        bias_init: Initialize biases of the Detect module.
-        fuse: Remove the one2many head for inference optimization.
+        __init__: 初始化 v10Detect 对象，指定类别数和输入通道。
+        forward: 执行 v10Detect 模块的前向传播。
+        bias_init: 初始化 Detect 模块的偏置。
+        fuse: 移除一对多头部以优化推理。
 
     Examples:
-        Create a v10Detect head
+        创建一个 v10Detect 头
         >>> v10_detect = v10Detect(nc=80, ch=(256, 512, 1024))
         >>> x = [torch.randn(1, 256, 80, 80), torch.randn(1, 512, 40, 40), torch.randn(1, 1024, 20, 20)]
         >>> outputs = v10_detect(x)
@@ -1774,15 +1768,15 @@ class v10Detect(Detect):
     end2end = True
 
     def __init__(self, nc: int = 80, ch: tuple = ()):
-        """Initialize the v10Detect object with the specified number of classes and input channels.
+        """初始化 v10Detect 对象，指定类别数和输入通道。
 
         Args:
-            nc (int): Number of classes.
-            ch (tuple): Tuple of channel sizes from backbone feature maps.
+            nc (int): 类别数。
+            ch (tuple): 骨干网络特征图的通道数元组。
         """
         super().__init__(nc, end2end=True, ch=ch)
-        c3 = max(ch[0], min(self.nc, 100))  # channels
-        # Light cls head
+        c3 = max(ch[0], min(self.nc, 100))  # 通道数
+        # 轻量分类头
         self.cv3 = nn.ModuleList(
             nn.Sequential(
                 nn.Sequential(Conv(x, x, 3, g=x), Conv(x, c3, 1)),
@@ -1794,5 +1788,5 @@ class v10Detect(Detect):
         self.one2one_cv3 = copy.deepcopy(self.cv3)
 
     def fuse(self):
-        """Remove the one2many head for inference optimization."""
+        """移除一对多头部以优化推理。"""
         self.cv2 = self.cv3 = None

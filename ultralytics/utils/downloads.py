@@ -18,7 +18,7 @@ GITHUB_ASSETS_REPO = "ultralytics/assets"
 GITHUB_ASSETS_NAMES = frozenset(
     [f"yolov8{k}{suffix}.pt" for k in "nsmlx" for suffix in ("", "-cls", "-seg", "-pose", "-obb", "-oiv7")]
     + [f"yolo11{k}{suffix}.pt" for k in "nsmlx" for suffix in ("", "-cls", "-seg", "-pose", "-obb")]
-    + [f"yolo12{k}{suffix}.pt" for k in "nsmlx" for suffix in ("",)]  # detect models only currently
+    + [f"yolo12{k}{suffix}.pt" for k in "nsmlx" for suffix in ("",)]  # 目前仅检测模型
     + [f"yolo26{k}{suffix}.pt" for k in "nsmlx" for suffix in ("", "-cls", "-seg", "-pose", "-obb")]
     + [f"yolov5{k}{resolution}u.pt" for k in "nsmlx" for resolution in ("", "6")]
     + [f"yolov3{k}u.pt" for k in ("", "-spp", "-tiny")]
@@ -124,15 +124,15 @@ def zip_directory(
     if not directory.is_dir():
         raise FileNotFoundError(f"Directory '{directory}' does not exist.")
 
-    # Zip with progress bar
-    files = [f for f in directory.rglob("*") if f.is_file() and all(x not in f.name for x in exclude)]  # files to zip
+    # 带进度条的 Zip 压缩
+    files = [f for f in directory.rglob("*") if f.is_file() and all(x not in f.name for x in exclude)]  # 要压缩的文件
     zip_file = directory.with_suffix(".zip")
     compression = ZIP_DEFLATED if compress else ZIP_STORED
     with ZipFile(zip_file, "w", compression) as f:
         for file in TQDM(files, desc=f"Zipping {directory} to {zip_file}...", unit="files", disable=not progress):
             f.write(file, file.relative_to(directory))
 
-    return zip_file  # return path to zip file
+    return zip_file  # 返回 zip 文件路径
 
 
 def unzip_file(
@@ -170,26 +170,26 @@ def unzip_file(
     if not (Path(file).exists() and is_zipfile(file)):
         raise BadZipFile(f"File '{file}' does not exist or is a bad zip file.")
     if path is None:
-        path = Path(file).parent  # default path
+        path = Path(file).parent  # 默认路径
 
-    # Unzip the file contents
+    # 解压文件内容
     with ZipFile(file) as zipObj:
         files = [f for f in zipObj.namelist() if all(x not in f for x in exclude)]
         top_level_dirs = {Path(f).parts[0] for f in files}
 
-        # Decide to unzip directly or unzip into a directory
+        # 决定直接解压还是解压到目录
         unzip_as_dir = len(top_level_dirs) == 1  # (len(files) > 1 and not files[0].endswith("/"))
         if unzip_as_dir:
-            # Zip has 1 top-level directory
-            extract_path = path  # i.e. ../datasets
-            path = Path(path) / next(iter(top_level_dirs))  # i.e. extract coco8/ dir to ../datasets/
+            # Zip 有 1 个顶层目录
+            extract_path = path  # 如 ../datasets
+            path = Path(path) / next(iter(top_level_dirs))  # 如将 coco8/ 目录解压到 ../datasets/
         else:
-            # Zip has multiple files at top level
-            path = extract_path = Path(path) / Path(file).stem  # i.e. extract multiple files to ../datasets/coco8/
+            # Zip 顶层有多个文件
+            path = extract_path = Path(path) / Path(file).stem  # 如将多个文件解压到 ../datasets/coco8/
 
-        # Check if destination directory already exists and contains files
+        # 检查目标目录是否已存在并包含文件
         if path.exists() and any(path.iterdir()) and not exist_ok:
-            # If it exists and is not empty, return the path without unzipping
+            # 如果存在且非空，返回路径而不解压
             LOGGER.warning(f"Skipping {file} unzip as destination directory {path} is not empty.")
             return path
 
@@ -206,7 +206,7 @@ def unzip_file(
                 continue
             zipObj.extract(f, extract_path)
 
-    return path  # return unzip dir
+    return path  # 返回解压目录
 
 
 def check_disk_space(
@@ -215,7 +215,7 @@ def check_disk_space(
     sf: float = 1.5,
     hard: bool = True,
 ) -> bool:
-    """Check if there is sufficient disk space to download and store a file.
+    """检查是否有足够的磁盘空间下载和存储文件。
 
     Args:
         file_bytes (int): The file size in bytes.
@@ -226,14 +226,14 @@ def check_disk_space(
     Returns:
         (bool): True if there is sufficient disk space, False otherwise.
     """
-    _total, _used, free = shutil.disk_usage(path)  # bytes
+    _total, _used, free = shutil.disk_usage(path)  # 字节
     if file_bytes * sf < free:
-        return True  # sufficient space
+        return True  # 空间充足
 
     def fmt_bytes(b):
         return f"{b / (1 << 20):.1f} MB" if b < (1 << 30) else f"{b / (1 << 30):.3f} GB"
 
-    # Insufficient space
+    # 空间不足
     text = (
         f"Insufficient free disk space {fmt_bytes(free)} < {fmt_bytes(int(file_bytes * sf))} required, "
         f"Please free {fmt_bytes(int(file_bytes * sf - free))} additional disk space and try again."
@@ -259,13 +259,13 @@ def get_google_drive_file_info(link: str) -> tuple[str, str | None]:
         >>> link = "https://drive.google.com/file/d/1cqT-cJgANNrhIHCrEufUYhQ4RqiWG_lJ/view?usp=drive_link"
         >>> url, filename = get_google_drive_file_info(link)
     """
-    import requests  # scoped as slow import
+    import requests  # 作用域为慢速导入
 
     file_id = link.split("/d/")[1].split("/view", 1)[0]
     drive_url = f"https://drive.google.com/uc?export=download&id={file_id}"
     filename = None
 
-    # Start session
+    # 启动会话
     with requests.Session() as session:
         response = session.get(drive_url, stream=True)
         if "quota exceeded" in str(response.content.lower()):
@@ -277,7 +277,7 @@ def get_google_drive_file_info(link: str) -> tuple[str, str | None]:
             )
         for k, v in response.cookies.items():
             if k.startswith("download_warning"):
-                drive_url += f"&confirm={v}"  # v is token
+                drive_url += f"&confirm={v}"  # v 是令牌
         if cd := response.headers.get("content-disposition"):
             filename = re.findall('filename="(.+)"', cd)[0]
     return drive_url, filename
@@ -325,25 +325,25 @@ def safe_download(
     if "://" not in url and Path(url).is_file():  # local file path ('://' check required in Windows Python<3.10)
         f = Path(url)
     else:
-        gdrive = url.startswith("https://drive.google.com/")  # check if the URL is a Google Drive link
+        gdrive = url.startswith("https://drive.google.com/")  # 检查 URL 是否为 Google Drive 链接
         if gdrive:
             url, file = get_google_drive_file_info(url)
-        url = url.replace(" ", "%20")  # encode spaces for curl/urllib compatibility
+        url = url.replace(" ", "%20")  # 编码空格以兼容 curl/urllib
 
-        f = Path(dir or ".") / (file or url2file(url))  # URL converted to filename
-        if not f.is_file():  # URL and file do not exist
-            uri = (url if gdrive else clean_url(url)).replace(ASSETS_URL, "https://ultralytics.com/assets")  # clean
+        f = Path(dir or ".") / (file or url2file(url))  # URL 转换为文件名
+        if not f.is_file():  # URL 和文件均不存在
+            uri = (url if gdrive else clean_url(url)).replace(ASSETS_URL, "https://ultralytics.com/assets")  # 清理
             desc = f"Downloading {uri} to '{f}'"
-            f.parent.mkdir(parents=True, exist_ok=True)  # make directory if missing
+            f.parent.mkdir(parents=True, exist_ok=True)  # 如缺少则创建目录
             curl_installed = shutil.which("curl")
             for i in range(retry + 1):
                 try:
-                    if (curl or i > 0) and curl_installed:  # curl download with retry, continue
-                        s = "sS" * (not progress)  # silent
+                    if (curl or i > 0) and curl_installed:  # curl 下载，支持重试和续传
+                        s = "sS" * (not progress)  # 静默
                         r = subprocess.run(["curl", "-#", f"-{s}L", url, "-o", f, "--retry", "3", "-C", "-"]).returncode
                         assert r == 0, f"Curl return value {r}"
-                        expected_size = None  # Can't get size with curl
-                    else:  # urllib download
+                        expected_size = None  # 无法用 curl 获取大小
+                    else:  # urllib 下载
                         with request.urlopen(url) as response:
                             expected_size = int(response.getheader("Content-Length", 0))
                             if i == 0 and expected_size > 1048576:
@@ -368,16 +368,16 @@ def safe_download(
                     if f.exists():
                         file_size = f.stat().st_size
                         if file_size > min_bytes:
-                            # Check if download is complete (only if we have expected_size)
+                            # 检查下载是否完成（仅当有 expected_size 时）
                             if expected_size and file_size != expected_size:
                                 LOGGER.warning(
                                     f"Partial download: {file_size}/{expected_size} bytes ({file_size / expected_size * 100:.1f}%)"
                                 )
                             else:
-                                break  # success
-                        f.unlink()  # remove partial downloads
+                                break  # 成功
+                        f.unlink()  # 移除部分下载
                 except MemoryError:
-                    raise  # Re-raise immediately - no point retrying if insufficient disk space
+                    raise  # 立即重新抛出 - 磁盘空间不足时重试无意义
                 except Exception as e:
                     if i == 0 and not is_online():
                         raise ConnectionError(
@@ -392,9 +392,9 @@ def safe_download(
     if unzip and f.exists() and f.suffix in {"", ".zip", ".tar", ".gz"}:
         from zipfile import is_zipfile
 
-        unzip_dir = (dir or f.parent).resolve()  # unzip to dir if provided else unzip in place
+        unzip_dir = (dir or f.parent).resolve()  # 如提供目录则解压到目录，否则原地解压
         if is_zipfile(f):
-            unzip_dir = unzip_file(file=f, path=unzip_dir, exist_ok=exist_ok, progress=progress)  # unzip
+            unzip_dir = unzip_file(file=f, path=unzip_dir, exist_ok=exist_ok, progress=progress)  # 解压
         elif f.suffix in {".tar", ".gz"}:
             LOGGER.info(f"Unzipping {f} to {unzip_dir}...")
             with tarfile.open(f, "r:*") as tar:
@@ -418,7 +418,7 @@ def safe_download(
                         with source, open(target, "wb") as f:
                             shutil.copyfileobj(source, f)
         if delete:
-            f.unlink()  # remove zip
+            f.unlink()  # 移除 zip
         return unzip_dir
     return f
 
@@ -444,19 +444,19 @@ def get_github_assets(
     Examples:
         >>> tag, assets = get_github_assets(repo="ultralytics/assets", version="latest")
     """
-    import requests  # scoped as slow import
+    import requests  # 作用域为慢速导入
 
     if version != "latest":
-        version = f"tags/{version}"  # i.e. tags/v6.2
+        version = f"tags/{version}"  # 如 tags/v6.2
     url = f"https://api.github.com/repos/{repo}/releases/{version}"
-    r = requests.get(url)  # github api
-    if r.status_code != 200 and r.reason != "rate limit exceeded" and retry:  # failed and not 403 rate limit exceeded
-        r = requests.get(url)  # try again
+    r = requests.get(url)  # GitHub API
+    if r.status_code != 200 and r.reason != "rate limit exceeded" and retry:  # 失败且非 403 速率限制
+        r = requests.get(url)  # 重试
     if r.status_code != 200:
         LOGGER.warning(f"GitHub assets check failure for {url}: {r.status_code} {r.reason}")
         return "", []
     data = r.json()
-    return data["tag_name"], [x["name"] for x in data["assets"]]  # tag, assets i.e. ['yolo26n.pt', 'yolo11s.pt', ...]
+    return data["tag_name"], [x["name"] for x in data["assets"]]  # 标签、资源，如 ['yolo26n.pt', 'yolo11s.pt', ...]
 
 
 def attempt_download_asset(
@@ -479,9 +479,9 @@ def attempt_download_asset(
     Examples:
         >>> file_path = attempt_download_asset("yolo26n.pt", repo="ultralytics/assets", release="latest")
     """
-    from ultralytics.utils import SETTINGS  # scoped for circular import
+    from ultralytics.utils import SETTINGS  # 作用域用于避免循环导入
 
-    # YOLOv3/5u updates
+    # YOLOv3/5u 更新
     file = str(file)
     file = checks.check_yolov5u_filename(file)
     file = Path(file.strip().replace("'", ""))
@@ -490,14 +490,14 @@ def attempt_download_asset(
     elif (SETTINGS["weights_dir"] / file).exists():
         return str(SETTINGS["weights_dir"] / file)
     else:
-        # URL specified
-        name = Path(parse.unquote(str(file))).name  # decode '%2F' to '/' etc.
+        # 指定了 URL
+        name = Path(parse.unquote(str(file))).name  # 将 '%2F' 等解码为 '/'
         download_url = f"https://github.com/{repo}/releases/download"
-        if str(file).startswith(("http:/", "https:/")):  # download
-            url = str(file).replace(":/", "://")  # Pathlib turns :// -> :/
-            file = url2file(name)  # parse authentication query strings
+        if str(file).startswith(("http:/", "https:/")):  # 下载
+            url = str(file).replace(":/", "://")  # Pathlib 将 :// 转为 :/
+            file = url2file(name)  # 解析认证查询字符串
             if Path(file).is_file():
-                LOGGER.info(f"Found {clean_url(url)} locally at {file}")  # file already exists
+                LOGGER.info(f"Found {clean_url(url)} locally at {file}")  # 文件已存在
             else:
                 safe_download(url=url, file=file, min_bytes=1e5, **kwargs)
 
@@ -507,7 +507,7 @@ def attempt_download_asset(
         else:
             tag, assets = get_github_assets(repo, release)
             if not assets:
-                tag, assets = get_github_assets(repo)  # latest release
+                tag, assets = get_github_assets(repo)  # 最新发布版
             if name in assets:
                 safe_download(url=f"{download_url}/{tag}/{name}", file=file, min_bytes=1e5, **kwargs)
 
@@ -524,25 +524,25 @@ def download(
     retry: int = 3,
     exist_ok: bool = False,
 ) -> None:
-    """Download files from specified URLs to a given directory.
+    """从指定 URL 下载文件到给定目录。
 
-    Supports concurrent downloads if multiple threads are specified.
+    如果指定了多个线程，支持并发下载。
 
-    Args:
-        url (str | list[str] | Path): The URL or list of URLs of the files to be downloaded.
-        dir (Path, optional): The directory where the files will be saved.
-        unzip (bool, optional): Flag to unzip the files after downloading.
-        delete (bool, optional): Flag to delete the zip files after extraction.
-        curl (bool, optional): Flag to use curl for downloading.
-        threads (int, optional): Number of threads to use for concurrent downloads.
-        retry (int, optional): Number of retries in case of download failure.
-        exist_ok (bool, optional): Whether to overwrite existing contents during unzipping.
+    参数:
+        url (str | list[str] | Path): 要下载文件的 URL 或 URL 列表。
+        dir (Path, 可选): 文件保存目录。
+        unzip (bool, 可选): 下载后是否解压文件。
+        delete (bool, 可选): 解压后是否删除 zip 文件。
+        curl (bool, 可选): 是否使用 curl 下载。
+        threads (int, 可选): 并发下载的线程数。
+        retry (int, 可选): 下载失败时的重试次数。
+        exist_ok (bool, 可选): 解压时是否覆盖已有内容。
 
-    Examples:
+    示例:
         >>> download("https://ultralytics.com/assets/example.zip", dir="path/to/dir", unzip=True)
     """
     dir = Path(dir)
-    dir.mkdir(parents=True, exist_ok=True)  # make directory
+    dir.mkdir(parents=True, exist_ok=True)  # 创建目录
     urls = [url] if isinstance(url, (str, Path)) else url
     if threads > 1:
         LOGGER.info(f"Downloading {len(urls)} file(s) with {threads} threads to {dir}...")

@@ -21,20 +21,19 @@ from .blocks import (
 
 
 class ImageEncoderViT(nn.Module):
-    """An image encoder using Vision Transformer (ViT) architecture for encoding images into a compact latent space.
+    """使用Vision Transformer（ViT）架构将图像编码到紧凑潜在空间的图像编码器。
 
-    This class processes images by splitting them into patches, applying transformer blocks, and generating a final
-    encoded representation through a neck module.
+    此类通过将图像分割为图块、应用transformer块并通过neck模块生成最终编码表示来处理图像。
 
     Attributes:
-        img_size (int): Dimension of input images, assumed to be square.
-        patch_embed (PatchEmbed): Module for patch embedding.
-        pos_embed (nn.Parameter | None): Absolute positional embedding for patches.
-        blocks (nn.ModuleList): List of transformer blocks for processing patch embeddings.
-        neck (nn.Sequential): Neck module to further process the output.
+        img_size (int): 输入图像的尺寸，假设为正方形。
+        patch_embed (PatchEmbed): 图块嵌入模块。
+        pos_embed (nn.Parameter | None): 图块的绝对位置嵌入。
+        blocks (nn.ModuleList): 用于处理图块嵌入的transformer块列表。
+        neck (nn.Sequential): 进一步处理输出的neck模块。
 
     Methods:
-        forward: Process input through patch embedding, positional embedding, blocks, and neck.
+        forward: 通过图块嵌入、位置嵌入、blocks和neck处理输入。
 
     Examples:
         >>> import torch
@@ -63,25 +62,25 @@ class ImageEncoderViT(nn.Module):
         window_size: int = 0,
         global_attn_indexes: tuple[int, ...] = (),
     ) -> None:
-        """Initialize an ImageEncoderViT instance for encoding images using Vision Transformer architecture.
+        """初始化ImageEncoderViT实例，使用Vision Transformer架构进行图像编码。
 
         Args:
-            img_size (int): Input image size, assumed to be square.
-            patch_size (int): Size of image patches.
-            in_chans (int): Number of input image channels.
-            embed_dim (int): Dimension of patch embeddings.
-            depth (int): Number of transformer blocks.
-            num_heads (int): Number of attention heads in each block.
-            mlp_ratio (float): Ratio of MLP hidden dimension to embedding dimension.
-            out_chans (int): Number of output channels from the neck module.
-            qkv_bias (bool): If True, adds learnable bias to query, key, value projections.
-            norm_layer (type[nn.Module]): Type of normalization layer to use.
-            act_layer (type[nn.Module]): Type of activation layer to use.
-            use_abs_pos (bool): If True, uses absolute positional embeddings.
-            use_rel_pos (bool): If True, adds relative positional embeddings to attention maps.
-            rel_pos_zero_init (bool): If True, initializes relative positional parameters to zero.
-            window_size (int): Size of attention window for windowed attention blocks.
-            global_attn_indexes (tuple[int, ...]): Indices of blocks that use global attention.
+            img_size (int): 输入图像尺寸，假设为正方形。
+            patch_size (int): 图像图块的大小。
+            in_chans (int): 输入图像的通道数。
+            embed_dim (int): 图块嵌入的维度。
+            depth (int): transformer块的数量。
+            num_heads (int): 每个块中注意力头的数量。
+            mlp_ratio (float): MLP隐藏维度与嵌入维度的比率。
+            out_chans (int): neck模块的输出通道数。
+            qkv_bias (bool): 如果为True，为query、key、value投影添加可学习的偏置。
+            norm_layer (type[nn.Module]): 要使用的归一化层类型。
+            act_layer (type[nn.Module]): 要使用的激活层类型。
+            use_abs_pos (bool): 如果为True，使用绝对位置嵌入。
+            use_rel_pos (bool): 如果为True，为注意力图添加相对位置嵌入。
+            rel_pos_zero_init (bool): 如果为True，将相对位置参数初始化为零。
+            window_size (int): 窗口注意力块的注意力窗口大小。
+            global_attn_indexes (tuple[int, ...]): 使用全局注意力的块索引。
         """
         super().__init__()
         self.img_size = img_size
@@ -133,7 +132,7 @@ class ImageEncoderViT(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Process input through patch embedding, positional embedding, transformer blocks, and neck module."""
+        """通过图块嵌入、位置嵌入、transformer块和neck模块处理输入。"""
         x = self.patch_embed(x)
         if self.pos_embed is not None:
             pos_embed = (
@@ -148,23 +147,23 @@ class ImageEncoderViT(nn.Module):
 
 
 class PromptEncoder(nn.Module):
-    """Encode different types of prompts for input to SAM's mask decoder, producing sparse and dense embeddings.
+    """为SAM的掩码解码器编码不同类型的提示，生成稀疏和密集嵌入。
 
     Attributes:
-        embed_dim (int): Dimension of the embeddings.
-        input_image_size (tuple[int, int]): Size of the input image as (H, W).
-        image_embedding_size (tuple[int, int]): Spatial size of the image embedding as (H, W).
-        pe_layer (PositionEmbeddingRandom): Module for random position embedding.
-        num_point_embeddings (int): Number of point embeddings for different types of points.
-        point_embeddings (nn.ModuleList): List of point embeddings.
-        not_a_point_embed (nn.Embedding): Embedding for points that are not part of any label.
-        mask_input_size (tuple[int, int]): Size of the input mask.
-        mask_downscaling (nn.Sequential): Neural network for downscaling the mask.
-        no_mask_embed (nn.Embedding): Embedding for cases where no mask is provided.
+        embed_dim (int): 嵌入的维度。
+        input_image_size (tuple[int, int]): 输入图像的尺寸，格式为(H, W)。
+        image_embedding_size (tuple[int, int]): 图像嵌入的空间尺寸，格式为(H, W)。
+        pe_layer (PositionEmbeddingRandom): 随机位置嵌入模块。
+        num_point_embeddings (int): 不同类型点的点嵌入数量。
+        point_embeddings (nn.ModuleList): 点嵌入的列表。
+        not_a_point_embed (nn.Embedding): 不属于任何标签的点的嵌入。
+        mask_input_size (tuple[int, int]): 输入掩码的尺寸。
+        mask_downscaling (nn.Sequential): 用于下采样掩码的神经网络。
+        no_mask_embed (nn.Embedding): 未提供掩码时的嵌入。
 
     Methods:
-        get_dense_pe: Return the positional encoding used to encode point prompts.
-        forward: Embed different types of prompts, returning both sparse and dense embeddings.
+        get_dense_pe: 返回用于编码点提示的位置编码。
+        forward: 嵌入不同类型的提示，返回稀疏和密集嵌入。
 
     Examples:
         >>> prompt_encoder = PromptEncoder(256, (64, 64), (1024, 1024), 16)
@@ -184,14 +183,14 @@ class PromptEncoder(nn.Module):
         mask_in_chans: int,
         activation: type[nn.Module] = nn.GELU,
     ) -> None:
-        """Initialize the PromptEncoder module for encoding various types of prompts.
+        """初始化PromptEncoder模块，用于编码各种类型的提示。
 
         Args:
-            embed_dim (int): The dimension of the embeddings.
-            image_embedding_size (tuple[int, int]): The spatial size of the image embedding as (H, W).
-            input_image_size (tuple[int, int]): The padded size of the input image as (H, W).
-            mask_in_chans (int): The number of hidden channels used for encoding input masks.
-            activation (type[nn.Module]): The activation function to use when encoding input masks.
+            embed_dim (int): 嵌入的维度。
+            image_embedding_size (tuple[int, int]): 图像嵌入的空间尺寸，格式为(H, W)。
+            input_image_size (tuple[int, int]): 输入图像的填充尺寸，格式为(H, W)。
+            mask_in_chans (int): 用于编码输入掩码的隐藏通道数。
+            activation (type[nn.Module]): 编码输入掩码时使用的激活函数。
         """
         super().__init__()
         self.embed_dim = embed_dim
@@ -217,14 +216,12 @@ class PromptEncoder(nn.Module):
         self.no_mask_embed = nn.Embedding(1, embed_dim)
 
     def get_dense_pe(self) -> torch.Tensor:
-        """Return the dense positional encoding used for encoding point prompts.
+        """返回用于编码点提示的密集位置编码。
 
-        Generate a positional encoding for a dense set of points matching the shape of the image
-        encoding. The encoding is used to provide spatial information to the model when processing point prompts.
+        生成与图像编码形状匹配的密集点集位置编码。该编码用于在处理点提示时为模型提供空间信息。
 
         Returns:
-            (torch.Tensor): Positional encoding tensor with shape (1, embed_dim, H, W), where H and W are the height and
-                width of the image embedding size, respectively.
+            (torch.Tensor): 形状为(1, embed_dim, H, W)的位置编码张量，其中H和W分别为图像嵌入大小的高度和宽度。
 
         Examples:
             >>> prompt_encoder = PromptEncoder(256, (64, 64), (1024, 1024), 16)
@@ -235,7 +232,7 @@ class PromptEncoder(nn.Module):
         return self.pe_layer(self.image_embedding_size).unsqueeze(0)
 
     def _embed_points(self, points: torch.Tensor, labels: torch.Tensor, pad: bool) -> torch.Tensor:
-        """Embed point prompts by applying positional encoding and label-specific embeddings."""
+        """通过应用位置编码和标签特定嵌入来嵌入点提示。"""
         points = points + 0.5  # Shift to center of pixel
         if pad:
             padding_point = torch.zeros((points.shape[0], 1, 2), dtype=points.dtype, device=points.device)
@@ -252,7 +249,7 @@ class PromptEncoder(nn.Module):
         return point_embedding
 
     def _embed_boxes(self, boxes: torch.Tensor) -> torch.Tensor:
-        """Embed box prompts by applying positional encoding and adding corner embeddings."""
+        """通过应用位置编码并添加角点嵌入来嵌入框提示。"""
         boxes = boxes + 0.5  # Shift to center of pixel
         coords = boxes.reshape(-1, 2, 2)
         corner_embedding = self.pe_layer.forward_with_coords(coords, self.input_image_size)
@@ -261,7 +258,7 @@ class PromptEncoder(nn.Module):
         return corner_embedding
 
     def _embed_masks(self, masks: torch.Tensor) -> torch.Tensor:
-        """Embed mask inputs by downscaling and processing through convolutional layers."""
+        """通过下采样和卷积层处理来嵌入掩码输入。"""
         return self.mask_downscaling(masks)
 
     @staticmethod
@@ -270,7 +267,7 @@ class PromptEncoder(nn.Module):
         boxes: torch.Tensor | None,
         masks: torch.Tensor | None,
     ) -> int:
-        """Get the batch size of the output given the batch size of the input prompts."""
+        """根据输入提示的批量大小获取输出的批量大小。"""
         if points is not None:
             return points[0].shape[0]
         elif boxes is not None:
@@ -286,17 +283,17 @@ class PromptEncoder(nn.Module):
         boxes: torch.Tensor | None,
         masks: torch.Tensor | None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Embed different types of prompts, returning both sparse and dense embeddings.
+        """嵌入不同类型的提示，返回稀疏和密集嵌入。
 
         Args:
-            points (tuple[torch.Tensor, torch.Tensor] | None): Point coordinates and labels to embed. The first tensor
-                contains coordinates of shape (B, N, 2), and the second tensor contains labels of shape (B, N).
-            boxes (torch.Tensor | None): Boxes to embed with shape (B, M, 2, 2), where M is the number of boxes.
-            masks (torch.Tensor | None): Masks to embed with shape (B, 1, H, W).
+            points (tuple[torch.Tensor, torch.Tensor] | None): 要嵌入的点坐标和标签。第一个张量包含形状为(B, N, 2)的坐标，
+                第二个张量包含形状为(B, N)的标签。
+            boxes (torch.Tensor | None): 要嵌入的框，形状为(B, M, 2, 2)，其中M是框的数量。
+            masks (torch.Tensor | None): 要嵌入的掩码，形状为(B, 1, H, W)。
 
         Returns:
-            sparse_embeddings (torch.Tensor): Sparse embeddings for points and boxes with shape (B, N, embed_dim).
-            dense_embeddings (torch.Tensor): Dense embeddings for masks of shape (B, embed_dim, embed_H, embed_W).
+            sparse_embeddings (torch.Tensor): 点和框的稀疏嵌入，形状为(B, N, embed_dim)。
+            dense_embeddings (torch.Tensor): 掩码的密集嵌入，形状为(B, embed_dim, embed_H, embed_W)。
 
         Examples:
             >>> encoder = PromptEncoder(256, (64, 64), (1024, 1024), 16)
@@ -332,20 +329,20 @@ class PromptEncoder(nn.Module):
 
 
 class MemoryEncoder(nn.Module):
-    """Encode pixel features and masks into a memory representation for efficient image segmentation.
+    """将像素特征和掩码编码为内存表示，用于高效图像分割。
 
-    This class processes pixel-level features and masks, fusing them to generate encoded memory representations suitable
-    for downstream tasks in image segmentation models like SAM (Segment Anything Model).
+    此类处理像素级特征和掩码，融合它们以生成适合SAM（Segment Anything Model）等图像分割模型下游任务
+    的编码内存表示。
 
     Attributes:
-        mask_downsampler (MaskDownSampler): Module for downsampling input masks.
-        pix_feat_proj (nn.Conv2d): Convolutional layer for projecting pixel features.
-        fuser (Fuser): Module for fusing pixel features and masks.
-        position_encoding (PositionEmbeddingSine): Module for adding positional encoding to features.
-        out_proj (nn.Module): Output projection layer, either nn.Identity or nn.Conv2d.
+        mask_downsampler (MaskDownSampler): 用于下采样输入掩码的模块。
+        pix_feat_proj (nn.Conv2d): 用于投影像素特征的卷积层。
+        fuser (Fuser): 用于融合像素特征和掩码的模块。
+        position_encoding (PositionEmbeddingSine): 用于为特征添加位置编码的模块。
+        out_proj (nn.Module): 输出投影层，可以是nn.Identity或nn.Conv2d。
 
     Methods:
-        forward: Process input pixel features and masks to generate encoded memory representations.
+        forward: 处理输入像素特征和掩码以生成编码的内存表示。
 
     Examples:
         >>> import torch
@@ -363,16 +360,15 @@ class MemoryEncoder(nn.Module):
         in_dim=256,  # in_dim of pix_feats
         interpol_size: tuple[int, int] | None = None,
     ):
-        """Initialize the MemoryEncoder for encoding pixel features and masks into memory representations.
+        """初始化MemoryEncoder，用于将像素特征和掩码编码为内存表示。
 
-        This encoder processes pixel-level features and masks, fusing them to generate encoded memory representations
-        suitable for downstream tasks in image segmentation models like SAM (Segment Anything Model).
+        此编码器处理像素级特征和掩码，融合它们以生成适合SAM（Segment Anything Model）等图像分割模型
+        下游任务的编码内存表示。
 
         Args:
-            out_dim (int): Output dimension of the encoded features.
-            in_dim (int): Input dimension of the pixel features.
-            interpol_size (tuple[int, int] | None): Size to interpolate masks to. If None, uses the size of pixel
-                features.
+            out_dim (int): 编码特征的输出维度。
+            in_dim (int): 像素特征的输入维度。
+            interpol_size (tuple[int, int] | None): 将掩码插值到的尺寸。如果为None，则使用像素特征的尺寸。
         """
         super().__init__()
 
@@ -391,7 +387,7 @@ class MemoryEncoder(nn.Module):
         masks: torch.Tensor,
         skip_mask_sigmoid: bool = False,
     ) -> dict:
-        """Process pixel features and masks to generate encoded memory representations for segmentation."""
+        """处理像素特征和掩码以生成用于分割的编码内存表示。"""
         if not skip_mask_sigmoid:
             masks = F.sigmoid(masks)
         masks = self.mask_downsampler(masks)
@@ -410,18 +406,18 @@ class MemoryEncoder(nn.Module):
 
 
 class ImageEncoder(nn.Module):
-    """Encode images using a trunk-neck architecture, producing multiscale features and positional encodings.
+    """使用trunk-neck架构编码图像，生成多尺度特征和位置编码。
 
-    This class combines a trunk network for feature extraction with a neck network for feature refinement and positional
-    encoding generation. It can optionally discard the lowest resolution features.
+    此类将用于特征提取的trunk网络与用于特征细化和位置编码生成的neck网络相结合。
+    它可以选择性地丢弃最低分辨率的特征。
 
     Attributes:
-        trunk (nn.Module): The trunk network for initial feature extraction.
-        neck (nn.Module): The neck network for feature refinement and positional encoding generation.
-        scalp (int): Number of lowest resolution feature levels to discard.
+        trunk (nn.Module): 用于初始特征提取的trunk网络。
+        neck (nn.Module): 用于特征细化和位置编码生成的neck网络。
+        scalp (int): 要丢弃的最低分辨率特征级别数量。
 
     Methods:
-        forward: Process the input image through the trunk and neck networks.
+        forward: 通过trunk和neck网络处理输入图像。
 
     Examples:
         >>> trunk = SomeTrunkNetwork()
@@ -439,15 +435,15 @@ class ImageEncoder(nn.Module):
         neck: nn.Module,
         scalp: int = 0,
     ):
-        """Initialize the ImageEncoder with trunk and neck networks for feature extraction and refinement.
+        """初始化ImageEncoder，使用trunk和neck网络进行特征提取和细化。
 
-        This encoder combines a trunk network for feature extraction with a neck network for feature refinement and
-        positional encoding generation. It can optionally discard the lowest resolution features.
+        此编码器将用于特征提取的trunk网络与用于特征细化和位置编码生成的neck网络相结合。
+        它可以选择性地丢弃最低分辨率的特征。
 
         Args:
-            trunk (nn.Module): The trunk network for initial feature extraction.
-            neck (nn.Module): The neck network for feature refinement and positional encoding generation.
-            scalp (int): Number of lowest resolution feature levels to discard.
+            trunk (nn.Module): 用于初始特征提取的trunk网络。
+            neck (nn.Module): 用于特征细化和位置编码生成的neck网络。
+            scalp (int): 要丢弃的最低分辨率特征级别数量。
         """
         super().__init__()
         self.trunk = trunk
@@ -458,7 +454,7 @@ class ImageEncoder(nn.Module):
         )
 
     def forward(self, sample: torch.Tensor):
-        """Encode input through trunk and neck networks, returning multiscale features and positional encodings."""
+        """通过trunk和neck网络编码输入，返回多尺度特征和位置编码。"""
         features, pos = self.neck(self.trunk(sample))
         if self.scalp > 0:
             # Discard the lowest resolution features
@@ -473,21 +469,20 @@ class ImageEncoder(nn.Module):
 
 
 class FpnNeck(nn.Module):
-    """A Feature Pyramid Network (FPN) neck variant for multiscale feature fusion in object detection models.
+    """一种用于目标检测模型中多尺度特征融合的Feature Pyramid Network（FPN）neck变体。
 
-    This FPN variant removes the output convolution and uses bicubic interpolation for feature resizing, similar to ViT
-    positional embedding interpolation.
+    此FPN变体移除了输出卷积，并使用双三次插值进行特征尺寸调整，类似于ViT位置嵌入插值。
 
     Attributes:
-        position_encoding (PositionEmbeddingSine): Sinusoidal positional encoding module.
-        convs (nn.ModuleList): List of convolutional layers for each backbone level.
-        backbone_channel_list (list[int]): List of channel dimensions from the backbone.
-        fpn_interp_model (str): Interpolation mode for FPN feature resizing.
-        fuse_type (str): Type of feature fusion, either 'sum' or 'avg'.
-        fpn_top_down_levels (list[int]): Levels to have top-down features in outputs.
+        position_encoding (PositionEmbeddingSine): 正弦位置编码模块。
+        convs (nn.ModuleList): 每个backbone级别的卷积层列表。
+        backbone_channel_list (list[int]): backbone的通道维度列表。
+        fpn_interp_model (str): FPN特征尺寸调整的插值模式。
+        fuse_type (str): 特征融合类型，'sum'或'avg'。
+        fpn_top_down_levels (list[int]): 输出中具有自上而下特征的级别。
 
     Methods:
-        forward: Perform forward pass through the FPN neck.
+        forward: 执行FPN neck的前向传播。
 
     Examples:
         >>> backbone_channels = [64, 128, 256, 512]
@@ -509,20 +504,19 @@ class FpnNeck(nn.Module):
         fuse_type: str = "sum",
         fpn_top_down_levels: list[int] | None = None,
     ):
-        """Initialize a modified Feature Pyramid Network (FPN) neck.
+        """初始化修改后的Feature Pyramid Network（FPN）neck。
 
-        This FPN variant removes the output convolution and uses bicubic interpolation for feature resizing, similar to
-        ViT positional embedding interpolation.
+        此FPN变体移除了输出卷积，并使用双三次插值进行特征尺寸调整，类似于ViT位置嵌入插值。
 
         Args:
-            d_model (int): Dimension of the model.
-            backbone_channel_list (list[int]): List of channel dimensions from the backbone.
-            kernel_size (int): Kernel size for the convolutional layers.
-            stride (int): Stride for the convolutional layers.
-            padding (int): Padding for the convolutional layers.
-            fpn_interp_model (str): Interpolation mode for FPN feature resizing.
-            fuse_type (str): Type of feature fusion, either 'sum' or 'avg'.
-            fpn_top_down_levels (list[int] | None): Levels to have top-down features in outputs.
+            d_model (int): 模型的维度。
+            backbone_channel_list (list[int]): backbone的通道维度列表。
+            kernel_size (int): 卷积层的卷积核大小。
+            stride (int): 卷积层的步幅。
+            padding (int): 卷积层的填充。
+            fpn_interp_model (str): FPN特征尺寸调整的插值模式。
+            fuse_type (str): 特征融合类型，'sum'或'avg'。
+            fpn_top_down_levels (list[int] | None): 输出中具有自上而下特征的级别。
         """
         super().__init__()
         self.position_encoding = PositionEmbeddingSine(num_pos_feats=256)
@@ -556,18 +550,17 @@ class FpnNeck(nn.Module):
         self.fpn_top_down_levels = list(fpn_top_down_levels)
 
     def forward(self, xs: list[torch.Tensor]):
-        """Perform forward pass through the Feature Pyramid Network (FPN) neck.
+        """执行Feature Pyramid Network（FPN）neck的前向传播。
 
-        This method processes a list of input tensors from the backbone through the FPN, applying lateral connections
-        and top-down feature fusion. It generates output feature maps and corresponding positional encodings.
+        此方法通过FPN处理来自backbone的输入张量列表，应用横向连接和自上而下的特征融合。
+        它生成输出特征图和相应的位置编码。
 
         Args:
-            xs (list[torch.Tensor]): List of input tensors from the backbone, each with shape (B, C, H, W).
+            xs (list[torch.Tensor]): 来自backbone的输入张量列表，每个张量形状为(B, C, H, W)。
 
         Returns:
-            out (list[torch.Tensor]): List of output feature maps after FPN processing, each with shape (B, d_model, H,
-                W).
-            pos (list[torch.Tensor]): List of positional encodings corresponding to each output feature map.
+            out (list[torch.Tensor]): FPN处理后输出特征图的列表，每个形状为(B, d_model, H, W)。
+            pos (list[torch.Tensor]): 对应每个输出特征图的位置编码列表。
 
         Examples:
             >>> fpn_neck = FpnNeck(d_model=256, backbone_channel_list=[64, 128, 256, 512])
@@ -608,29 +601,28 @@ class FpnNeck(nn.Module):
 
 
 class Hiera(nn.Module):
-    """Hierarchical vision transformer for efficient multiscale feature extraction in image processing tasks.
+    """层次化视觉transformer，用于图像处理任务中的高效多尺度特征提取。
 
-    This class implements a Hiera model, which is a hierarchical vision transformer architecture designed for efficient
-    multiscale feature extraction. It uses a series of transformer blocks organized into stages, with optional pooling
-    and global attention mechanisms.
+    此类实现了Hiera模型，这是一种设计用于高效多尺度特征提取的层次化视觉transformer架构。
+    它使用按阶段组织的一系列transformer块，具有可选的下采样和全局注意力机制。
 
     Attributes:
-        window_spec (tuple[int, ...]): Window sizes for each stage.
-        q_stride (tuple[int, int]): Downsampling stride between stages.
-        stage_ends (list[int]): Indices of the last block in each stage.
-        q_pool_blocks (list[int]): Indices of blocks where pooling is applied.
-        return_interm_layers (bool): Whether to return intermediate layer outputs.
-        patch_embed (PatchEmbed): Module for patch embedding.
-        global_att_blocks (tuple[int, ...]): Indices of blocks with global attention.
-        window_pos_embed_bkg_spatial_size (tuple[int, int]): Spatial size for window positional embedding background.
-        pos_embed (nn.Parameter): Positional embedding for the background.
-        pos_embed_window (nn.Parameter): Positional embedding for the window.
-        blocks (nn.ModuleList): List of MultiScaleBlock modules.
-        channel_list (list[int]): List of output channel dimensions for each stage.
+        window_spec (tuple[int, ...]): 每个阶段的窗口大小。
+        q_stride (tuple[int, int]): 阶段之间的下采样步幅。
+        stage_ends (list[int]): 每个阶段最后一个块的索引。
+        q_pool_blocks (list[int]): 应用下采样的块索引。
+        return_interm_layers (bool): 是否返回中间层输出。
+        patch_embed (PatchEmbed): 图块嵌入模块。
+        global_att_blocks (tuple[int, ...]): 使用全局注意力的块索引。
+        window_pos_embed_bkg_spatial_size (tuple[int, int]): 窗口位置嵌入背景的空间尺寸。
+        pos_embed (nn.Parameter): 背景的位置嵌入。
+        pos_embed_window (nn.Parameter): 窗口的位置嵌入。
+        blocks (nn.ModuleList): MultiScaleBlock模块的列表。
+        channel_list (list[int]): 每个阶段输出通道维度的列表。
 
     Methods:
-        _get_pos_embed: Generate positional embeddings by interpolating and combining window and background embeddings.
-        forward: Perform the forward pass through the Hiera model.
+        _get_pos_embed: 通过插值和组合窗口及背景嵌入来生成位置嵌入。
+        forward: 执行Hiera模型的前向传播。
 
     Examples:
         >>> model = Hiera(embed_dim=96, num_heads=1, stages=(2, 3, 16, 3))
@@ -666,26 +658,24 @@ class Hiera(nn.Module):
         ),
         return_interm_layers=True,  # return feats from every stage
     ):
-        """Initialize a Hiera model, a hierarchical vision transformer for efficient multiscale feature extraction.
+        """初始化Hiera模型，一种用于高效多尺度特征提取的层次化视觉transformer。
 
-        Hiera is a hierarchical vision transformer architecture designed for efficient multiscale feature extraction in
-        image processing tasks. It uses a series of transformer blocks organized into stages, with optional pooling and
-        global attention mechanisms.
+        Hiera是一种设计用于图像处理任务中高效多尺度特征提取的层次化视觉transformer架构。
+        它使用按阶段组织的一系列transformer块，具有可选的下采样和全局注意力机制。
 
         Args:
-            embed_dim (int): Initial embedding dimension for the model.
-            num_heads (int): Initial number of attention heads.
-            drop_path_rate (float): Stochastic depth rate.
-            q_pool (int): Number of query pooling stages.
-            q_stride (tuple[int, int]): Downsampling stride between stages.
-            stages (tuple[int, ...]): Number of blocks per stage.
-            dim_mul (float): Dimension multiplier factor at stage transitions.
-            head_mul (float): Head multiplier factor at stage transitions.
-            window_pos_embed_bkg_spatial_size (tuple[int, int]): Spatial size for window positional embedding
-                background.
-            window_spec (tuple[int, ...]): Window sizes for each stage when not using global attention.
-            global_att_blocks (tuple[int, ...]): Indices of blocks that use global attention.
-            return_interm_layers (bool): Whether to return intermediate layer outputs.
+            embed_dim (int): 模型的初始嵌入维度。
+            num_heads (int): 初始注意力头数。
+            drop_path_rate (float): 随机深度率。
+            q_pool (int): 查询下采样阶段的数量。
+            q_stride (tuple[int, int]): 阶段之间的下采样步幅。
+            stages (tuple[int, ...]): 每个阶段的块数量。
+            dim_mul (float): 阶段转换时的维度倍增因子。
+            head_mul (float): 阶段转换时的头数倍增因子。
+            window_pos_embed_bkg_spatial_size (tuple[int, int]): 窗口位置嵌入背景的空间尺寸。
+            window_spec (tuple[int, ...]): 不使用全局注意力时每个阶段的窗口大小。
+            global_att_blocks (tuple[int, ...]): 使用全局注意力的块索引。
+            return_interm_layers (bool): 是否返回中间层输出。
         """
         super().__init__()
 
@@ -751,7 +741,7 @@ class Hiera(nn.Module):
         )
 
     def _get_pos_embed(self, hw: tuple[int, int]) -> torch.Tensor:
-        """Generate positional embeddings by interpolating and combining window and background embeddings."""
+        """通过插值和组合窗口及背景嵌入来生成位置嵌入。"""
         h, w = hw
         window_embed = self.pos_embed_window
         pos_embed = F.interpolate(self.pos_embed, size=(h, w), mode="bicubic")
@@ -760,16 +750,15 @@ class Hiera(nn.Module):
         return pos_embed
 
     def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
-        """Perform forward pass through Hiera model, extracting multiscale features from input images.
+        """执行Hiera模型的前向传播，从输入图像中提取多尺度特征。
 
         Args:
-            x (torch.Tensor): Input tensor with shape (B, C, H, W) representing a batch of images.
+            x (torch.Tensor): 表示一批图像的输入张量，形状为(B, C, H, W)。
 
         Returns:
-            (list[torch.Tensor]): List of feature maps at different scales, each with shape (B, C_i, H_i, W_i), where
-                C_i is the channel dimension and H_i, W_i are the spatial dimensions at scale i. The list is ordered
-                from highest resolution (fine features) to lowest resolution (coarse features) if return_interm_layers
-                is True, otherwise contains only the final output.
+            (list[torch.Tensor]): 不同尺度的特征图列表，每个形状为(B, C_i, H_i, W_i)，其中C_i是通道维度，
+                H_i、W_i是尺度i的空间维度。如果return_interm_layers为True，列表从最高分辨率（精细特征）
+                到最低分辨率（粗略特征）排序，否则仅包含最终输出。
 
         Examples:
             >>> model = Hiera(embed_dim=96, num_heads=1, stages=(2, 3, 16, 3))

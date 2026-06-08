@@ -1,8 +1,8 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 """
-Benchmark YOLO model formats for speed and accuracy.
+YOLO 模型基准测试，对不同格式进行速度和精度评估。
 
-Usage:
+用法:
     from ultralytics.utils.benchmarks import ProfileModels, benchmark
     ProfileModels(['yolo26n.yaml', 'yolov8s.yaml']).run()
     benchmark(model='yolo26n.pt', imgsz=160)
@@ -78,46 +78,45 @@ def benchmark(
     format="",
     **kwargs,
 ):
-    """Benchmark a YOLO model across different formats for speed and accuracy.
+    """对不同格式的 YOLO 模型进行速度和精度基准测试。
 
-    Args:
-        model (str | Path): Path to the model file or directory.
-        data (str | None): Dataset to evaluate on, inherited from TASK2DATA if not passed.
-        imgsz (int): Image size for the benchmark.
-        half (bool): Use half-precision for the model if True.
-        int8 (bool): Use int8-precision for the model if True.
-        device (str): Device to run the benchmark on, either 'cpu' or 'cuda'.
-        verbose (bool | float): If True or a float, assert benchmarks pass with given metric.
-        eps (float): Epsilon value for divide by zero prevention.
-        format (str): Export format for benchmarking. If not supplied all formats are benchmarked.
-        **kwargs (Any): Additional keyword arguments for exporter.
+    参数:
+        model (str | Path): 模型文件或目录路径。
+        data (str | None): 评估数据集，未传入时从 TASK2DATA 继承。
+        imgsz (int): 基准测试的图像大小。
+        half (bool): 为 True 时使用半精度。
+        int8 (bool): 为 True 时使用 int8 精度。
+        device (str): 运行基准测试的设备，'cpu' 或 'cuda'。
+        verbose (bool | float): 如果为 True 或浮点数，断言基准测试通过给定指标。
+        eps (float): 防止除零的 Epsilon 值。
+        format (str): 基准测试的导出格式。未提供时测试所有格式。
+        **kwargs (Any): 导出器的额外关键字参数。
 
-    Returns:
-        (polars.DataFrame): A Polars DataFrame with benchmark results for each format, including file size, metric, and
-            inference time.
+    返回:
+        (polars.DataFrame): 包含每种格式基准测试结果的 Polars DataFrame，包括文件大小、指标和推理时间。
 
-    Examples:
-        Benchmark a YOLO model with default settings:
+    示例:
+        使用默认设置进行 YOLO 模型基准测试:
         >>> from ultralytics.utils.benchmarks import benchmark
         >>> benchmark(model="yolo26n.pt", imgsz=640)
     """
     imgsz = check_imgsz(imgsz)
     assert imgsz[0] == imgsz[1] if isinstance(imgsz, list) else True, "benchmark() only supports square imgsz."
 
-    import polars as pl  # scope for faster 'import ultralytics'
+    import polars as pl  # 限定作用域以加速 'import ultralytics'
 
-    pl.Config.set_tbl_cols(-1)  # Show all columns
-    pl.Config.set_tbl_rows(-1)  # Show all rows
-    pl.Config.set_tbl_width_chars(-1)  # No width limit
-    pl.Config.set_tbl_hide_column_data_types(True)  # Hide data types
-    pl.Config.set_tbl_hide_dataframe_shape(True)  # Hide shape info
+    pl.Config.set_tbl_cols(-1)  # 显示所有列
+    pl.Config.set_tbl_rows(-1)  # 显示所有行
+    pl.Config.set_tbl_width_chars(-1)  # 无宽度限制
+    pl.Config.set_tbl_hide_column_data_types(True)  # 隐藏数据类型
+    pl.Config.set_tbl_hide_dataframe_shape(True)  # 隐藏形状信息
     pl.Config.set_tbl_formatting("ASCII_BORDERS_ONLY_CONDENSED")
 
     device = select_device(device, verbose=False)
     if isinstance(model, (str, Path)):
         model = YOLO(model)
-    data = data or TASK2DATA[model.task]  # task to dataset, i.e. coco8.yaml for task=detect
-    key = TASK2METRIC[model.task]  # task to metric, i.e. metrics/mAP50-95(B) for task=detect
+    data = data or TASK2DATA[model.task]  # 任务对应数据集，如 task=detect 对应 coco8.yaml
+    key = TASK2METRIC[model.task]  # 任务对应指标，如 task=detect 对应 metrics/mAP50-95(B)
 
     y = []
     t0 = time.time()
@@ -127,12 +126,12 @@ def benchmark(
         formats = frozenset(export_formats()["Argument"])
         assert format in formats, f"Expected format to be one of {formats}, but got '{format_arg}'."
     for name, format, suffix, cpu, gpu, valid_args in zip(*export_formats().values()):
-        emoji, filename = "❌", None  # export defaults
+        emoji, filename = "❌", None  # 导出默认值
         try:
             if format_arg and format_arg != format:
                 continue
 
-            # Checks
+            # 检查
             if format == "pb":
                 assert model.task != "obb", "TensorFlow GraphDef not supported for OBB task"
             elif format == "edgetpu":
@@ -180,10 +179,10 @@ def benchmark(
             if "cuda" in device.type:
                 assert gpu, "inference not supported on GPU"
 
-            # Export
+            # 导出
             if format == "-":
                 filename = model.pt_path or model.ckpt_path or model.model_name
-                exported_model = deepcopy(model)  # PyTorch format
+                exported_model = deepcopy(model)  # PyTorch 格式
             else:
                 export_data = data if "data" in valid_args else None
                 filename = deepcopy(model).export(
@@ -197,17 +196,17 @@ def benchmark(
                     **kwargs,
                 )
                 exported_model = YOLO(filename, task=model.task)
-                assert suffix in str(filename), "export failed"
-            emoji = "❎"  # indicates export succeeded
+                assert suffix in str(filename), "导出失败"
+            emoji = "❎"  # 表示导出成功
 
-            # Predict
+            # 预测
             assert model.task != "pose" or format != "pb", "GraphDef Pose inference is not supported"
             assert format not in {"edgetpu", "tfjs"}, "inference not supported"
             assert format != "coreml" or platform.system() == "Darwin", "inference only supported on macOS>=10.13"
             assert format != "axelera", "inference only supported on Axelera hardware"
             exported_model.predict(ASSETS / "bus.jpg", imgsz=imgsz, device=device, half=half, verbose=False)
 
-            # Validate
+            # 验证
             results = exported_model.val(
                 data=data,
                 batch=1,
@@ -220,7 +219,7 @@ def benchmark(
                 conf=0.001,  # all the pre-set benchmark mAP values are based on conf=0.001
             )
             metric, speed = results.results_dict[key], results.speed["inference"]
-            fps = round(1000 / (speed + eps), 2)  # frames per second
+            fps = round(1000 / (speed + eps), 2)  # 每秒帧数
             y.append([name, "✅", round(file_size(filename), 1), round(metric, 4), round(speed, 2), fps])
         except Exception as e:
             if verbose:
@@ -228,10 +227,10 @@ def benchmark(
             LOGGER.error(f"Benchmark failure for {name}: {e}")
             y.append([name, emoji, round(file_size(filename), 1), None, None, None])  # mAP, t_inference
 
-    # Print results
-    check_yolo(device=device)  # print system info
+    # 打印结果
+    check_yolo(device=device)  # 打印系统信息
     df = pl.DataFrame(y, schema=["Format", "Status❔", "Size (MB)", key, "Inference time (ms/im)", "FPS"], orient="row")
-    df = df.with_row_index(" ", offset=1)  # add index info
+    df = df.with_row_index(" ", offset=1)  # 添加索引信息
     df_display = df.with_columns(pl.all().cast(pl.String).fill_null("-"))
 
     name = model.model_name
@@ -243,46 +242,46 @@ def benchmark(
         f.write(s)
 
     if verbose and isinstance(verbose, float):
-        metrics = df[key].to_numpy()  # values to compare to floor
-        floor = verbose  # minimum metric floor to pass, i.e. = 0.29 mAP for YOLOv5n
+        metrics = df[key].to_numpy()  # 与底线比较的值
+        floor = verbose  # 通过的最低指标底线，如 YOLOv5n 的 mAP = 0.29
         assert all(x > floor for x in metrics if not np.isnan(x)), f"Benchmark failure: metric(s) < floor {floor}"
 
     return df_display
 
 
 class RF100Benchmark:
-    """Benchmark YOLO model performance on the RF100 dataset collection.
+    """在 RF100 数据集集合上对 YOLO 模型进行基准测试。
 
-    This class provides functionality to download, process, and evaluate YOLO models on the RF100 datasets.
+    该类提供下载、处理和评估 YOLO 模型在 RF100 数据集上表现的功能。
 
-    Attributes:
-        ds_names (list[str]): Names of datasets used for benchmarking.
-        ds_cfg_list (list[Path]): List of paths to dataset configuration files.
-        rf (Roboflow | None): Roboflow instance for accessing datasets.
-        val_metrics (list[str]): Metrics used for validation.
+    属性:
+        ds_names (list[str]): 用于基准测试的数据集名称。
+        ds_cfg_list (list[Path]): 数据集配置文件路径列表。
+        rf (Roboflow | None): 用于访问数据集的 Roboflow 实例。
+        val_metrics (list[str]): 用于验证的指标。
 
-    Methods:
-        set_key: Set Roboflow API key for accessing datasets.
-        parse_dataset: Parse dataset links and download datasets.
-        fix_yaml: Fix train and validation paths in YAML files.
-        evaluate: Evaluate model performance on validation results.
+    方法:
+        set_key: 设置 Roboflow API 密钥以访问数据集。
+        parse_dataset: 解析数据集链接并下载数据集。
+        fix_yaml: 修复 YAML 文件中的训练和验证路径。
+        evaluate: 在验证结果上评估模型性能。
     """
 
     def __init__(self):
-        """Initialize the RF100Benchmark class for benchmarking YOLO model performance on RF100 datasets."""
+        """初始化 RF100Benchmark 类，用于在 RF100 数据集上对 YOLO 模型进行基准测试。"""
         self.ds_names = []
         self.ds_cfg_list = []
         self.rf = None
         self.val_metrics = ["class", "images", "targets", "precision", "recall", "map50", "map95"]
 
     def set_key(self, api_key: str):
-        """Set Roboflow API key for processing.
+        """设置 Roboflow API 密钥。
 
-        Args:
-            api_key (str): The API key.
+        参数:
+            api_key (str): API 密钥。
 
-        Examples:
-            Set the Roboflow API key for accessing datasets:
+        示例:
+            设置 Roboflow API 密钥以访问数据集:
             >>> benchmark = RF100Benchmark()
             >>> benchmark.set_key("your_roboflow_api_key")
         """
@@ -292,15 +291,15 @@ class RF100Benchmark:
         self.rf = Roboflow(api_key=api_key)
 
     def parse_dataset(self, ds_link_txt: str = "datasets_links.txt"):
-        """Parse dataset links and download datasets.
+        """解析数据集链接并下载数据集。
 
-        Args:
-            ds_link_txt (str): Path to the file containing dataset links.
+        参数:
+            ds_link_txt (str): 包含数据集链接的文件路径。
 
-        Returns:
-            (tuple[list[str], list[Path]]): List of dataset names and list of paths to dataset configuration files.
+        返回:
+            (tuple[list[str], list[Path]]): 数据集名称列表和数据集配置文件路径列表。
 
-        Examples:
+        示例:
             >>> benchmark = RF100Benchmark()
             >>> benchmark.set_key("api_key")
             >>> benchmark.parse_dataset("datasets_links.txt")
@@ -328,26 +327,26 @@ class RF100Benchmark:
 
     @staticmethod
     def fix_yaml(path: Path):
-        """Fix the train and validation paths in a given YAML file."""
+        """修复给定 YAML 文件中的训练和验证路径。"""
         yaml_data = YAML.load(path)
         yaml_data["train"] = "train/images"
         yaml_data["val"] = "valid/images"
         YAML.save(path, yaml_data)
 
     def evaluate(self, yaml_path: str, val_log_file: str, eval_log_file: str, list_ind: int):
-        """Evaluate model performance on validation results.
+        """在验证结果上评估模型性能。
 
-        Args:
-            yaml_path (str): Path to the YAML configuration file.
-            val_log_file (str): Path to the validation log file.
-            eval_log_file (str): Path to the evaluation log file.
-            list_ind (int): Index of the current dataset in the list.
+        参数:
+            yaml_path (str): YAML 配置文件路径。
+            val_log_file (str): 验证日志文件路径。
+            eval_log_file (str): 评估日志文件路径。
+            list_ind (int): 当前数据集在列表中的索引。
 
-        Returns:
-            (float): The mean average precision (mAP) value for the evaluated model.
+        返回:
+            (float): 评估模型的平均精度（mAP）值。
 
-        Examples:
-            Evaluate a model on a specific dataset
+        示例:
+            在特定数据集上评估模型
             >>> benchmark = RF100Benchmark()
             >>> benchmark.evaluate("path/to/data.yaml", "path/to/val_log.txt", "path/to/eval_log.txt", 0)
         """
@@ -392,33 +391,33 @@ class RF100Benchmark:
 
 
 class ProfileModels:
-    """ProfileModels class for profiling different models on ONNX and TensorRT.
+    """ProfileModels 类，用于在 ONNX 和 TensorRT 上分析不同模型。
 
-    This class profiles the performance of different models, returning results such as model speed and FLOPs.
+    该类分析不同模型的性能，返回模型速度和 FLOPs 等结果。
 
-    Attributes:
-        paths (list[str]): Paths of the models to profile.
-        num_timed_runs (int): Number of timed runs for the profiling.
-        num_warmup_runs (int): Number of warmup runs before profiling.
-        min_time (float): Minimum number of seconds to profile for.
-        imgsz (int): Image size used in the models.
-        half (bool): Flag to indicate whether to use FP16 half-precision for TensorRT profiling.
-        trt (bool): Flag to indicate whether to profile using TensorRT.
-        device (torch.device): Device used for profiling.
+    属性:
+        paths (list[str]): 要分析的模型路径。
+        num_timed_runs (int): 计时运行次数。
+        num_warmup_runs (int): 预热运行次数。
+        min_time (float): 最短分析时间（秒）。
+        imgsz (int): 模型使用的图像大小。
+        half (bool): 是否使用 FP16 半精度进行 TensorRT 分析的标志。
+        trt (bool): 是否使用 TensorRT 进行分析的标志。
+        device (torch.device): 用于分析的设备。
 
-    Methods:
-        run: Profile YOLO models for speed and accuracy across various formats.
-        get_files: Get all relevant model files.
-        get_onnx_model_info: Extract metadata from an ONNX model.
-        iterative_sigma_clipping: Apply sigma clipping to remove outliers.
-        profile_tensorrt_model: Profile a TensorRT model.
-        profile_onnx_model: Profile an ONNX model.
-        generate_table_row: Generate a table row with model metrics.
-        generate_results_dict: Generate a dictionary of profiling results.
-        print_table: Print a formatted table of results.
+    方法:
+        run: 对 YOLO 模型在各种格式下进行速度和精度分析。
+        get_files: 获取所有相关模型文件。
+        get_onnx_model_info: 从 ONNX 模型中提取元数据。
+        iterative_sigma_clipping: 应用 sigma 裁剪移除异常值。
+        profile_tensorrt_model: 分析 TensorRT 模型。
+        profile_onnx_model: 分析 ONNX 模型。
+        generate_table_row: 生成包含模型指标的表格行。
+        generate_results_dict: 生成分析结果的字典。
+        print_table: 打印格式化的结果表格。
 
-    Examples:
-        Profile models and print results
+    示例:
+        分析模型并打印结果
         >>> from ultralytics.utils.benchmarks import ProfileModels
         >>> profiler = ProfileModels(["yolo26n.yaml", "yolov8s.yaml"], imgsz=640)
         >>> profiler.run()
@@ -435,20 +434,20 @@ class ProfileModels:
         trt: bool = True,
         device: torch.device | str | None = None,
     ):
-        """Initialize the ProfileModels class for profiling models.
+        """初始化 ProfileModels 类用于分析模型。
 
-        Args:
-            paths (list[str]): List of paths of the models to be profiled.
-            num_timed_runs (int): Number of timed runs for the profiling.
-            num_warmup_runs (int): Number of warmup runs before the actual profiling starts.
-            min_time (float): Minimum time in seconds for profiling a model.
-            imgsz (int): Size of the image used during profiling.
-            half (bool): Flag to indicate whether to use FP16 half-precision for TensorRT profiling.
-            trt (bool): Flag to indicate whether to profile using TensorRT.
-            device (torch.device | str | None): Device used for profiling. If None, it is determined automatically.
+        参数:
+            paths (list[str]): 要分析的模型路径列表。
+            num_timed_runs (int): 计时运行次数。
+            num_warmup_runs (int): 实际分析前的预热运行次数。
+            min_time (float): 分析模型的最短时间（秒）。
+            imgsz (int): 分析期间使用的图像大小。
+            half (bool): 是否使用 FP16 半精度进行 TensorRT 分析的标志。
+            trt (bool): 是否使用 TensorRT 进行分析的标志。
+            device (torch.device | str | None): 用于分析的设备。如果为 None，自动确定。
 
-        Notes:
-            FP16 'half' argument option removed for ONNX as slower on CPU than FP32.
+        注意:
+            ONNX 的 FP16 'half' 参数选项已移除，因为在 CPU 上比 FP32 更慢。
         """
         self.paths = paths
         self.num_timed_runs = num_timed_runs
@@ -456,17 +455,17 @@ class ProfileModels:
         self.min_time = min_time
         self.imgsz = imgsz
         self.half = half
-        self.trt = trt  # run TensorRT profiling
+        self.trt = trt  # 运行 TensorRT 分析
         self.device = device if isinstance(device, torch.device) else select_device(device)
 
     def run(self):
-        """Profile YOLO models for speed and accuracy across various formats including ONNX and TensorRT.
+        """对 YOLO 模型在各种格式（包括 ONNX 和 TensorRT）下进行速度和精度分析。
 
-        Returns:
-            (list[dict]): List of dictionaries containing profiling results for each model.
+        返回:
+            (list[dict]): 包含每个模型分析结果的字典列表。
 
-        Examples:
-            Profile models and print results
+        示例:
+            分析模型并打印结果
             >>> from ultralytics.utils.benchmarks import ProfileModels
             >>> profiler = ProfileModels(["yolo26n.yaml", "yolo11s.yaml"])
             >>> results = profiler.run()
@@ -483,7 +482,7 @@ class ProfileModels:
             engine_file = file.with_suffix(".engine")
             if file.suffix in {".pt", ".yaml", ".yml"}:
                 model = YOLO(str(file))
-                model.fuse()  # to report correct params and GFLOPs in model.info()
+                model.fuse()  # 以便在 model.info() 中报告正确的参数和 GFLOPs
                 model_info = model.info(imgsz=self.imgsz)
                 if self.trt and self.device.type != "cpu" and not engine_file.is_file():
                     engine_file = model.export(
@@ -514,10 +513,10 @@ class ProfileModels:
         return output
 
     def get_files(self):
-        """Return a list of paths for all relevant model files given by the user.
+        """返回用户给定的所有相关模型文件路径列表。
 
-        Returns:
-            (list[Path]): List of Path objects for the model files.
+        返回:
+            (list[Path]): 模型文件的 Path 对象列表。
         """
         files = []
         for path in self.paths:
@@ -525,7 +524,7 @@ class ProfileModels:
             if path.is_dir():
                 extensions = ["*.pt", "*.onnx", "*.yaml"]
                 files.extend([file for ext in extensions for file in glob.glob(str(path / ext))])
-            elif path.suffix in {".pt", ".yaml", ".yml"}:  # add non-existing
+            elif path.suffix in {".pt", ".yaml", ".yml"}:  # 添加不存在的
                 files.append(str(path))
             else:
                 files.extend(glob.glob(str(path)))
@@ -535,20 +534,20 @@ class ProfileModels:
 
     @staticmethod
     def get_onnx_model_info(onnx_file: str):
-        """Extract metadata from an ONNX model file including layers, parameters, gradients, and FLOPs."""
-        return 0.0, 0.0, 0.0, 0.0  # return (num_layers, num_params, num_gradients, num_flops)
+        """从 ONNX 模型文件中提取元数据，包括层数、参数、梯度和 FLOPs。"""
+        return 0.0, 0.0, 0.0, 0.0  # 返回 (num_layers, num_params, num_gradients, num_flops)
 
     @staticmethod
     def iterative_sigma_clipping(data: np.ndarray, sigma: float = 2, max_iters: int = 3):
-        """Apply iterative sigma clipping to data to remove outliers.
+        """对数据应用迭代 sigma 裁剪以移除异常值。
 
-        Args:
-            data (np.ndarray): Input data array.
-            sigma (float): Number of standard deviations to use for clipping.
-            max_iters (int): Maximum number of iterations for the clipping process.
+        参数:
+            data (np.ndarray): 输入数据数组。
+            sigma (float): 用于裁剪的标准差倍数。
+            max_iters (int): 裁剪过程的最大迭代次数。
 
-        Returns:
-            (np.ndarray): Clipped data array with outliers removed.
+        返回:
+            (np.ndarray): 移除异常值后的裁剪数据数组。
         """
         data = np.array(data)
         for _ in range(max_iters):
@@ -560,23 +559,23 @@ class ProfileModels:
         return data
 
     def profile_tensorrt_model(self, engine_file: str, eps: float = 1e-3):
-        """Profile YOLO model performance with TensorRT, measuring average run time and standard deviation.
+        """使用 TensorRT 分析 YOLO 模型性能，测量平均运行时间和标准差。
 
-        Args:
-            engine_file (str): Path to the TensorRT engine file.
-            eps (float): Small epsilon value to prevent division by zero.
+        参数:
+            engine_file (str): TensorRT 引擎文件路径。
+            eps (float): 防止除零的小 epsilon 值。
 
-        Returns:
-            (tuple[float, float]): Mean and standard deviation of inference time in milliseconds.
+        返回:
+            (tuple[float, float]): 推理时间的均值和标准差（毫秒）。
         """
         if not self.trt or not Path(engine_file).is_file():
             return 0.0, 0.0
 
-        # Model and input
+        # 模型和输入
         model = YOLO(engine_file)
-        input_data = np.zeros((self.imgsz, self.imgsz, 3), dtype=np.uint8)  # use uint8 for Classify
+        input_data = np.zeros((self.imgsz, self.imgsz, 3), dtype=np.uint8)  # 使用 uint8 用于分类
 
-        # Warmup runs
+        # 预热运行
         elapsed = 0.0
         for _ in range(3):
             start_time = time.time()
@@ -584,40 +583,40 @@ class ProfileModels:
                 model(input_data, imgsz=self.imgsz, verbose=False)
             elapsed = time.time() - start_time
 
-        # Compute number of runs as higher of min_time or num_timed_runs
+        # 计算运行次数，取 min_time 和 num_timed_runs 的较大值
         num_runs = max(round(self.min_time / (elapsed + eps) * self.num_warmup_runs), self.num_timed_runs * 50)
 
-        # Timed runs
+        # 计时运行
         run_times = []
         for _ in TQDM(range(num_runs), desc=engine_file):
             results = model(input_data, imgsz=self.imgsz, verbose=False)
-            run_times.append(results[0].speed["inference"])  # Convert to milliseconds
+            run_times.append(results[0].speed["inference"])  # 转换为毫秒
 
-        run_times = self.iterative_sigma_clipping(np.array(run_times), sigma=2, max_iters=3)  # sigma clipping
+        run_times = self.iterative_sigma_clipping(np.array(run_times), sigma=2, max_iters=3)  # sigma 裁剪
         return np.mean(run_times), np.std(run_times)
 
     @staticmethod
     def check_dynamic(tensor_shape):
-        """Check whether the tensor shape in the ONNX model is dynamic."""
+        """检查 ONNX 模型中的张量形状是否为动态。"""
         return not all(isinstance(dim, int) and dim >= 0 for dim in tensor_shape)
 
     def profile_onnx_model(self, onnx_file: str, eps: float = 1e-3):
-        """Profile an ONNX model, measuring average inference time and standard deviation across multiple runs.
+        """分析 ONNX 模型，测量多次运行的平均推理时间和标准差。
 
-        Args:
-            onnx_file (str): Path to the ONNX model file.
-            eps (float): Small epsilon value to prevent division by zero.
+        参数:
+            onnx_file (str): ONNX 模型文件路径。
+            eps (float): 防止除零的小 epsilon 值。
 
-        Returns:
-            (tuple[float, float]): Mean and standard deviation of inference time in milliseconds.
+        返回:
+            (tuple[float, float]): 推理时间的均值和标准差（毫秒）。
         """
-        check_requirements([("onnxruntime", "onnxruntime-gpu")])  # either package meets requirements
+        check_requirements([("onnxruntime", "onnxruntime-gpu")])  # 任一包满足要求
         import onnxruntime as ort
 
-        # Session with either 'TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider'
+        # 使用 'TensorrtExecutionProvider'、'CUDAExecutionProvider' 或 'CPUExecutionProvider' 的会话
         sess_options = ort.SessionOptions()
         sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-        sess_options.intra_op_num_threads = 8  # Limit the number of threads
+        sess_options.intra_op_num_threads = 8  # 限制线程数
         sess = ort.InferenceSession(onnx_file, sess_options, providers=["CPUExecutionProvider"])
 
         input_data_dict = {}
@@ -632,7 +631,7 @@ class ProfileModels:
             else:
                 input_shape = input_tensor.shape
 
-            # Mapping ONNX datatype to numpy datatype
+            # 映射 ONNX 数据类型到 numpy 数据类型
             if "float16" in input_type:
                 input_dtype = np.float16
             elif "float" in input_type:
@@ -652,7 +651,7 @@ class ProfileModels:
 
         output_name = sess.get_outputs()[0].name
 
-        # Warmup runs
+        # 预热运行
         elapsed = 0.0
         for _ in range(3):
             start_time = time.time()
@@ -660,17 +659,17 @@ class ProfileModels:
                 sess.run([output_name], input_data_dict)
             elapsed = time.time() - start_time
 
-        # Compute number of runs as higher of min_time or num_timed_runs
+        # 计算运行次数，取 min_time 和 num_timed_runs 的较大值
         num_runs = max(round(self.min_time / (elapsed + eps) * self.num_warmup_runs), self.num_timed_runs)
 
-        # Timed runs
+        # 计时运行
         run_times = []
         for _ in TQDM(range(num_runs), desc=onnx_file):
             start_time = time.time()
             sess.run([output_name], input_data_dict)
-            run_times.append((time.time() - start_time) * 1000)  # Convert to milliseconds
+            run_times.append((time.time() - start_time) * 1000)  # 转换为毫秒
 
-        run_times = self.iterative_sigma_clipping(np.array(run_times), sigma=2, max_iters=5)  # sigma clipping
+        run_times = self.iterative_sigma_clipping(np.array(run_times), sigma=2, max_iters=5)  # sigma 裁剪
         return np.mean(run_times), np.std(run_times)
 
     def generate_table_row(
@@ -680,16 +679,16 @@ class ProfileModels:
         t_engine: tuple[float, float],
         model_info: tuple[float, float, float, float],
     ):
-        """Generate a table row string with model performance metrics.
+        """生成包含模型性能指标的表格行字符串。
 
-        Args:
-            model_name (str): Name of the model.
-            t_onnx (tuple): ONNX model inference time statistics (mean, std).
-            t_engine (tuple): TensorRT engine inference time statistics (mean, std).
-            model_info (tuple): Model information (layers, params, gradients, flops).
+        参数:
+            model_name (str): 模型名称。
+            t_onnx (tuple): ONNX 模型推理时间统计（均值，标准差）。
+            t_engine (tuple): TensorRT 引擎推理时间统计（均值，标准差）。
+            model_info (tuple): 模型信息（层数，参数，梯度，FLOPs）。
 
-        Returns:
-            (str): Formatted table row string with model metrics.
+        返回:
+            (str): 包含模型指标的格式化表格行字符串。
         """
         _layers, params, _gradients, flops = model_info
         return (
@@ -704,16 +703,16 @@ class ProfileModels:
         t_engine: tuple[float, float],
         model_info: tuple[float, float, float, float],
     ):
-        """Generate a dictionary of profiling results.
+        """生成分析结果的字典。
 
-        Args:
-            model_name (str): Name of the model.
-            t_onnx (tuple): ONNX model inference time statistics (mean, std).
-            t_engine (tuple): TensorRT engine inference time statistics (mean, std).
-            model_info (tuple): Model information (layers, params, gradients, flops).
+        参数:
+            model_name (str): 模型名称。
+            t_onnx (tuple): ONNX 模型推理时间统计（均值，标准差）。
+            t_engine (tuple): TensorRT 引擎推理时间统计（均值，标准差）。
+            model_info (tuple): 模型信息（层数，参数，梯度，FLOPs）。
 
-        Returns:
-            (dict): Dictionary containing profiling results.
+        返回:
+            (dict): 包含分析结果的字典。
         """
         _layers, params, _gradients, flops = model_info
         return {
@@ -726,9 +725,9 @@ class ProfileModels:
 
     @staticmethod
     def print_table(table_rows: list[str]):
-        """Print a formatted table of model profiling results.
+        """打印格式化的模型分析结果表格。
 
-        Args:
+        参数:
             table_rows (list[str]): List of formatted table row strings.
         """
         gpu = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "GPU"

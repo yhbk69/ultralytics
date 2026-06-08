@@ -12,10 +12,10 @@ from .ops import ltwh2xywh, ltwh2xyxy, resample_segments, xywh2ltwh, xywh2xyxy, 
 
 
 def _ntuple(n):
-    """Create a function that converts input to n-tuple by repeating singleton values."""
+    """创建一个将输入转换为 n 元组的函数，通过重复单个值。"""
 
     def parse(x):
-        """Parse input to return n-tuple by repeating singleton values n times."""
+        """解析输入并返回 n 元组，将单个值重复 n 次。"""
         return x if isinstance(x, abc.Iterable) else tuple(repeat(x, n))
 
     return parse
@@ -24,47 +24,47 @@ def _ntuple(n):
 to_2tuple = _ntuple(2)
 to_4tuple = _ntuple(4)
 
-# `xyxy` means left top and right bottom
-# `xywh` means center x, center y and width, height(YOLO format)
-# `ltwh` means left top and width, height(COCO format)
+# `xyxy` 表示左上角和右下角
+# `xywh` 表示中心 x、中心 y 和宽度、高度（YOLO 格式）
+# `ltwh` 表示左上角和宽度、高度（COCO 格式）
 _formats = ["xyxy", "xywh", "ltwh"]
 
 __all__ = ("Bboxes", "Instances")  # tuple or list
 
 
 class Bboxes:
-    """A class for handling bounding boxes in multiple formats.
+    """处理多种格式的边界框的类。
 
-    The class supports various bounding box formats like 'xyxy', 'xywh', and 'ltwh' and provides methods for format
-    conversion, scaling, and area calculation. Bounding box data should be provided as numpy arrays.
+    该类支持多种边界框格式，如 'xyxy'、'xywh' 和 'ltwh'，并提供格式转换、缩放和面积计算的方法。
+    边界框数据应以 numpy 数组形式提供。
 
-    Attributes:
-        bboxes (np.ndarray): The bounding boxes stored in a 2D numpy array with shape (N, 4).
-        format (str): The format of the bounding boxes ('xyxy', 'xywh', or 'ltwh').
+    属性:
+        bboxes (np.ndarray): 存储在形状为 (N, 4) 的 2D numpy 数组中的边界框。
+        format (str): 边界框的格式（'xyxy'、'xywh' 或 'ltwh'）。
 
-    Methods:
-        convert: Convert bounding box format from one type to another.
-        areas: Calculate the area of bounding boxes.
-        mul: Multiply bounding box coordinates by scale factor(s).
-        add: Add offset to bounding box coordinates.
-        concatenate: Concatenate multiple Bboxes objects.
+    方法:
+        convert: 将边界框格式从一种类型转换为另一种。
+        areas: 计算边界框的面积。
+        mul: 将边界框坐标乘以缩放因子。
+        add: 将偏移量加到边界框坐标上。
+        concatenate: 拼接多个 Bboxes 对象。
 
-    Examples:
-        Create bounding boxes in YOLO format
+    示例:
+        创建 YOLO 格式的边界框
         >>> bboxes = Bboxes(np.array([[100, 50, 150, 100]]), format="xywh")
         >>> bboxes.convert("xyxy")
         >>> print(bboxes.areas())
 
-    Notes:
-        This class does not handle normalization or denormalization of bounding boxes.
+    注意:
+        该类不处理边界框的归一化或反归一化。
     """
 
     def __init__(self, bboxes: np.ndarray, format: str = "xyxy") -> None:
-        """Initialize the Bboxes class with bounding box data in a specified format.
+        """以指定格式使用边界框数据初始化 Bboxes 类。
 
-        Args:
-            bboxes (np.ndarray): Array of bounding boxes with shape (N, 4) or (4,).
-            format (str): Format of the bounding boxes, one of 'xyxy', 'xywh', or 'ltwh'.
+        参数:
+            bboxes (np.ndarray): 形状为 (N, 4) 或 (4,) 的边界框数组。
+            format (str): 边界框格式，'xyxy'、'xywh' 或 'ltwh' 之一。
         """
         assert format in _formats, f"Invalid bounding box format: {format}, format must be one of {_formats}"
         bboxes = bboxes[None, :] if bboxes.ndim == 1 else bboxes
@@ -74,10 +74,10 @@ class Bboxes:
         self.format = format
 
     def convert(self, format: str) -> None:
-        """Convert bounding box format from one type to another.
+        """将边界框格式从一种类型转换为另一种。
 
-        Args:
-            format (str): Target format for conversion, one of 'xyxy', 'xywh', or 'ltwh'.
+        参数:
+            format (str): 转换的目标格式，'xyxy'、'xywh' 或 'ltwh' 之一。
         """
         assert format in _formats, f"Invalid bounding box format: {format}, format must be one of {_formats}"
         if self.format == format:
@@ -92,19 +92,18 @@ class Bboxes:
         self.format = format
 
     def areas(self) -> np.ndarray:
-        """Calculate the area of bounding boxes."""
+        """计算边界框的面积。"""
         return (
-            (self.bboxes[:, 2] - self.bboxes[:, 0]) * (self.bboxes[:, 3] - self.bboxes[:, 1])  # format xyxy
+            (self.bboxes[:, 2] - self.bboxes[:, 0]) * (self.bboxes[:, 3] - self.bboxes[:, 1])  # 格式 xyxy
             if self.format == "xyxy"
-            else self.bboxes[:, 3] * self.bboxes[:, 2]  # format xywh or ltwh
+            else self.bboxes[:, 3] * self.bboxes[:, 2]  # 格式 xywh 或 ltwh
         )
 
     def mul(self, scale: int | tuple | list) -> None:
-        """Multiply bounding box coordinates by scale factor(s).
+        """将边界框坐标乘以缩放因子。
 
-        Args:
-            scale (int | tuple | list): Scale factor(s) for four coordinates. If int, the same scale is applied to all
-                coordinates.
+        参数:
+            scale (int | tuple | list): 四个坐标的缩放因子。如果为 int，所有坐标应用相同的缩放。
         """
         if isinstance(scale, Number):
             scale = to_4tuple(scale)
@@ -116,11 +115,10 @@ class Bboxes:
         self.bboxes[:, 3] *= scale[3]
 
     def add(self, offset: int | tuple | list) -> None:
-        """Add offset to bounding box coordinates.
+        """将偏移量加到边界框坐标上。
 
-        Args:
-            offset (int | tuple | list): Offset(s) for four coordinates. If int, the same offset is applied to all
-                coordinates.
+        参数:
+            offset (int | tuple | list): 四个坐标的偏移量。如果为 int，所有坐标应用相同的偏移。
         """
         if isinstance(offset, Number):
             offset = to_4tuple(offset)
@@ -132,22 +130,22 @@ class Bboxes:
         self.bboxes[:, 3] += offset[3]
 
     def __len__(self) -> int:
-        """Return the number of bounding boxes."""
+        """返回边界框数量。"""
         return len(self.bboxes)
 
     @classmethod
     def concatenate(cls, boxes_list: list[Bboxes], axis: int = 0) -> Bboxes:
-        """Concatenate a list of Bboxes objects into a single Bboxes object.
+        """将 Bboxes 对象列表拼接为单个 Bboxes 对象。
 
-        Args:
-            boxes_list (list[Bboxes]): A list of Bboxes objects to concatenate.
-            axis (int, optional): The axis along which to concatenate the bounding boxes.
+        参数:
+            boxes_list (list[Bboxes]): 要拼接的 Bboxes 对象列表。
+            axis (int, 可选): 拼接边界框的轴。
 
-        Returns:
-            (Bboxes): A new Bboxes object containing the concatenated bounding boxes.
+        返回:
+            (Bboxes): 包含拼接后边界框的新 Bboxes 对象。
 
-        Notes:
-            The input should be a list or tuple of Bboxes objects.
+        注意:
+            输入应为 Bboxes 对象的列表或元组。
         """
         assert isinstance(boxes_list, (list, tuple))
         if not boxes_list:
@@ -159,17 +157,16 @@ class Bboxes:
         return cls(np.concatenate([b.bboxes for b in boxes_list], axis=axis))
 
     def __getitem__(self, index: int | np.ndarray | slice) -> Bboxes:
-        """Retrieve a specific bounding box or a set of bounding boxes using indexing.
+        """使用索引检索特定的边界框或一组边界框。
 
-        Args:
-            index (int | slice | np.ndarray): The index, slice, or boolean array to select the desired bounding boxes.
+        参数:
+            index (int | slice | np.ndarray): 选择所需边界框的索引、切片或布尔数组。
 
-        Returns:
-            (Bboxes): A new Bboxes object containing the selected bounding boxes.
+        返回:
+            (Bboxes): 包含所选边界框的新 Bboxes 对象。
 
-        Notes:
-            When using boolean indexing, make sure to provide a boolean array with the same length as the number of
-            bounding boxes.
+        注意:
+            使用布尔索引时，请确保提供与边界框数量相同长度的布尔数组。
         """
         if isinstance(index, int):
             return Bboxes(self.bboxes[index].reshape(1, -1))
@@ -179,33 +176,32 @@ class Bboxes:
 
 
 class Instances:
-    """Container for bounding boxes, segments, and keypoints of detected objects in an image.
+    """图像中检测到的目标的边界框、分割和关键点的容器。
 
-    This class provides a unified interface for handling different types of object annotations including bounding boxes,
-    segmentation masks, and keypoints. It supports various operations like scaling, normalization, clipping, and format
-    conversion.
+    该类提供处理不同类型目标标注（包括边界框、分割掩码和关键点）的统一接口。
+    支持缩放、归一化、裁剪和格式转换等多种操作。
 
-    Attributes:
-        _bboxes (Bboxes): Internal object for handling bounding box operations.
-        keypoints (np.ndarray): Keypoints with shape (N, 17, 3) in format (x, y, visible).
-        normalized (bool): Flag indicating whether the bounding box coordinates are normalized.
-        segments (np.ndarray): Segments array with shape (N, M, 2) after resampling.
+    属性:
+        _bboxes (Bboxes): 处理边界框操作的内部对象。
+        keypoints (np.ndarray): 关键点，形状 (N, 17, 3)，格式 (x, y, visible)。
+        normalized (bool): 指示边界框坐标是否已归一化的标志。
+        segments (np.ndarray): 重采样后的分割数组，形状 (N, M, 2)。
 
-    Methods:
-        convert_bbox: Convert bounding box format.
-        scale: Scale coordinates by given factors.
-        denormalize: Convert normalized coordinates to absolute coordinates.
-        normalize: Convert absolute coordinates to normalized coordinates.
-        add_padding: Add padding to coordinates.
-        flipud: Flip coordinates vertically.
-        fliplr: Flip coordinates horizontally.
-        clip: Clip coordinates to stay within image boundaries.
-        remove_zero_area_boxes: Remove boxes with zero area.
-        update: Update instance variables.
-        concatenate: Concatenate multiple Instances objects.
+    方法:
+        convert_bbox: 转换边界框格式。
+        scale: 按给定因子缩放坐标。
+        denormalize: 将归一化坐标转换为绝对坐标。
+        normalize: 将绝对坐标转换为归一化坐标。
+        add_padding: 为坐标添加填充。
+        flipud: 垂直翻转坐标。
+        fliplr: 水平翻转坐标。
+        clip: 将坐标裁剪到图像边界内。
+        remove_zero_area_boxes: 移除零面积的框。
+        update: 更新实例变量。
+        concatenate: 拼接多个 Instances 对象。
 
-    Examples:
-        Create instances with bounding boxes and segments
+    示例:
+        创建带有边界框和分割的实例
         >>> instances = Instances(
         ...     bboxes=np.array([[10, 10, 30, 30], [20, 20, 40, 40]]),
         ...     segments=[np.array([[5, 5], [10, 10]]), np.array([[15, 15], [20, 20]])],
@@ -221,14 +217,14 @@ class Instances:
         bbox_format: str = "xywh",
         normalized: bool = True,
     ) -> None:
-        """Initialize the Instances object with bounding boxes, segments, and keypoints.
+        """使用边界框、分割和关键点初始化 Instances 对象。
 
-        Args:
-            bboxes (np.ndarray): Bounding boxes with shape (N, 4).
-            segments (np.ndarray, optional): Segmentation masks.
-            keypoints (np.ndarray, optional): Keypoints with shape (N, 17, 3) in format (x, y, visible).
-            bbox_format (str): Format of bboxes.
-            normalized (bool): Whether the coordinates are normalized.
+        参数:
+            bboxes (np.ndarray): 边界框，形状 (N, 4)。
+            segments (np.ndarray, 可选): 分割掩码。
+            keypoints (np.ndarray, 可选): 关键点，形状 (N, 17, 3)，格式 (x, y, visible)。
+            bbox_format (str): 边界框格式。
+            normalized (bool): 坐标是否已归一化。
         """
         self._bboxes = Bboxes(bboxes=bboxes, format=bbox_format)
         self.keypoints = keypoints
@@ -236,25 +232,24 @@ class Instances:
         self.segments = segments
 
     def convert_bbox(self, format: str) -> None:
-        """Convert bounding box format.
+        """转换边界框格式。
 
-        Args:
-            format (str): Target format for conversion, one of 'xyxy', 'xywh', or 'ltwh'.
+        参数:
+            format (str): 转换的目标格式，'xyxy'、'xywh' 或 'ltwh' 之一。
         """
         self._bboxes.convert(format=format)
 
     @property
-    def bbox_areas(self) -> np.ndarray:
-        """Calculate the area of bounding boxes."""
+        """计算边界框的面积。"""
         return self._bboxes.areas()
 
     def scale(self, scale_w: float, scale_h: float, bbox_only: bool = False):
-        """Scale coordinates by given factors.
+        """按给定因子缩放坐标。
 
-        Args:
-            scale_w (float): Scale factor for width.
-            scale_h (float): Scale factor for height.
-            bbox_only (bool, optional): Whether to scale only bounding boxes.
+        参数:
+            scale_w (float): 宽度缩放因子。
+            scale_h (float): 高度缩放因子。
+            bbox_only (bool, 可选): 是否仅缩放边界框。
         """
         self._bboxes.mul(scale=(scale_w, scale_h, scale_w, scale_h))
         if bbox_only:
@@ -266,11 +261,11 @@ class Instances:
             self.keypoints[..., 1] *= scale_h
 
     def denormalize(self, w: int, h: int) -> None:
-        """Convert normalized coordinates to absolute coordinates.
+        """将归一化坐标转换为绝对坐标。
 
-        Args:
-            w (int): Image width.
-            h (int): Image height.
+        参数:
+            w (int): 图像宽度。
+            h (int): 图像高度。
         """
         if not self.normalized:
             return
@@ -283,11 +278,11 @@ class Instances:
         self.normalized = False
 
     def normalize(self, w: int, h: int) -> None:
-        """Convert absolute coordinates to normalized coordinates.
+        """将绝对坐标转换为归一化坐标。
 
-        Args:
-            w (int): Image width.
-            h (int): Image height.
+        参数:
+            w (int): 图像宽度。
+            h (int): 图像高度。
         """
         if self.normalized:
             return
@@ -300,13 +295,13 @@ class Instances:
         self.normalized = True
 
     def add_padding(self, padw: int, padh: int) -> None:
-        """Add padding to coordinates.
+        """为坐标添加填充。
 
-        Args:
-            padw (int): Padding width.
-            padh (int): Padding height.
+        参数:
+            padw (int): 填充宽度。
+            padh (int): 填充高度。
         """
-        assert not self.normalized, "you should add padding with absolute coordinates."
+        assert not self.normalized, "应该使用绝对坐标添加填充。"
         self._bboxes.add(offset=(padw, padh, padw, padh))
         self.segments[..., 0] += padw
         self.segments[..., 1] += padh
@@ -315,17 +310,16 @@ class Instances:
             self.keypoints[..., 1] += padh
 
     def __getitem__(self, index: int | np.ndarray | slice) -> Instances:
-        """Retrieve a specific instance or a set of instances using indexing.
+        """使用索引检索特定实例或一组实例。
 
-        Args:
-            index (int | slice | np.ndarray): The index, slice, or boolean array to select the desired instances.
+        参数:
+            index (int | slice | np.ndarray): 选择所需实例的索引、切片或布尔数组。
 
-        Returns:
-            (Instances): A new Instances object containing the selected boxes, segments, and keypoints if present.
+        返回:
+            (Instances): 包含所选框、分割和关键点（如果存在）的新 Instances 对象。
 
-        Notes:
-            When using boolean indexing, make sure to provide a boolean array with the same length as the number of
-            instances.
+        注意:
+            使用布尔索引时，请确保提供与实例数量相同长度的布尔数组。
         """
         segments = self.segments[index] if len(self.segments) else self.segments
         keypoints = self.keypoints[index] if self.keypoints is not None else None
@@ -340,10 +334,10 @@ class Instances:
         )
 
     def flipud(self, h: int) -> None:
-        """Flip coordinates vertically.
+        """垂直翻转坐标。
 
-        Args:
-            h (int): Image height.
+        参数:
+            h (int): 图像高度。
         """
         if self._bboxes.format == "xyxy":
             y1 = self.bboxes[:, 1].copy()
@@ -357,10 +351,10 @@ class Instances:
             self.keypoints[..., 1] = h - self.keypoints[..., 1]
 
     def fliplr(self, w: int) -> None:
-        """Flip coordinates horizontally.
+        """水平翻转坐标。
 
-        Args:
-            w (int): Image width.
+        参数:
+            w (int): 图像宽度。
         """
         if self._bboxes.format == "xyxy":
             x1 = self.bboxes[:, 0].copy()
@@ -374,11 +368,11 @@ class Instances:
             self.keypoints[..., 0] = w - self.keypoints[..., 0]
 
     def clip(self, w: int, h: int) -> None:
-        """Clip coordinates to stay within image boundaries.
+        """将坐标裁剪到图像边界内。
 
-        Args:
-            w (int): Image width.
-            h (int): Image height.
+        参数:
+            w (int): 图像宽度。
+            h (int): 图像高度。
         """
         ori_format = self._bboxes.format
         self.convert_bbox(format="xyxy")
@@ -389,7 +383,7 @@ class Instances:
         self.segments[..., 0] = self.segments[..., 0].clip(0, w)
         self.segments[..., 1] = self.segments[..., 1].clip(0, h)
         if self.keypoints is not None:
-            # Set out of bounds visibility to zero
+            # 将超出边界的可见性设置为零
             self.keypoints[..., 2][
                 (self.keypoints[..., 0] < 0)
                 | (self.keypoints[..., 0] > w)
@@ -400,10 +394,10 @@ class Instances:
             self.keypoints[..., 1] = self.keypoints[..., 1].clip(0, h)
 
     def remove_zero_area_boxes(self) -> np.ndarray:
-        """Remove zero-area boxes, i.e. after clipping some boxes may have zero width or height.
+        """移除零面积的框，即裁剪后某些框可能宽度或高度为零。
 
-        Returns:
-            (np.ndarray): Boolean array indicating which boxes were kept.
+        返回:
+            (np.ndarray): 指示哪些框被保留的布尔数组。
         """
         good = self.bbox_areas > 0
         if not all(good):
@@ -415,12 +409,12 @@ class Instances:
         return good
 
     def update(self, bboxes: np.ndarray, segments: np.ndarray = None, keypoints: np.ndarray = None):
-        """Update instance variables.
+        """更新实例变量。
 
-        Args:
-            bboxes (np.ndarray): New bounding boxes.
-            segments (np.ndarray, optional): New segments.
-            keypoints (np.ndarray, optional): New keypoints.
+        参数:
+            bboxes (np.ndarray): 新的边界框。
+            segments (np.ndarray, 可选): 新的分割。
+            keypoints (np.ndarray, 可选): 新的关键点。
         """
         self._bboxes = Bboxes(bboxes, format=self._bboxes.format)
         if segments is not None:
@@ -429,24 +423,22 @@ class Instances:
             self.keypoints = keypoints
 
     def __len__(self) -> int:
-        """Return the number of instances."""
+        """返回实例数量。"""
         return len(self.bboxes)
 
     @classmethod
     def concatenate(cls, instances_list: list[Instances], axis=0) -> Instances:
-        """Concatenate a list of Instances objects into a single Instances object.
+        """将 Instances 对象列表拼接为单个 Instances 对象。
 
-        Args:
-            instances_list (list[Instances]): A list of Instances objects to concatenate.
-            axis (int, optional): The axis along which the arrays will be concatenated.
+        参数:
+            instances_list (list[Instances]): 要拼接的 Instances 对象列表。
+            axis (int, 可选): 数组拼接的轴。
 
-        Returns:
-            (Instances): A new Instances object containing the concatenated bounding boxes, segments, and keypoints if
-                present.
+        返回:
+            (Instances): 包含拼接后边界框、分割和关键点（如果存在）的新 Instances 对象。
 
-        Notes:
-            The `Instances` objects in the list should have the same properties, such as the format of the bounding
-            boxes, whether keypoints are present, and if the coordinates are normalized.
+        注意:
+            列表中的 `Instances` 对象应具有相同的属性，如边界框格式、是否存在关键点、坐标是否归一化。
         """
         assert isinstance(instances_list, (list, tuple))
         if not instances_list:
@@ -462,13 +454,13 @@ class Instances:
 
         cat_boxes = np.concatenate([ins.bboxes for ins in instances_list], axis=axis)
         seg_len = [b.segments.shape[1] for b in instances_list]
-        if len(frozenset(seg_len)) > 1:  # resample segments if there's different length
+        if len(frozenset(seg_len)) > 1:  # 如果长度不同则重采样分割
             max_len = max(seg_len)
             cat_segments = np.concatenate(
                 [
                     resample_segments(list(b.segments), max_len)
                     if len(b.segments)
-                    else np.zeros((0, max_len, 2), dtype=np.float32)  # re-generating empty segments
+                    else np.zeros((0, max_len, 2), dtype=np.float32)  # 重新生成空分割
                     for b in instances_list
                 ],
                 axis=axis,
@@ -479,19 +471,18 @@ class Instances:
         return cls(cat_boxes, cat_segments, cat_keypoints, bbox_format, normalized)
 
     @property
-    def bboxes(self) -> np.ndarray:
-        """Return bounding boxes."""
+        """返回边界框。"""
         return self._bboxes.bboxes
 
     def __repr__(self) -> str:
-        """Return a string representation of the Instances object."""
-        # Map private to public names and include direct attributes
+        """返回 Instances 对象的字符串表示。"""
+        # 将私有名称映射为公共名称，并包含直接属性
         attr_map = {"_bboxes": "bboxes"}
         parts = []
         for key, value in self.__dict__.items():
             name = attr_map.get(key, key)
             if name == "bboxes":
-                value = self.bboxes  # Use the property
+                value = self.bboxes  # 使用属性
             if value is not None:
                 parts.append(f"{name}={value!r}")
         return "Instances({})".format("\n".join(parts))

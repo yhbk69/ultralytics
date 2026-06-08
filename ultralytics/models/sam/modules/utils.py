@@ -10,16 +10,16 @@ import torch.nn.functional as F
 
 
 def select_closest_cond_frames(frame_idx: int, cond_frame_outputs: dict[int, Any], max_cond_frame_num: int):
-    """Select the closest conditioning frames to a given frame index.
+    """选择距离给定帧索引最近的调节帧。
 
     Args:
-        frame_idx (int): Current frame index.
-        cond_frame_outputs (dict[int, Any]): Dictionary of conditioning frame outputs keyed by frame indices.
-        max_cond_frame_num (int): Maximum number of conditioning frames to select.
+        frame_idx (int): 当前帧索引。
+        cond_frame_outputs (dict[int, Any]): 以帧索引为键的调节帧输出字典。
+        max_cond_frame_num (int): 要选择的最大调节帧数量。
 
     Returns:
-        selected_outputs (dict[int, Any]): Selected items from cond_frame_outputs.
-        unselected_outputs (dict[int, Any]): Items not selected from cond_frame_outputs.
+        selected_outputs (dict[int, Any]): 从cond_frame_outputs中选择的项目。
+        unselected_outputs (dict[int, Any]): 未从cond_frame_outputs中选择的项目。
 
     Examples:
         >>> frame_idx = 5
@@ -62,15 +62,15 @@ def select_closest_cond_frames(frame_idx: int, cond_frame_outputs: dict[int, Any
 
 
 def get_1d_sine_pe(pos_inds: torch.Tensor, dim: int, temperature: float = 10000):
-    """Generate 1D sinusoidal positional embeddings for given positions and dimensions.
+    """为给定的位置和维度生成一维正弦位置编码。
 
     Args:
-        pos_inds (torch.Tensor): Position indices for which to generate embeddings.
-        dim (int): Dimension of the positional embeddings. Should be an even number.
-        temperature (float, optional): Scaling factor for the frequency of the sinusoidal functions.
+        pos_inds (torch.Tensor): 要为其生成嵌入的位置索引。
+        dim (int): 位置嵌入的维度。应为偶数。
+        temperature (float, optional): 正弦函数的频率缩放因子。
 
     Returns:
-        (torch.Tensor): Sinusoidal positional embeddings with shape (pos_inds.shape, dim).
+        (torch.Tensor): 正弦位置编码，形状为(pos_inds.shape, dim)。
 
     Examples:
         >>> pos = torch.tensor([0, 1, 2, 3])
@@ -88,20 +88,19 @@ def get_1d_sine_pe(pos_inds: torch.Tensor, dim: int, temperature: float = 10000)
 
 
 def init_t_xy(end_x: int, end_y: int, scale: float = 1.0, offset: int = 0):
-    """Initialize 1D and 2D coordinate tensors for a grid of specified dimensions.
+    """为指定维度的网格初始化一维和二维坐标张量。
 
-    This function creates coordinate tensors for a grid with dimensions end_x × end_y. It generates a linear index
-    tensor and corresponding x and y coordinate tensors.
+    此函数为具有end_x × end_y维度的网格生成线性索引张量和对应的x、y坐标张量。
 
     Args:
-        end_x (int): Width of the grid (number of columns).
-        end_y (int): Height of the grid (number of rows).
-        scale (float): Scaling factor to apply to the coordinates.
-        offset (int): Offset to add to the coordinates.
+        end_x (int): 网格的宽度（列数）。
+        end_y (int): 网格的高度（行数）。
+        scale (float): 应用于坐标的缩放因子。
+        offset (int): 应用于坐标的偏移量。
 
     Returns:
-        t_x (torch.Tensor): X-coordinates for each position, with shape (end_x * end_y).
-        t_y (torch.Tensor): Y-coordinates for each position, with shape (end_x * end_y).
+        t_x (torch.Tensor): 每个位置的X坐标，形状为(end_x * end_y)。
+        t_y (torch.Tensor): 每个位置的Y坐标，形状为(end_x * end_y)。
 
     Examples:
         >>> t_x, t_y = init_t_xy(3, 2)
@@ -117,20 +116,20 @@ def init_t_xy(end_x: int, end_y: int, scale: float = 1.0, offset: int = 0):
 
 
 def compute_axial_cis(dim: int, end_x: int, end_y: int, theta: float = 10000.0, scale_pos: float = 1.0):
-    """Compute axial complex exponential positional encodings for 2D spatial positions in a grid.
+    """为网格中的二维空间位置计算轴向复数指数位置编码。
 
-    This function generates complex exponential positional encodings for a 2D grid of spatial positions, using separate
-    frequency components for the x and y dimensions.
+    此函数为二维空间位置的网格生成复数指数位置编码，对x和y维度使用独立的
+    频率分量。
 
     Args:
-        dim (int): Dimension of the positional encoding.
-        end_x (int): Width of the 2D grid.
-        end_y (int): Height of the 2D grid.
-        theta (float, optional): Scaling factor for frequency computation.
-        scale_pos (float, optional): Scaling factor for position coordinates.
+        dim (int): 位置编码的维度。
+        end_x (int): 二维网格的宽度。
+        end_y (int): 二维网格的高度。
+        theta (float, optional): 频率计算的缩放因子。
+        scale_pos (float, optional): 位置坐标的缩放因子。
 
     Returns:
-        (torch.Tensor): Complex exponential positional encodings with shape (end_x*end_y, dim//2).
+        (torch.Tensor): 复数指数位置编码，形状为(end_x*end_y, dim//2)。
 
     Examples:
         >>> dim, end_x, end_y = 128, 8, 8
@@ -150,20 +149,20 @@ def compute_axial_cis(dim: int, end_x: int, end_y: int, theta: float = 10000.0, 
 
 
 def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
-    """Reshape frequency tensor for broadcasting with input tensor.
+    """重塑频率张量以与输入张量进行广播。
 
-    Reshapes a frequency tensor to ensure dimensional compatibility for broadcasting with an input tensor. This function
-    is typically used in positional encoding operations.
+    将频率张量重塑以确保与输入张量的维度兼容。此函数
+    通常用于位置编码操作。
 
     Args:
-        freqs_cis (torch.Tensor): Frequency tensor with shape matching the last two dimensions of x.
-        x (torch.Tensor): Input tensor to broadcast with.
+        freqs_cis (torch.Tensor): 频率张量，形状与x的最后两个维度匹配。
+        x (torch.Tensor): 要与其进行广播的输入张量。
 
     Returns:
-        (torch.Tensor): Reshaped frequency tensor ready for broadcasting with the input tensor.
+        (torch.Tensor): 重塑后的频率张量，准备好与输入张量进行广播。
 
     Raises:
-        AssertionError: If the shape of freqs_cis doesn't match the last two dimensions of x.
+        AssertionError: 如果freqs_cis的形状与x的最后两个维度不匹配。
     """
     ndim = x.ndim
     assert ndim >= 2
@@ -178,30 +177,30 @@ def apply_rotary_enc(
     freqs_cis: torch.Tensor,
     repeat_freqs_k: bool = False,
 ):
-    """Apply rotary positional encoding to query and key tensors.
+    """应用旋转位置编码到查询和键张量。
 
-    This function applies rotary positional encoding (RoPE) to query and key tensors using complex-valued frequency
-    components. RoPE is a technique that injects relative position information into self-attention mechanisms.
+        此函数使用复数值频率分量对查询和键张量应用旋转位置编码（RoPE）。
+        RoPE是一种将相对位置信息注入自注意力机制的技术。
 
-    Args:
-        xq (torch.Tensor): Query tensor to encode with positional information.
-        xk (torch.Tensor): Key tensor to encode with positional information.
-        freqs_cis (torch.Tensor): Complex-valued frequency components for rotary encoding with shape matching the last
-            two dimensions of xq.
-        repeat_freqs_k (bool, optional): Whether to repeat frequency components along sequence length dimension to match
-            key sequence length.
+        Args:
+            xq (torch.Tensor): 要编码位置信息的查询张量。
+            xk (torch.Tensor): 要编码位置信息的键张量。
+            freqs_cis (torch.Tensor): 用于旋转编码的复数值频率分量，形状与xq的最后
+                两个维度匹配。
+            repeat_freqs_k (bool, optional): 是否沿序列长度维度重复频率分量以匹配
+                键序列长度。
 
-    Returns:
-        xq_out (torch.Tensor): Query tensor with rotary positional encoding applied.
-        xk_out (torch.Tensor): Key tensor with rotary positional encoding applied, or original xk if xk is empty.
+        Returns:
+            xq_out (torch.Tensor): 应用了旋转位置编码的查询张量。
+            xk_out (torch.Tensor): 应用了旋转位置编码的键张量，如果xk为空则为原始xk。
 
-    Examples:
-        >>> import torch
-        >>> xq = torch.randn(2, 8, 16, 64)  # [batch, heads, seq_len, dim]
-        >>> xk = torch.randn(2, 8, 16, 64)
-        >>> freqs_cis = compute_axial_cis(64, 4, 4)  # For a 4x4 spatial grid with dim=64
-        >>> q_encoded, k_encoded = apply_rotary_enc(xq, xk, freqs_cis)
-    """
+        Examples:
+            >>> import torch
+            >>> xq = torch.randn(2, 8, 16, 64)  # [batch, heads, seq_len, dim]
+            >>> xk = torch.randn(2, 8, 16, 64)
+            >>> freqs_cis = compute_axial_cis(64, 4, 4)  # 对于dim=64的4x4空间网格
+            >>> q_encoded, k_encoded = apply_rotary_enc(xq, xk, freqs_cis)
+        """
     xq_ = torch.view_as_complex(xq.float().reshape(*xq.shape[:-1], -1, 2))
     xk_ = torch.view_as_complex(xk.float().reshape(*xk.shape[:-1], -1, 2)) if xk.shape[-2] != 0 else None
     freqs_cis = reshape_for_broadcast(freqs_cis, xq_)
@@ -223,15 +222,15 @@ def apply_rotary_enc(
 
 
 def window_partition(x: torch.Tensor, window_size: int):
-    """Partition input tensor into non-overlapping windows with padding if needed.
+    """将输入张量分区为非重叠窗口，必要时进行填充。
 
     Args:
-        x (torch.Tensor): Input tensor with shape (B, H, W, C).
-        window_size (int): Size of each window.
+        x (torch.Tensor): 输入张量，形状为(B, H, W, C)。
+        window_size (int): 每个窗口的大小。
 
     Returns:
-        windows (torch.Tensor): Partitioned windows with shape (B * num_windows, window_size, window_size, C).
-        padded_h_w (tuple[int, int]): Padded height and width before partition.
+        windows (torch.Tensor): 分区后的窗口，形状为(B * num_windows, window_size, window_size, C)。
+        padded_h_w (tuple[int, int]): 分区前的填充高度和宽度。
 
     Examples:
         >>> x = torch.randn(1, 16, 16, 3)

@@ -11,71 +11,70 @@ from typing import IO, Any
 
 @lru_cache(maxsize=1)
 def is_noninteractive_console() -> bool:
-    """Check for known non-interactive console environments."""
+    """检查是否为已知的非交互式控制台环境。"""
     return "GITHUB_ACTIONS" in os.environ or "RUNPOD_POD_ID" in os.environ
 
 
 class TQDM:
-    """Lightweight zero-dependency progress bar for Ultralytics.
+    """Ultralytics 的轻量级零依赖进度条。
 
-    Provides clean, rich-style progress bars suitable for various environments including Weights & Biases, console
-    outputs, and other logging systems. Features zero external dependencies, clean single-line output, rich-style
-    progress bars with Unicode block characters, context manager support, iterator protocol support, and dynamic
-    description updates.
+    提供适合各种环境（包括 Weights & Biases、控制台输出和其他日志系统）的简洁、rich 风格进度条。
+    特点包括零外部依赖、整洁的单行输出、带 Unicode 块字符的 rich 风格进度条、
+    上下文管理器支持、迭代器协议支持和动态描述更新。
 
-    Attributes:
-        iterable (Any): Iterable to wrap with progress bar.
-        desc (str): Prefix description for the progress bar.
-        total (int | None): Expected number of iterations.
-        disable (bool): Whether to disable the progress bar.
-        unit (str): String for units of iteration.
-        unit_scale (bool): Auto-scale units flag.
-        unit_divisor (int): Divisor for unit scaling.
-        leave (bool): Whether to leave the progress bar after completion.
-        mininterval (float): Minimum time interval between updates.
-        initial (int): Initial counter value.
-        n (int): Current iteration count.
-        closed (bool): Whether the progress bar is closed.
-        bar_format (str | None): Custom bar format string.
-        file (IO[str]): Output file stream.
+    属性:
+        iterable (Any): 用进度条包装的可迭代对象。
+        desc (str): 进度条的前缀描述。
+        total (int | None): 预期迭代次数。
+        disable (bool): 是否禁用进度条。
+        unit (str): 迭代单位的字符串。
+        unit_scale (bool): 自动缩放单位标志。
+        unit_divisor (int): 单位缩放的除数。
+        leave (bool): 完成后是否保留进度条。
+        mininterval (float): 更新之间的最小时间间隔。
+        initial (int): 初始计数器值。
+        n (int): 当前迭代次数。
+        closed (bool): 进度条是否已关闭。
+        bar_format (str | None): 自定义进度条格式字符串。
+        file (IO[str]): 输出文件流。
 
-    Methods:
-        update: Update progress by n steps.
-        set_description: Set or update the description.
-        set_postfix: Set postfix for the progress bar.
-        close: Close the progress bar and clean up.
-        refresh: Refresh the progress bar display.
-        clear: Clear the progress bar from display.
-        write: Write a message without breaking the progress bar.
+    方法:
+        update: 更新进度 n 步。
+        set_description: 设置或更新描述。
+        set_postfix: 设置进度条的后缀。
+        close: 关闭进度条并清理。
+        refresh: 刷新进度条显示。
+        clear: 清除进度条显示。
+        write: 写入消息而不破坏进度条。
 
-    Examples:
-        Basic usage with iterator:
+    示例:
+        使用迭代器的基本用法:
         >>> for i in TQDM(range(100)):
         ...     time.sleep(0.01)
 
-        With custom description:
+        带自定义描述:
         >>> pbar = TQDM(range(100), desc="Processing")
         >>> for i in pbar:
         ...     pbar.set_description(f"Processing item {i}")
 
-        Context manager usage:
+        上下文管理器用法:
         >>> with TQDM(total=100, unit="B", unit_scale=True) as pbar:
         ...     for i in range(100):
         ...         pbar.update(1)
 
-        Manual updates:
+        手动更新:
         >>> pbar = TQDM(total=100, desc="Training")
         >>> for epoch in range(100):
-        ...     # Do work
+        ...     # 执行工作
         ...     pbar.update(1)
         >>> pbar.close()
     """
 
-    # Constants
-    MIN_RATE_CALC_INTERVAL = 0.01  # Minimum time interval for rate calculation
-    RATE_SMOOTHING_FACTOR = 0.3  # Factor for exponential smoothing of rates
-    MAX_SMOOTHED_RATE = 1000000  # Maximum rate to apply smoothing to
-    NONINTERACTIVE_MIN_INTERVAL = 60.0  # Minimum interval for non-interactive environments
+    # 常量
+    MIN_RATE_CALC_INTERVAL = 0.01  # 速率计算的最小时间间隔
+    RATE_SMOOTHING_FACTOR = 0.3  # 速率指数平滑因子
+    MAX_SMOOTHED_RATE = 1000000  # 应用平滑的最大速率
+    NONINTERACTIVE_MIN_INTERVAL = 60.0  # 非交互式环境的最小间隔
 
     def __init__(
         self,
@@ -89,28 +88,28 @@ class TQDM:
         unit: str = "it",
         unit_scale: bool = True,
         unit_divisor: int = 1000,
-        bar_format: str | None = None,  # kept for API compatibility; not used for formatting
+        bar_format: str | None = None,  # 保留以兼容 API；不用于格式化
         initial: int = 0,
         **kwargs,
     ) -> None:
-        """Initialize the TQDM progress bar with specified configuration options.
+        """使用指定配置选项初始化 TQDM 进度条。
 
-        Args:
-            iterable (Any, optional): Iterable to wrap with progress bar.
-            desc (str, optional): Prefix description for the progress bar.
-            total (int, optional): Expected number of iterations.
-            leave (bool, optional): Whether to leave the progress bar after completion.
-            file (IO[str], optional): Output file stream for progress display.
-            mininterval (float, optional): Minimum time interval between updates (default 0.1s, 60s in GitHub Actions).
-            disable (bool, optional): Whether to disable the progress bar. Auto-detected if None.
-            unit (str, optional): String for units of iteration (default "it" for items).
-            unit_scale (bool, optional): Auto-scale units for bytes/data units.
-            unit_divisor (int, optional): Divisor for unit scaling (default 1000).
-            bar_format (str, optional): Custom bar format string.
-            initial (int, optional): Initial counter value.
-            **kwargs (Any): Additional keyword arguments for compatibility (ignored).
+        参数:
+            iterable (Any, 可选): 用进度条包装的可迭代对象。
+            desc (str, 可选): 进度条的前缀描述。
+            total (int, 可选): 预期迭代次数。
+            leave (bool, 可选): 完成后是否保留进度条。
+            file (IO[str], 可选): 进度显示的输出文件流。
+            mininterval (float, 可选): 更新之间的最小时间间隔（默认 0.1s，GitHub Actions 中 60s）。
+            disable (bool, 可选): 是否禁用进度条。如果为 None 则自动检测。
+            unit (str, 可选): 迭代单位字符串（默认 "it"）。
+            unit_scale (bool, 可选): 自动缩放字节/数据单位。
+            unit_divisor (int, 可选): 单位缩放除数（默认 1000）。
+            bar_format (str, 可选): 自定义进度条格式字符串。
+            initial (int, 可选): 初始计数器值。
+            **kwargs (Any): 用于兼容性的额外关键字参数（忽略）。
         """
-        # Disable if not verbose
+        # 如果不详细则禁用
         if disable is None:
             try:
                 from ultralytics.utils import LOGGER, VERBOSE
@@ -121,7 +120,7 @@ class TQDM:
 
         self.iterable = iterable
         self.desc = desc or ""
-        self.total = total or (len(iterable) if hasattr(iterable, "__len__") else None) or None  # prevent total=0
+        self.total = total or (len(iterable) if hasattr(iterable, "__len__") else None) or None  # 防止 total=0
         self.disable = disable
         self.unit = unit
         self.unit_scale = unit_scale
@@ -131,12 +130,12 @@ class TQDM:
         self.mininterval = max(mininterval, self.NONINTERACTIVE_MIN_INTERVAL) if self.noninteractive else mininterval
         self.initial = initial
 
-        # Kept for API compatibility (unused for f-string formatting)
+        # 保留以兼容 API（不用于 f-string 格式化）
         self.bar_format = bar_format
 
         self.file = file or sys.stdout
 
-        # Internal state
+        # 内部状态
         self.n = self.initial
         self.last_print_n = self.initial
         self.last_print_t = time.time()
@@ -154,22 +153,22 @@ class TQDM:
             self._display()
 
     def _format_rate(self, rate: float) -> str:
-        """Format rate with units, switching between it/s and s/it for readability."""
+        """格式化带单位的速率，在 it/s 和 s/it 之间切换以提高可读性。"""
         if rate <= 0:
             return ""
 
         inv_rate = 1 / rate if rate else None
 
-        # Use s/it format when inv_rate > 1 (i.e., rate < 1 it/s) for better readability
+        # 当 inv_rate > 1（即 rate < 1 it/s）时使用 s/it 格式以提高可读性
         if inv_rate and inv_rate > 1:
             return f"{inv_rate:.1f}s/B" if self.is_bytes else f"{inv_rate:.1f}s/{self.unit}"
 
-        # Use it/s format for fast iterations
+        # 快速迭代使用 it/s 格式
         fallback = f"{rate:.1f}B/s" if self.is_bytes else f"{rate:.1f}{self.unit}/s"
         return next((f"{rate / t:.1f}{u}" for t, u in self.scales if rate >= t), fallback)
 
     def _format_num(self, num: int | float) -> str:
-        """Format number with optional unit scaling."""
+        """格式化数字，可选单位缩放。"""
         if not self.unit_scale or not self.is_bytes:
             return str(num)
 
@@ -181,7 +180,7 @@ class TQDM:
 
     @staticmethod
     def _format_time(seconds: float) -> str:
-        """Format time duration."""
+        """格式化时间持续时间。"""
         if seconds < 60:
             return f"{seconds:.1f}s"
         elif seconds < 3600:
@@ -191,7 +190,7 @@ class TQDM:
             return f"{h}:{m:02d}:{seconds % 60:02.0f}"
 
     def _generate_bar(self, width: int = 12) -> str:
-        """Generate progress bar."""
+        """生成进度条。"""
         if self.total is None:
             return "━" * width if self.closed else "─" * width
 
@@ -203,13 +202,13 @@ class TQDM:
         return bar
 
     def _should_update(self, dt: float, dn: int) -> bool:
-        """Check if display should update."""
+        """检查是否应该更新显示。"""
         if self.noninteractive:
             return False
         return (self.total is not None and self.n >= self.total) or (dt >= self.mininterval)
 
     def _display(self, final: bool = False) -> None:
-        """Display progress bar."""
+        """显示进度条。"""
         if self.disable or (self.closed and not final):
             return
 
@@ -220,39 +219,39 @@ class TQDM:
         if not final and not self._should_update(dt, dn):
             return
 
-        # Calculate rate (avoid crazy numbers)
+        # 计算速率（避免异常值）
         if dt > self.MIN_RATE_CALC_INTERVAL:
             rate = dn / dt if dt else 0.0
-            # Smooth rate for reasonable values, use raw rate for very high values
+            # 对合理值平滑速率，对非常高的值使用原始速率
             if rate < self.MAX_SMOOTHED_RATE:
                 self.last_rate = self.RATE_SMOOTHING_FACTOR * rate + (1 - self.RATE_SMOOTHING_FACTOR) * self.last_rate
                 rate = self.last_rate
         else:
             rate = self.last_rate
 
-        # At completion, use overall rate
+        # 完成时使用整体速率
         if self.total and self.n >= self.total:
             overall_elapsed = current_time - self.start_t
             if overall_elapsed > 0:
                 rate = self.n / overall_elapsed
 
-        # Update counters
+        # 更新计数器
         self.last_print_n = self.n
         self.last_print_t = current_time
         elapsed = current_time - self.start_t
 
-        # Remaining time
+        # 剩余时间
         remaining_str = ""
         if self.total and 0 < self.n < self.total and elapsed > 0:
             est_rate = rate or (self.n / elapsed)
             remaining_str = f"<{self._format_time((self.total - self.n) / est_rate)}"
 
-        # Numbers and percent
+        # 数字和百分比
         if self.total:
             percent = (self.n / self.total) * 100
             n_str = self._format_num(self.n)
             t_str = self._format_num(self.total)
-            if self.is_bytes and n_str[-2] == t_str[-2]:  # Collapse suffix only when identical (e.g. "5.4/5.4MB")
+            if self.is_bytes and n_str[-2] == t_str[-2]:  # 仅在相同后缀时折叠（如 "5.4/5.4MB"）"5.4/5.4MB")
                 n_str = n_str.rstrip("KMGTPB")
         else:
             percent = 0.0
@@ -263,10 +262,10 @@ class TQDM:
 
         bar = self._generate_bar()
 
-        # Compose progress line via f-strings (two shapes: with/without total)
+        # 通过 f-string 组合进度行（两种形式：有/无 total）
         if self.total:
             if self.is_bytes and self.n >= self.total:
-                # Completed bytes: show only final size
+                # 完成的字节数：仅显示最终大小
                 progress_str = f"{self.desc}: {percent:.0f}% {bar} {t_str} {rate_str} {elapsed_str}"
             else:
                 progress_str = (
@@ -275,54 +274,54 @@ class TQDM:
         else:
             progress_str = f"{self.desc}: {bar} {n_str} {rate_str} {elapsed_str}"
 
-        # Write to output
+        # 写入输出
         try:
             if self.noninteractive:
-                # In non-interactive environments, avoid carriage return which creates empty lines
+                # 非交互式环境中，避免回车符产生空行
                 self.file.write(progress_str)
             else:
-                # In interactive terminals, use carriage return and clear line for updating display
+                # 交互式终端中，使用回车和清行来更新显示
                 self.file.write(f"\r\033[K{progress_str}")
             self.file.flush()
         except Exception:
             pass
 
     def update(self, n: int = 1) -> None:
-        """Update progress by n steps."""
+        """更新进度 n 步。"""
         if not self.disable and not self.closed:
             self.n += n
             self._display()
 
     def set_description(self, desc: str | None) -> None:
-        """Set description."""
+        """设置描述。"""
         self.desc = desc or ""
         if not self.disable:
             self._display()
 
     def set_postfix(self, **kwargs: Any) -> None:
-        """Set postfix (appends to description)."""
+        """设置后缀（附加到描述）。"""
         if kwargs:
             postfix = ", ".join(f"{k}={v}" for k, v in kwargs.items())
             base_desc = self.desc.split(" | ")[0] if " | " in self.desc else self.desc
             self.set_description(f"{base_desc} | {postfix}")
 
     def close(self) -> None:
-        """Close progress bar."""
+        """关闭进度条。"""
         if self.closed:
             return
 
         self.closed = True
 
         if not self.disable:
-            # Final display
+            # 最终显示
             if self.total and self.n >= self.total:
                 self.n = self.total
-                if self.n != self.last_print_n:  # Skip if 100% already shown
+                if self.n != self.last_print_n:  # 如果已显示 100% 则跳过
                     self._display(final=True)
             else:
                 self._display(final=True)
 
-            # Cleanup
+            # 清理
             if self.leave:
                 self.file.write("\n")
             else:
@@ -334,15 +333,15 @@ class TQDM:
                 pass
 
     def __enter__(self) -> TQDM:
-        """Enter context manager."""
+        """进入上下文管理器。"""
         return self
 
     def __exit__(self, *args: Any) -> None:
-        """Exit context manager and close progress bar."""
+        """退出上下文管理器并关闭进度条。"""
         self.close()
 
     def __iter__(self) -> Any:
-        """Iterate over the wrapped iterable with progress updates."""
+        """迭代包装的可迭代对象并更新进度。"""
         if self.iterable is None:
             raise TypeError("'NoneType' object is not iterable")
 
@@ -354,19 +353,19 @@ class TQDM:
             self.close()
 
     def __del__(self) -> None:
-        """Destructor to ensure cleanup."""
+        """析构函数，确保清理。"""
         try:
             self.close()
         except Exception:
             pass
 
     def refresh(self) -> None:
-        """Refresh display."""
+        """刷新显示。"""
         if not self.disable:
             self._display()
 
     def clear(self) -> None:
-        """Clear progress bar."""
+        """清除进度条。"""
         if not self.disable:
             try:
                 self.file.write("\r\033[K")
@@ -376,7 +375,7 @@ class TQDM:
 
     @staticmethod
     def write(s: str, file: IO[str] | None = None, end: str = "\n") -> None:
-        """Static method to write without breaking progress bar."""
+        """静态方法，写入消息而不破坏进度条。"""
         file = file or sys.stdout
         try:
             file.write(s + end)

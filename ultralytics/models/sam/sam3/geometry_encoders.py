@@ -1,6 +1,6 @@
-# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Ultralytics 🚀 AGPL-3.0 许可证 - https://ultralytics.com/license
 
-# Copyright (c) Meta Platforms, Inc. and affiliates. All Rights Reserved
+# 版权所有 (c) Meta Platforms, Inc. 及其附属公司。保留所有权利。
 
 import torch
 import torch.nn as nn
@@ -11,28 +11,23 @@ from ultralytics.utils.ops import xywh2xyxy
 
 
 def is_right_padded(mask: torch.Tensor):
-    """Given a padding mask (following pytorch convention, 1s for padded values), returns whether the padding is on the
-    right or not.
-    """
+    """给定一个填充掩码（遵循 PyTorch 约定，1 表示填充值），返回填充是否在右侧。"""
     return (mask.long() == torch.sort(mask.long(), dim=-1)[0]).all()
 
 
 def concat_padded_sequences(seq1, mask1, seq2, mask2, return_index: bool = False):
     """
-    Concatenates two right-padded sequences, such that the resulting sequence
-    is contiguous and also right-padded.
+    拼接两个右填充序列，使得结果序列连续且也是右填充的。
 
-    Following pytorch's convention, tensors are sequence first, and the mask are
-    batch first, with 1s for padded values.
+    遵循 PyTorch 约定，张量为序列优先，掩码为批次优先，1 表示填充值。
 
-    :param seq1: A tensor of shape (seq1_length, batch_size, hidden_size).
-    :param mask1: A tensor of shape (batch_size, seq1_length).
-    :param seq2: A tensor of shape (seq2_length, batch_size,  hidden_size).
-    :param mask2: A tensor of shape (batch_size, seq2_length).
-    :param return_index: If True, also returns the index of the ids of the element of seq2
-        in the concatenated sequence. This can be used to retrieve the elements of seq2
-    :return: A tuple (concatenated_sequence, concatenated_mask) if return_index is False,
-        otherwise (concatenated_sequence, concatenated_mask, index).
+    :param seq1: 形状为 (seq1_length, batch_size, hidden_size) 的张量。
+    :param mask1: 形状为 (batch_size, seq1_length) 的张量。
+    :param seq2: 形状为 (seq2_length, batch_size, hidden_size) 的张量。
+    :param mask2: 形状为 (batch_size, seq2_length) 的张量。
+    :param return_index: 如果为 True，同时返回 seq2 元素在拼接序列中的索引。可用于检索 seq2 的元素
+    :return: 如果 return_index 为 False，返回元组 (concatenated_sequence, concatenated_mask)，
+        否则返回 (concatenated_sequence, concatenated_mask, index)。
     """
     seq1_length, batch_size, hidden_size = seq1.shape
     seq2_length, batch_size, hidden_size = seq2.shape
@@ -58,8 +53,8 @@ def concat_padded_sequences(seq1, mask1, seq2, mask2, return_index: bool = False
     concatenated_sequence = torch.zeros((max_length, batch_size, hidden_size), device=seq2.device, dtype=seq2.dtype)
     concatenated_sequence[:seq1_length, :, :] = seq1
 
-    # At this point, the element of seq1 are in the right place
-    # We just need to shift the elements of seq2
+    # 此时，seq1 的元素已在正确位置
+    # 我们只需要移动 seq2 的元素
 
     index = torch.arange(seq2_length, device=seq2.device)[:, None].repeat(1, batch_size)
     index = index + actual_seq1_lengths[None]
@@ -73,41 +68,44 @@ def concat_padded_sequences(seq1, mask1, seq2, mask2, return_index: bool = False
 
 
 class Prompt:
-    """Utility class to manipulate geometric prompts.
+    """操作几何提示的工具类。
 
-    We expect the sequences in pytorch convention, that is sequence first, batch second The dimensions are expected as
-    follows: box_embeddings shape: N_boxes x B x C_box box_mask shape: B x N_boxes. Can be None if nothing is masked out
-    point_embeddings shape: N_points x B x C_point point_mask shape: B x N_points. Can be None if nothing is masked out
-    mask_embeddings shape: N_masks x B x 1 x H_mask x W_mask mask_mask shape: B x N_masks. Can be None if nothing is
-    masked out
+    我们期望序列遵循 PyTorch 约定，即序列优先、批次其次。维度期望如下：
+    box_embeddings 形状：N_boxes x B x C_box
+    box_mask 形状：B x N_boxes。如果没有被遮蔽则可为 None
+    point_embeddings 形状：N_points x B x C_point
+    point_mask 形状：B x N_points。如果没有被遮蔽则可为 None
+    mask_embeddings 形状：N_masks x B x 1 x H_mask x W_mask
+    mask_mask 形状：B x N_masks。如果没有被遮蔽则可为 None
 
-    We also store positive/negative labels. These tensors are also stored batch-first If they are None, we'll assume
-    positive labels everywhere box_labels: long tensor of shape N_boxes x B point_labels: long tensor of shape N_points
-    x B mask_labels: long tensor of shape N_masks x B
+    我们还存储正/负标签。这些张量也是批次优先存储。如果为 None，则假设所有位置为正标签
+    box_labels：长整型张量，形状 N_boxes x B
+    point_labels：长整型张量，形状 N_points x B
+    mask_labels：长整型张量，形状 N_masks x B
     """
 
     def __init__(self, box_embeddings=None, box_mask=None, box_labels=None):
-        """Initialize the Prompt object."""
-        # Check for null prompt
-        # Check for null prompt
+        """初始化 Prompt 对象。"""
+        # 检查空提示
+        # 检查空提示
         if box_embeddings is None:
             self.box_embeddings = None
             self.box_labels = None
             self.box_mask = None
             return
 
-        # Get sequence length, batch size, and device
+        # 获取序列长度、批次大小和设备
         box_seq_len = box_embeddings.shape[0]
         bs = box_embeddings.shape[1]
         device = box_embeddings.device
 
-        # Initialize labels and attention mask if not provided
+        # 如果未提供，初始化标签和注意力掩码
         if box_labels is None:
             box_labels = torch.ones(box_seq_len, bs, device=device, dtype=torch.long)
         if box_mask is None:
             box_mask = torch.zeros(bs, box_seq_len, device=device, dtype=torch.bool)
 
-        # Dimension checks
+        # 维度检查
         assert list(box_embeddings.shape[:2]) == [box_seq_len, bs], (
             f"Wrong dimension for box embeddings. Expected [{box_seq_len}, {bs}, *] got {box_embeddings.shape}"
         )
@@ -121,7 +119,7 @@ class Prompt:
             f"Wrong dimension for box labels. Expected [{box_seq_len}, {bs}] got {box_labels.shape}"
         )
 
-        # Device checks
+        # 设备检查
         assert box_embeddings.device == device, (
             f"Expected box embeddings to be on device {device}, got {box_embeddings.device}"
         )
@@ -133,15 +131,15 @@ class Prompt:
         self.box_labels = box_labels
 
     def append_boxes(self, boxes, labels=None, mask=None):
-        """Append box prompts to existing prompts.
+        """追加框提示到现有提示。
 
         Args:
-            boxes (torch.Tensor): Tensor of shape (N_new_boxes, B, 4) with normalized box coordinates.
-            labels (torch.Tensor | None): Optional tensor of shape (N_new_boxes, B) with positive/negative labels.
-            mask (torch.Tensor | None): Optional tensor of shape (B, N_new_boxes) for attention mask.
+            boxes (torch.Tensor): 形状为 (N_new_boxes, B, 4) 的归一化框坐标张量。
+            labels (torch.Tensor | None): 可选的形状为 (N_new_boxes, B) 的正/负标签张量。
+            mask (torch.Tensor | None): 可选的形状为 (B, N_new_boxes) 的注意力掩码张量。
         """
         if self.box_embeddings is None:
-            # First boxes - initialize
+            # 第一个框 - 初始化
             self.box_embeddings = boxes
             bs = boxes.shape[1]
             box_seq_len = boxes.shape[0]
@@ -155,7 +153,7 @@ class Prompt:
             self.box_mask = mask
             return
 
-        # Append to existing boxes
+        # 追加到现有框
         bs = self.box_embeddings.shape[1]
         assert boxes.shape[1] == bs, f"Batch size mismatch: expected {bs}, got {boxes.shape[1]}"
 
@@ -168,7 +166,7 @@ class Prompt:
             f"Shape mismatch between boxes {boxes.shape} and labels {labels.shape}"
         )
 
-        # Concatenate using the helper function
+        # 使用辅助函数进行拼接
         self.box_labels, _ = concat_padded_sequences(
             self.box_labels.unsqueeze(-1), self.box_mask, labels.unsqueeze(-1), mask
         )
@@ -177,18 +175,18 @@ class Prompt:
 
 
 class SequenceGeometryEncoder(nn.Module):
-    """Encoder for geometric box prompts. Assumes boxes are passed in the "normalized CxCyWH" format.
+    """几何框提示编码器。假设框以"归一化 CxCyWH"格式传入。
 
-    Boxes can be encoded with any of the three possibilities:
-    - direct projection: linear projection from coordinate space to d_model
-    - pooling: RoI align features from the backbone
-    - pos encoder: position encoding of the box center
+    框可以通过以下三种方式之一进行编码：
+    - 直接投影：从坐标空间到 d_model 的线性投影
+    - 池化：从骨干网络中进行 RoI 对齐特征池化
+    - 位置编码：框中心的位置编码
 
-    These three options are mutually compatible and will be summed if multiple are selected.
+    这三种选项互不冲突，如果同时选择多个，将会求和。
 
-    As an alternative, boxes can be encoded as two corner points (top-left and bottom-right).
+    替代方案：框可以编码为两个角点（左上和右下）。
 
-    The encoded sequence can be further processed with a transformer.
+    编码后的序列可以进一步通过 Transformer 处理。
     """
 
     def __init__(
@@ -206,7 +204,7 @@ class SequenceGeometryEncoder(nn.Module):
         add_post_encode_proj: bool = True,
         use_act_ckpt: bool = False,
     ):
-        """Initialize the SequenceGeometryEncoder."""
+        """初始化 SequenceGeometryEncoder。"""
         super().__init__()
 
         self.d_model = d_model
@@ -214,23 +212,23 @@ class SequenceGeometryEncoder(nn.Module):
         self.encode_boxes_as_points = encode_boxes_as_points
         self.roi_size = roi_size
 
-        # Label embeddings: 2 labels if encoding as boxes (pos/neg)
-        # 6 labels if encoding as points (regular pos/neg, top-left pos/neg, bottom-right pos/neg)
+        # 标签嵌入：如果编码为框则 2 个标签（正/负）
+        # 如果编码为点则 6 个标签（常规正/负、左上正/负、右下正/负）
         num_labels = 6 if self.encode_boxes_as_points else 2
         self.label_embed = torch.nn.Embedding(num_labels, self.d_model)
 
-        # CLS token for pooling
+        # 用于池化的 CLS token
         self.cls_embed = None
         if add_cls:
             self.cls_embed = torch.nn.Embedding(1, self.d_model)
 
-        # Point encoding (used when encode_boxes_as_points is True)
+        # 点编码（当 encode_boxes_as_points 为 True 时使用）
         if encode_boxes_as_points:
             self.points_direct_project = nn.Linear(2, self.d_model)
             self.points_pool_project = None
             self.points_pos_enc_project = None
         else:
-            # Box encoding modules
+            # 框编码模块
             assert boxes_direct_project or boxes_pos_enc or boxes_pool, "Error: need at least one way to encode boxes"
             self.points_direct_project = None
             self.points_pool_project = None
@@ -265,16 +263,16 @@ class SequenceGeometryEncoder(nn.Module):
         self.use_act_ckpt = use_act_ckpt
 
     def _encode_points(self, points, points_mask, points_labels, img_feats):
-        """Encode points (used when boxes are converted to corner points)."""
-        # Direct projection of coordinates
+        """编码点（当框被转换为角点时使用）。"""
+        # 坐标的直接投影
         points_embed = self.points_direct_project(points.to(img_feats.dtype))
 
-        # Add label embeddings
+        # 添加标签嵌入
         type_embed = self.label_embed(points_labels.long())
         return type_embed + points_embed, points_mask
 
     def _encode_boxes(self, boxes, boxes_mask, boxes_labels, img_feats: torch.Tensor):
-        """Encode boxes using configured encoding methods."""
+        """使用配置的编码方法编码框。"""
         boxes_embed = None
         n_boxes, bs = boxes.shape[:2]
 
@@ -285,14 +283,14 @@ class SequenceGeometryEncoder(nn.Module):
         if self.boxes_pool_project is not None:
             H, W = img_feats.shape[-2:]
 
-            # Convert boxes to xyxy format and denormalize
+            # 将框转换为 xyxy 格式并反归一化
             boxes_xyxy = xywh2xyxy(boxes.to(img_feats.dtype))
             scale = torch.tensor([W, H, W, H], dtype=boxes_xyxy.dtype)
             scale = scale.to(device=boxes_xyxy.device, non_blocking=True)
             scale = scale.view(1, 1, 4)
             boxes_xyxy = boxes_xyxy * scale
 
-            # RoI align
+            # RoI 对齐
             sampled = torchvision.ops.roi_align(img_feats, boxes_xyxy.transpose(0, 1).unbind(0), self.roi_size)
             assert list(sampled.shape) == [
                 bs * n_boxes,
@@ -319,21 +317,21 @@ class SequenceGeometryEncoder(nn.Module):
             else:
                 boxes_embed = boxes_embed + proj
 
-        # Add label embeddings
+        # 添加标签嵌入
         type_embed = self.label_embed(boxes_labels.long())
         return type_embed + boxes_embed, boxes_mask
 
     def forward(self, geo_prompt: Prompt, img_feats, img_sizes, img_pos_embeds=None):
-        """Encode geometric box prompts.
+        """编码几何框提示。
 
         Args:
-            geo_prompt (Prompt): Prompt object containing box embeddings, masks, and labels.
-            img_feats (list[torch.Tensor]): List of image features from backbone.
-            img_sizes (list[tuple[int, int]]): List of (H, W) tuples for each feature level.
-            img_pos_embeds (list[torch.Tensor] | None): Optional position embeddings for image features.
+            geo_prompt (Prompt): 包含框嵌入、掩码和标签的 Prompt 对象。
+            img_feats (list[torch.Tensor]): 来自骨干网络的图像特征列表。
+            img_sizes (list[tuple[int, int]]): 每个特征级别的 (H, W) 元组列表。
+            img_pos_embeds (list[torch.Tensor] | None): 图像特征的可选位置嵌入。
 
         Returns:
-            Tuple of (encoded_embeddings, attention_mask)
+            (encoded_embeddings, attention_mask) 的元组
         """
         boxes = geo_prompt.box_embeddings
         boxes_mask = geo_prompt.box_mask
@@ -344,7 +342,7 @@ class SequenceGeometryEncoder(nn.Module):
             img_pos_embeds[-1] if img_pos_embeds is not None else torch.zeros_like(seq_first_img_feats)
         )
 
-        # Prepare image features for pooling if needed
+        # 如果需要，准备用于池化的图像特征
         if self.points_pool_project or self.boxes_pool_project:
             assert len(img_feats) == len(img_sizes)
             cur_img_feat = img_feats[-1]
@@ -352,23 +350,23 @@ class SequenceGeometryEncoder(nn.Module):
             H, W = img_sizes[-1]
             assert cur_img_feat.shape[0] == H * W
             N, C = cur_img_feat.shape[-2:]
-            # Reshape to NxCxHxW
+            # 重塑为 NxCxHxW
             cur_img_feat = cur_img_feat.permute(1, 2, 0)
             cur_img_feat = cur_img_feat.view(N, C, H, W)
             img_feats = cur_img_feat
 
         if self.encode_boxes_as_points:
-            # Convert boxes to corner points
+            # 将框转换为角点
             assert boxes is not None and boxes.shape[-1] == 4
 
             boxes_xyxy = xywh2xyxy(boxes)
             top_left, bottom_right = boxes_xyxy.split(split_size=2, dim=-1)
 
-            # Adjust labels for corner points (offset by 2 and 4)
+            # 调整角点的标签（偏移 2 和 4）
             labels_tl = boxes_labels + 2
             labels_br = boxes_labels + 4
 
-            # Concatenate top-left and bottom-right points
+            # 拼接左上和右下点
             points = torch.cat([top_left, bottom_right], dim=0)
             points_labels = torch.cat([labels_tl, labels_br], dim=0)
             points_mask = torch.cat([boxes_mask, boxes_mask], dim=1)
@@ -380,7 +378,7 @@ class SequenceGeometryEncoder(nn.Module):
                 img_feats=img_feats,
             )
         else:
-            # Encode boxes directly
+            # 直接编码框
             final_embeds, final_mask = self._encode_boxes(
                 boxes=boxes,
                 boxes_mask=boxes_mask,
@@ -391,17 +389,17 @@ class SequenceGeometryEncoder(nn.Module):
         bs = final_embeds.shape[1]
         assert final_mask.shape[0] == bs
 
-        # Add CLS token if configured
+        # 如果已配置，添加 CLS token
         if self.cls_embed is not None:
             cls = self.cls_embed.weight.view(1, 1, self.d_model).repeat(1, bs, 1)
             cls_mask = torch.zeros(bs, 1, dtype=final_mask.dtype, device=final_mask.device)
             final_embeds, final_mask = concat_padded_sequences(final_embeds, final_mask, cls, cls_mask)
 
-        # Final projection
+        # 最终投影
         if self.final_proj is not None:
             final_embeds = self.norm(self.final_proj(final_embeds))
 
-        # Transformer encoding layers
+        # Transformer 编码层
         if self.encode is not None:
             for lay in self.encode:
                 final_embeds = lay(
